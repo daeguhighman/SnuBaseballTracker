@@ -33,6 +33,13 @@ jobs:
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/nest-app:latest
 
+      # AWS 자격 증명 설정
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_NAME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       # CodeDeploy에 필요한 파일들을 ZIP으로 압축
       # appspec.yml과 scripts/ 폴더를 포함
       - name: Zip artifacts for CodeDeploy
