@@ -1,0 +1,1865 @@
+openapi: 3.0.0
+info:
+  version: '1'
+  title: ''
+  description: ''
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/YUNDONGHYUN/SNUBaseballTournament/1
+tags: 
+  - name: auth
+  - name: teams
+  - name: records
+  - name: matches
+  
+paths:
+  /auth/email/request:
+    post:
+      summary: "이메일 인증번호 발송"
+      description: |
+        사용자 이메일(@snu.ac.kr)로 인증번호를 발송합니다.
+        이미 인증번호가 발급된 경우 새로 갱신됩니다.
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "junho@snu.ac.kr"
+      responses:
+        "200":
+          description: "인증번호 발송 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Verification code sent to junho@snu.ac.kr."
+        "400":
+          description: "잘못된 이메일 형식 또는 도메인 아님"
+        "429":
+          description: "요청 횟수 초과"
+  /auth/email/verify:
+    post:
+      summary: "이메일 인증번호 검증"
+      description: "이메일과 인증번호를 검증하여 이메일 소유 여부를 확인합니다."
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "junho@snu.ac.kr"
+                code:
+                  type: string
+                  example: "847219"
+      responses:
+        "200":
+          description: "인증 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email successfully verified."
+        "400":
+          description: "잘못된 코드 또는 만료됨"
+  /auth/signup:
+    post:
+      summary: "회원가입 (비밀번호 설정)"
+      description: |
+        이메일 인증을 마친 사용자가 비밀번호를 설정하여 최종 가입합니다.
+        이미 가입된 이메일일 경우 에러 반환.
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "junho@snu.ac.kr"
+                password:
+                  type: string
+                  format: password
+                  example: "mypassword123!"
+      responses:
+        "200":
+          description: "회원가입 완료"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signup successful. You can now log in."
+        "400":
+          description: "이메일 인증이 안 되었거나 이미 가입됨"
+
+  /auth/login:
+    post:
+      summary: "로그인"
+      description: "이메일과 비밀번호로 로그인합니다."
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "junho@snu.ac.kr"
+                password:
+                  type: string
+                  format: password
+                  example: "mypassword123!"
+      responses:
+        "200":
+          description: "로그인 성공"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: "이메일 또는 비밀번호가 잘못됨"
+
+  /auth/password/reset-request:
+  post:
+    summary: "비밀번호 재설정 링크 요청"
+    description: "사용자 이메일로 비밀번호 재설정 링크를 전송합니다."
+    tags: [Auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [email]
+            properties:
+              email:
+                type: string
+                format: email
+    responses:
+      "200":
+        description: "재설정 링크 전송 성공"
+      "404":
+        description: "가입되지 않은 이메일"
+
+---
+
+/auth/password/reset:
+  post:
+    summary: "비밀번호 재설정"
+    description: "이메일로 받은 링크에 포함된 토큰으로 비밀번호를 재설정합니다."
+    tags: [Auth]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [token, newPassword]
+            properties:
+              token:
+                type: string
+              newPassword:
+                type: string
+    responses:
+      "200":
+        description: "비밀번호 재설정 성공"
+      "400":
+        description: "토큰이 만료되었거나 유효하지 않음"
+  /teams/grouped:
+    get:
+      summary: "모든 조의 팀 목록을 조별로 그룹화하고 순위별로 정렬해서 조회"
+      tags: 
+        - teams
+      parameters: 
+        - name : group
+          in : query
+          required: true
+          schema:
+            type: string
+          example: "A"
+      responses:
+        "200":
+          description: "조별로 그룹화된 팀 목록 반환 (각 조 내부는 순위 순 정렬)"
+          content:
+            application/json:
+              schema:
+                  $ref : "#/components/schemas/GroupedTeamResponse"
+  /matches:
+    get:
+      summary: "특정 날짜의 경기 일정 조회"
+      tags: 
+        - matches
+      parameters: 
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: "조회할 날짜 (YYYY-MM-DD 형태)"
+          example: "2025-04-13"
+      responses:
+        "200":
+          description: "특정 날짜의 경기 일정 정보"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchScheduleResponse"
+        "400":
+          description: "잘못된 파라미터 형식"
+        "404":
+          description: "해당 날짜의 경기가 존재하지 않음"
+  /records/batters:
+    get:
+      summary: "전체 타자 기록 조회"
+      description: |
+        전체 타자 기록을 반환합니다. 정렬은 프론트에서 처리합니다.
+      tags:
+        - "records"
+      responses:
+        "200":
+          description: "성공적으로 타자 기록을 가져옴"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatterRecordsResponse"
+        "500":
+          description: "서버 내부 오류"
+        
+  /records/pitchers:
+    get:
+      summary: "전체 투수 기록 조회"
+      description: |
+        전체 투수 기록을 반환합니다. 정렬은 프론트에서 처리합니다.
+      tags:
+        - "records"
+      responses:
+        "200":
+          description: "성공적으로 투수 기록을 가져옴"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PitcherRecordsResponse"
+        "500":
+          description: "서버 내부 오류"
+
+          
+  # /records/batters:
+  #   get:
+  #     summary: "타자 기록 조회 (상위 N명, 정렬 기준 설정)"
+  #     description: |
+  #       타자 기록을 특정 정렬 기준에 따라 상위 N명까지 반환합니다.
+  #       - limit 파라미터로 최대 몇 명까지 받을지 지정 (기본 5)
+  #       - sortBy 파라미터로 정렬 기준 지정 (AB, H, 2B, 3B, HR, BB, AVG, OBP, SLG, OPS)
+  #     tags:
+  #       - "records"
+  #     parameters:
+  #       - in: query
+  #         name: limit
+  #         schema:
+  #           type: integer
+  #           minimum: 1
+  #           default: 5
+  #         required: false
+  #         description: "가져올 상위 선수 수 (예: 5, 20)"
+  #         example: 5
+
+  #       - in: query
+  #         name: sortBy
+  #         schema:
+  #           type: string
+  #           default: "AVG"
+  #           enum: [AB, H, 2B, 3B, HR, BB, AVG, OBP, SLG, OPS]
+  #         required: false
+  #         description: |
+  #           정렬 기준 
+  #           - AB: 타수
+  #           - H: 안타
+  #           - 2B: 2루타
+  #           - 3B: 3루타
+  #           - HR: 홈런
+  #           - BB: 볼넷
+  #           - AVG: 타율
+  #           - OBP: 출루율
+  #           - SLG: 장타율
+  #           - OPS: OPS
+            
+
+  #     responses:
+  #       "200":
+  #         description: "성공적으로 타자 기록을 가져옴"
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: "#/components/schemas/BatterRecordsResponse"
+  #       "400":
+  #         description: "잘못된 요청 (파라미터 범위/값 오류 등)"
+
+  # /records/pitchers:
+  #   get:
+  #     summary: "투수 기록 조회 (상위 N명, 정렬 기준 설정)"
+  #     description: |
+  #       투수 기록을 탈삼진 기준에 따라 내림차순 정렬 후상위 N명까지 반환합니다.
+  #       - limit 파라미터로 최대 몇 명까지 받을지 지정 (기본 5)
+  #     tags:
+  #       - "records"
+  #     parameters:
+  #       - in: query
+  #         name: limit
+  #         schema:
+  #           type: integer
+  #           minimum: 1
+  #           default: 5
+  #         required: false
+  #         description: "가져올 상위 선수 수 (예: 5, 20)"
+  #         example: 20
+
+
+  #     responses:
+  #       "200":
+  #         description: "성공적으로 투수 기록을 가져옴"
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: "#/components/schemas/PitcherRecordsResponse"
+  #       "400":
+  #         description: "잘못된 요청 (파라미터 범위/값 오류 등)"
+  /teams/{teamId}/players:
+    get:
+      summary: "특정 팀의 선수 목록 조회"
+      description: |
+        팀 ID를 경로로 받아 해당 팀에 소속된 선수들을 리스트업합니다.
+        - 선출 여부(`isElite`), WC 여부(`isWc`)는 boolean
+      tags:
+        - "teams"
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "팀의 ID"
+          example: 1
+      responses:
+        "200":
+          description: "특정 팀의 선수 목록을 성공적으로 가져옴"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerListResponse"
+        "404":
+          description: "해당 팀이 존재하지 않는 경우"
+  /matches/{matchId}/lineup:
+    post:
+      summary: "특정 경기의 라인업 제출"
+      tags:
+      - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 1001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitLineupRequest"
+      responses:
+        "200":
+          description: "라인업 제출 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitLineupResponse"
+        "400":
+          description: "잘못된 요청 (예: 이미 제출된 라인업, 중복된 선수, 인원이 부족 등)"
+        "404":
+          description: "해당 경기 또는 팀을 찾을 수 없음"
+    patch:
+      summary: "특정 경기 라인업 부분 수정"
+      description: |
+        - 서버는 전달받은 `batters` 또는 'pitcher' 목록에 있는 선수들만 **DB 업데이트**합니다.
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 1001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchLineupRequest"
+      responses:
+        "200":
+          description: "라인업 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchLineupResponse"
+        "400":
+          description: "잘못된 요청 (중복 타순, 없는 선수, 이미 교체 불가 상황 등)"
+        "404":
+          description: "해당 경기 또는 팀(혹은 선수)을 찾을 수 없음"
+
+  /matches/{matchId}/lineup/{order}:
+    get:
+      summary: "특정 경기에서 특정 타순 선수를 조회"
+      description: "1~9"
+      tags: 
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 1001
+
+        - name: order
+          in: path
+          required: true
+          description: |
+            1~9(타순) 
+          schema:
+            oneOf:
+              - type: integer
+                minimum: 1
+                maximum: 9
+          example: 7
+
+      responses:
+        "200":
+          description: "타순 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SingleLineupBatterResponse"
+        "404":
+          description: "해당 경기나 해당 타순/투수가 없을 경우"
+
+  /matches/{matchId}/lineup/pitcher:
+    get:
+      summary: "특정 경기의 선발 투수 조회"
+      description: "라인업에 등록된 투수를 조회합니다."
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 1001
+
+      responses:
+        "200":
+          description: "투수 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SingleLineupPitcherResponse"
+        "404":
+          description: "해당 경기나 투수 정보가 없을 경우"
+  
+  /matches/{matchId}/inning-scores:
+    post:
+      summary: "특정 경기(match) 중 스코어보드 수정 또는 생성"
+      description: |
+        - 예) 2회말 점수를 수정하고, 4회초 점수를 새로 생성
+        - 서버는 (matchId, inning, inning_half)로 DB 조회:
+          - 있으면 update
+          - 없으면 insert
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 1001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchInningScoresRequest"
+      responses:
+        "201":
+          description: "이닝 점수 기록 생성 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchInningScoresResponse"
+        "400":
+          description: "잘못된 요청 (예: 이미 존재하는 이닝/초말 중복, 입력 값 오류 등)"
+        "404":
+          description: "해당 경기(matchId)가 존재하지 않는 경우"
+
+    
+    get:
+      summary: "특정 경기(match)의 이닝별 득점 조회 (스코어보드)"
+      description: |
+        - 예: 1회초/말 점수부터 n회초/말까지 기록된 스코어를 반환
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 1001
+      responses:
+        "200":
+          description: "이닝별 득점 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListInningScoresResponse"
+        "404":
+          description: "경기가 존재하지 않음 (또는 아직 스코어가 전혀 기록되지 않은 경우)"
+          
+  /matches/{matchId}/batters/{playerId}/plate-appearance:
+    post:
+      summary: "특정 경기에서 타자의 타석 결과 기록"
+      description: |
+        - 안타/2루타/3루타/홈런/볼넷/희생타/아웃 등 타석 결과를 기록
+        - 서버는 DB(hitter_game_stats)를 업데이트
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기(매치) ID"
+          example: 1001
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "타자(선수) ID"
+          example: 25
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HitterPlateAppearanceRequest"
+      responses:
+        "200":
+          description: "타석 기록 성공 (DB 업데이트 완료)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HitterStatsResponse"
+        "400":
+          description: "잘못된 요청 (예: 잘못된 결과값, 없는 선수ID, 경기 종료 등)"
+        "404":
+          description: "경기나 선수 찾을 수 없음"
+
+  /matches/{matchId}/pitchers/{playerId}/strikeout:
+    post:
+      summary: "특정 경기에서 투수의 삼진 기록"
+      description: |
+        - 투수가 삼진을 잡았을 때 호출
+        - 서버는 DB(pitcher_game_stats)를 업데이트 (K++)
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기(매치) ID"
+          example: 1001
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "투수(선수) ID"
+          example: 32
+      responses:
+        "200":
+          description: "삼진 기록 성공 (DB 업데이트 완료)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PitcherStatsResponse"
+        "400":
+          description: "잘못된 요청 (예: 없는 선수, 경기 종료 등)"
+        "404":
+          description: "경기나 선수 찾을 수 없음"
+  /matches/{matchId}/results:
+    get:
+      summary: "경기 결과 조회 (스코어보드 + 팀/선수 기록)"
+      description: |
+        종료된 경기(matchId)에 대한:
+        - 이닝별 득점(스코어보드)
+        - 팀별 총 득점, 안타 등
+        - 선수별 당일 스탯(타자, 투수)
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 101
+      responses:
+        "200":
+          description: "경기 결과 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResultsResponse"
+        "404":
+          description: "경기(matchId) 없음"
+
+    patch:
+      summary: "경기 결과 수정 (스코어보드/선수 스탯)"
+      description: |
+        - 심판(관리자)이 이닝별 득점이나 선수별 타격/투수 기록을 수정
+        - 서버에서 정합성 체크 (예: 총 득점/안타, 개인 기록 일치 여부 등)
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 101
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMatchResultsRequest"
+      responses:
+        "200":
+          description: "결과 수정 성공 → 수정된 결과 반환"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResultsResponse"
+        "400":
+          description: "정합성 오류 등 잘못된 요청"
+        "404":
+          description: "경기(matchId) 없음"
+
+  /matches/{matchId}/results/finalize:
+    post:
+      summary: "경기 결과 최종 확정"
+      description: |
+        - 스코어, 팀 득점/승패 반영
+        - 선수별 기록(타격/투수) 통산 스탯에 반영
+        - 최종 확정된 결과를 반환
+      tags:
+        - "matches"
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "경기 ID"
+          example: 101
+      responses:
+        "200":
+          description: "경기 종료 및 확정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalizedMatchResultsResponse"
+        "400":
+          description: "이미 종료된 경기, 또는 정합성 오류"
+        "404":
+          description: "경기(matchId) 없음"
+
+components:
+  schemas:
+    GroupedTeamResponse:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/TeamList"
+      example:
+        A:
+          - id: 1
+            name: "관악사"
+            games: 4
+            wins: 2
+            draws: 0
+            losses: 2
+            rank: 1
+          - id: 2
+            name: "포톤스"
+            games: 4
+            wins: 3
+            draws: 0
+            losses: 1
+            rank: 2
+        B:
+          - id: 3
+            name: "아갉쥐"
+            games: 4
+            wins: 4
+            draws: 0
+            losses: 0
+            rank: 1
+    
+    TeamList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Team"
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "관악사"
+        games:
+          type: integer
+          example: 4
+        wins:
+          type: integer
+          example: 2
+        draws:
+          type: integer
+          example: 0
+        losses:
+          type: integer
+          example: 2
+        rank:
+          type: integer
+          example: 1
+    # 전체 응답 스키마
+    MatchScheduleResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: "요청 날짜 (YYYY-MM-DD)"
+          example: "2025-04-13"
+        dayOfWeek:
+          type: string
+          description: "요일 정보"
+          example: "일"
+        matches:
+          type: array
+          description: "해당 날짜의 경기 목록"
+          items:
+            $ref: "#/components/schemas/Match"
+      required:
+        - date
+        - matches
+      example:
+        date: "2025-04-13"
+        dayOfWeek: "일"
+        matches:
+          - time: "09:00"
+            status: "FINALIZED"
+            homeTeamName: "자연대"
+            awayTeamName: "공대"
+            homeTeamScore: 9
+            awayTeamScore: 16
+          - time: "11:00"
+            status: "EDITING"
+            homeTeamName: "자연대"
+            awayTeamName: "건환공"
+            homeTeamScore: 9
+            awayTeamScore: 6
+          - time: "14:00"
+            status: "IN_PROGRESS"
+            currentInning: 5
+            inning_half: "BOT"
+            homeTeamName: "관악사"
+            awayTeamName: "공대"
+            homeTeamScore: 10
+            awayTeamScore: 6
+          - time: "16:30"
+            status: "SCHEDULED"
+            homeTeamName: "자연대"
+            awayTeamName: "공대"
+            homeTeamScore: null
+            awayTeamScore: null
+          - time: "19:00"
+            status: "SCHEDULED"
+            homeTeamName: "자연대"
+            awayTeamName: "공대"
+            homeTeamScore: null
+            awayTeamScore: null
+
+    # 경기 하나에 대한 스키마
+    Match:
+      type: object
+      properties:
+        time:
+          type: string
+          description: "경기 시작 시간 (HH:MM)"
+          example: "09:00"
+        status:
+          type: string
+          description: "경기 상태 (SCHEDULED / IN_PROGRESS / FINALIZED 등)"
+          example: "SCHEDULED"
+        currentInning:
+          type: integer
+          nullable: true
+          description: "경기중일 때 현재 이닝 (예: '5회초'), 그 외에는 null"
+          example: 6
+        inning_half:
+          type: string
+          description: "초/말"
+          example: "BOT"
+        homeTeamName:
+          type: string
+          description: "홈 팀 이름"
+          example: "자연대"
+        awayTeamName:
+          type: string
+          description: "원정 팀 이름"
+          example: "공대"
+        homeTeamScore:
+          type: integer
+          nullable: true
+          description: "홈 팀 점수 (경기 전 null)"
+          example: 9
+        awayTeamScore:
+          type: integer
+          nullable: true
+          description: "원정 팀 점수 (경기 전 null)"
+          example: 16
+      required:
+        - time
+        - status
+        - homeTeamName
+        - awayTeamName
+        
+    BatterRecordsResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: "가져온 타자 수"
+          example: 150
+        batters:
+          type: array
+          description: "타자 기록 배열"
+          items:
+            $ref: "#/components/schemas/BatterRecord"
+      required:
+      - count
+      - batters
+    # # ----- 타자 쿼리 응답 -----
+    # BatterRecordsResponse:
+    #   type: object
+    #   properties:
+    #     count:
+    #       type: integer
+    #       description: "가져온 타자 기록 수"
+    #       example: 5
+    #     sortBy:
+    #       type: string
+    #       description: "이번 응답에 적용된 정렬 기준 (AB, H, 2B, 3B, HR, BB, AVG, OBP, SLG, OPS)"
+    #       example: "AVG"
+    #     batters:
+    #       type: array
+    #       description: "타자 기록 배열"
+    #       items:
+    #         $ref: "#/components/schemas/BatterRecord"
+    #   required:
+    #     - count
+    #     - batters
+    #   example:
+    #     count: 5
+    #     sortBy: "AVG"
+    #     batters:
+    #       - rank: 1
+    #         playerName: "박병호"
+    #         teamName: "관악사"
+    #         AB: 20
+    #         H: 12
+    #         "2B": 3
+    #         HR: 2
+    #         BB: 1
+    #         AVG: 0.312
+    #         OBP: 0.370
+    #         SLG: 0.550
+    #         OPS: 0.920
+    #       - rank: 2
+    #         playerName: "김지찬"
+    #         teamName: "포톤스"
+    #         AB: 23
+    #         H: 10
+    #         "2B": 1
+    #         HR: 0
+    #         BB: 3
+    #         AVG: 0.304
+    #         OBP: 0.419
+    #         SLG: 0.478
+    #         OPS: 0.897
+    #       # ... 이하 생략
+
+    BatterRecord:
+      type: object
+      properties:
+        playerName:
+          type: string
+          description: "선수 이름"
+          example: "박병호"
+        teamName:
+          type: string
+          description: "소속 팀 이름"
+          example: "관악사"
+        AB:
+          type: integer
+          description: "타수 (At Bats)"
+          example: 20
+        H:
+          type: integer
+          description: "안타 수 (Hits)"
+          example: 12
+        "2B":
+          type: integer
+          description: "2루타 (Doubles)"
+          example: 3
+        "3B":
+          type: integer
+          description: "3루타 (Triples)"
+          example: 1
+        HR:
+          type: integer
+          description: "홈런 (Home Runs)"
+          example: 0
+        BB:
+          type: integer
+          description: "볼넷 (Base on Balls)"
+          example: 1
+        AVG:
+          type: number
+          format: float
+          description: "타율 (Batting Average)"
+          example: 0.312
+        OBP:
+          type: number
+          format: float
+          description: "출루율 (On-Base Percentage)"
+          example: 0.370
+        SLG:
+          type: number
+          format: float
+          description: "장타율 (Slugging Percentage)"
+          example: 0.550
+        OPS:
+          type: number
+          format: float
+          description: "OPS (On-base + Slugging)"
+          example: 0.920
+      required:
+        - rank
+        - playerName
+        - teamName
+        - AB
+        - H
+        - AVG
+      # (필요 시 "2B", "3B", "HR", "BB" 등도 필수에 넣을 수 있음)
+
+    # # ----- 투수 쿼리 응답 -----
+    # PitcherRecordsResponse:
+    #   type: object
+    #   properties:
+    #     count:
+    #       type: integer
+    #       description: "가져온 투수 기록 수"
+    #       example: 5
+    #     pitchers:
+    #       type: array
+    #       description: "투수 기록 배열"
+    #       items:
+    #         $ref: "#/components/schemas/PitcherRecord"
+    #   required:
+    #     - count
+    #     - pitchers
+    #   example:
+    #     count: 5
+    #     pitchers:
+    #       - rank: 1
+    #         playerName: "배찬송"
+    #         teamName: "관악사"
+    #         K: 12
+    #       - rank: 2
+    #         playerName: "정현우"
+    #         teamName: "공대"
+    #         K: 10
+    #       - rank: 2
+    #         playerName: "김야구"
+    #         teamName: "경영대"
+    #         K: 10
+    #       - rank: 4
+    #         playerName: "박야구"
+    #         teamName: "포톤스"
+    #         K: 8
+    #       - rank: 5
+    #         playerName: "김민수"
+    #         teamName: "관악사"
+    #         K: 7
+    PitcherRecordsResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: "가져온 투수 수"
+          example: 80
+        pitchers:
+          type: array
+          description: "투수 기록 배열"
+          items:
+            $ref: "#/components/schemas/PitcherRecord"
+      required:
+        - count
+        - pitchers
+
+    PitcherRecord:
+      type: object
+      properties:
+        playerName:
+          type: string
+          description: "선수 이름"
+          example: "배찬송"
+        teamName:
+          type: string
+          description: "소속 팀 이름"
+          example: "관악사"
+        K:
+          type: integer
+          description: "삼진 수"
+          example: 12
+      required:
+        - rank
+        - playerName
+        - teamName
+        - K
+    # 전체 응답
+    PlayerListResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "팀 ID"
+          example: 1
+        name:
+          type: string
+          description: "팀 이름"
+          example: "공대"
+        players:
+          type: array
+          description: "선수 배열"
+          items:
+            $ref: "#/components/schemas/Player"
+      required:
+        - id
+        - name
+        - players
+      example:
+        id: 1
+        name: "공대"
+        players:
+          - id: 101
+            departmentName: "수학교육과"
+            name: "윤동현"
+            isElite: false
+            isWc: false
+          - id: 102
+            departmentName: "언론정보학과"
+            playerName: "김준기"
+            isElite: false
+            isWc: false
+          - id: 103
+            departmentName: "사회학과"
+            playerName: "김태균"
+            isElite: true
+            isWc: false
+          - id: 104
+            departmentName: "컴퓨터공학과"
+            playerName: "박야구"
+            isElite: false
+            isWc: false   # 이미 선택되어 더 이상 선택 불가
+
+    # 선수 개별 정보
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "선수 ID"
+          example: 101
+        departmentName:
+          type: string
+          description: "학과"
+          example: "수학교육과"
+        playerName:
+          type: string
+          description: "선수 이름"
+          example: "윤동현"
+        isElite:
+          type: boolean
+          description: "선출 여부 (true면 프로 경험자)"
+          example: false
+        isWc:
+          type: boolean
+          description: "WC 여부 (true면 와일드카드)"
+          example: false  
+      required:
+        - id
+        - departmentName
+        - playerName
+        - isElite
+        - isWc
+    SubmitLineupRequest:
+      type: object
+      properties:
+        teamId:
+          type: integer
+          description: "라인업을 등록하는 팀의 ID"
+          example: 10
+        batters:
+          type: array
+          description: "타순별(혹은 투수 포함) 등록 선수 목록"
+          items:
+            $ref: "#/components/schemas/LineupBatter"
+          minItems: 9
+          maxItems: 9
+        
+        pitcher:
+            $ref: "#/components/schemas/LineupPitcher"
+      required:
+        - teamId
+        - batters
+        - pitcher
+      example:
+        teamId: 10
+        batters:
+          - order: 1
+            playerId: 101
+            position: "CF"
+          - order: 2
+            playerId: 102
+            position: "SS"
+          - order: 3
+            playerId: 103
+            position: "C"
+          - order: 4
+            playerId: 104
+            position: "1B"
+          - order: 5
+            playerId: 105
+            position: "2B"
+          - order: 6
+            playerId: 106
+            position: "3B"
+          - order: 7
+            playerId: 107
+            position: "LF"
+          - order: 8
+            playerId: 108
+            position: "RF"
+          - order: 9
+            playerId: 109
+            position: "DH"
+        pitcher:
+          playerId: 110
+
+    LineupBatter:
+      type: object
+      properties:
+        order:
+          type: integer
+          nullable: true
+          description: |
+            타순 (1~9)
+          example: 1
+        playerId:
+          type: integer
+          description: "선수 고유 ID"
+          example: 101
+        position:
+          type: string
+          description: "포지션 (CF, SS, C, 1B, 2B, 3B, LF, RF, DH, P 등)"
+          example: "CF"
+      required:
+        - playerId
+        - order
+        - position
+    LineupPitcher:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          description: "투수 선수 ID"
+      required:
+        - playerId
+        - position
+    SubmitLineupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: "라인업 등록 성공 여부"
+          example: true
+        message:
+          type: string
+          description: "추가 메시지 (예: '라인업 제출이 완료되었습니다.')"
+          example: "라인업 제출이 완료되었습니다."
+      required:
+        - success
+      example:
+        success: true
+        message: "라인업 제출이 완료되었습니다."
+    PatchLineupRequest:
+      type: object
+      properties:
+        batters:
+          type: array
+          description: |
+            타자만 교체할 경우 `batters`만 포함  
+            투수만 교체할 경우 `pitcher`만 포함  
+            둘 다 교체할 경우 두 필드를 모두 포함
+          items:
+            $ref: "#/components/schemas/LineupBatterUpdate"
+        
+        pitcher:
+          $ref: "#/components/schemas/LineupPitcherUpdate"
+      
+      example:
+        batters:
+          - order: 5
+            playerId: 999
+            position: "2B"
+        pitcher:
+          playerId: 110
+          position: "P"
+
+    LineupBatterUpdate:
+      type: object
+      properties:
+        order:
+          type: integer
+          nullable: true
+          description: |
+            변경할 타순 (1~9).  
+          example: 5
+        playerId:
+          type: integer
+          description: "새로 교체될 선수 ID (또는 교체 대상)."
+          example: 999
+        position:
+          type: string
+          description: "포지션 (예: '2B', 'P', 'SS' 등)."
+          example: "2B"
+      required:
+        - playerId
+        - position
+    
+    LineupPitcherUpdate:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          description: "교체될 투수 선수 ID"
+          example: 110
+      required:
+        - playerId
+        
+    PatchLineupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: "라인업 수정 성공 여부"
+          example: true
+        message:
+          type: string
+          description: "추가 메시지 (예: '라인업 수정이 완료되었습니다.')"
+          example: "라인업 수정이 완료되었습니다."
+      required:
+        - success
+      example:
+        success: true
+        message: "라인업 수정이 완료되었습니다."
+    
+    SingleLineupBatterResponse:
+      type: object
+      properties:
+        order:
+          type: integer
+          nullable: true
+          description: |
+            1~9 중 하나. 
+          example: 7
+        playerId:
+          type: integer
+          description: "선수 ID"
+          example: 107
+        playerName:
+          type: string
+          description: "선수 이름"
+          example: "최정"
+        position:
+          type: string
+          description: "포지션 (예: CF, SS, C, 1B, 2B, 3B, LF, RF, DH, P 등)"
+          example: "LF"
+        isElite:
+          type: boolean
+          example: true
+        isWc:
+          type: boolean
+          example: false
+      required:
+        - order
+        - id
+        - playerName
+        - position
+        - isWc
+        - isElite
+    
+    SingleLineupPitcherResponse:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          description: "선수 ID"
+          example: 110
+        
+        playerName:
+          type: string
+          description: "선수 이름"
+          example: "류현진"
+        
+        isElite:
+          type: boolean
+          description: "선출 여부"
+          example: true
+        
+        isWc:
+          type: boolean
+          description: "와일드카드 여부"
+          example: true
+      required: 
+        - playerId
+        - playerName
+        - isElite
+        - isWc
+
+    # 요청 스키마: 여러 이닝 점수 동시에 수정/추가
+    BatchInningScoresRequest:
+      type: object
+      properties:
+        scores:
+          type: array
+          description: "이닝 점수 목록"
+          items:
+            $ref: "#/components/schemas/InningScoreUpsert"
+      required:
+        - scores
+      example:
+        scores:
+          - inning: 2
+            inning_half: "BOT"    # 2회말 점수 수정
+            runs: 2
+          - inning: 4
+            inning_half: "TOP"    # 4회초 점수 새로 생성
+            runs: 3
+
+    # 이닝 스코어 정보 (업서트용)
+    InningScoreUpsert:
+      type: object
+      properties:
+        inning:
+          type: integer
+          description: "몇 회 이닝인지 (1~9, 연장 10,11...)"
+          example: 2
+        inning_half:
+          type: string
+          enum: ["TOP", "BOT"]
+          description: "초(TOP) or 말(BOT)"
+          example: "BOT"
+        runs:
+          type: integer
+          description: "득점"
+          example: 2
+      required:
+        - inning
+        - inning_half
+        - runs
+
+    # 응답 스키마: 최신 스코어보드
+    BatchInningScoresResponse:
+      type: object
+      properties:
+        matchId:
+          type: integer
+          example: 1001
+        scoreboard:
+          type: array
+          description: "최신 이닝별 점수 (예: 1회초/말, 2회초/말...)"
+          items:
+            $ref: "#/components/schemas/InningHalfScore"
+      required:
+        - matchId
+        - scoreboard
+      example:
+        matchId: 1001
+        scoreboard:
+          - inning: 1
+            inning_half: "TOP"
+            runs: 1
+          - inning: 1
+            inning_half: "BOT"
+            runs: 0
+          - inning: 2
+            inning_half: "TOP"
+            runs: 0
+          - inning: 2
+            inning_half: "BOT"
+            runs: 2
+          - inning: 3
+            inning_half: "TOP"
+            runs: 0
+          - inning: 3
+            inning_half: "BOT"
+            runs: 0
+          - inning: 4
+            inning_half: "TOP"
+            runs: 3
+
+
+    InningHalfScore:
+      type: object
+      properties:
+        inning:
+          type: integer
+          description: "몇 회 이닝인지"
+          example: 1
+        inning_half:
+          type: string
+          enum: [TOP, BOT]
+          description: "이닝의 절반 - TOP: 초 / BOT: 말"
+          example: "TOP"
+        runs:
+          type: integer
+          nullable: true
+          description: "득점 (아직 기록되지 않은 경우 null)"
+          example: 1
+      required:
+        - inning
+        - inning_half
+
+
+
+    InningScoreResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "match_inning_scores 테이블의 PK (생성된 레코드 ID)"
+          example: 10
+        matchId:
+          type: integer
+          description: "경기 ID"
+          example: 1001
+        inning:
+          type: integer
+          description: "이닝 번호"
+          example: 3
+        inning_half:
+          type: string
+          enum: ["TOP", "BOT"]
+          description: "초(TOP) or 말(BOT)"
+          example: "TOP"
+        runs:
+          type: integer
+          description: "해당 inning_half-inning 점수"
+          example: 2
+      required:
+        - id
+        - matchId
+        - inning
+        - inning_half
+        - runs
+      example:
+        id: 101
+        matchId: 1001
+        inning: 3
+        inning_half: "TOP"
+        runs: 2
+
+    ListInningScoresResponse:
+      type: object
+      properties:
+        matchId:
+          type: integer
+          description: "경기 ID"
+          example: 1001
+        scores:
+          type: array
+          description: "이닝별 득점 목록"
+          items:
+            $ref: "#/components/schemas/InningScoreResponse"
+      required:
+        - matchId
+        - scores
+      example:
+        matchId: 1001
+        scores:
+          - id: 1
+            matchId: 1001
+            inning: 1
+            inning_half: "TOP"
+            runs: 1
+          - id: 2
+            matchId: 1001
+            inning: 1
+            inning_half: "BOT"
+            runs: 0
+          - id: 3
+            matchId: 1001
+            inning: 2
+            inning_half: "TOP"
+            runs: 2
+          - id: 4
+            matchId: 1001
+            inning: 2
+            inning_half: "BOT"
+            runs: 1
+          # ...
+    HitterPlateAppearanceRequest:
+      type: object
+      properties:
+        result:
+          type: string
+          description: |
+            타석 결과 (안타/2루타/3루타/홈런/볼넷/희생타/아웃 등)
+          enum: ["1B", "2B", "3B", "HR", "BB", "SAC", "OUT"]
+          example: "2B"
+      required:
+        - result
+      example:
+        result: "2B"
+
+    HitterStatsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "메시지"
+          example: "Hitter stats successfully recorded."
+      required:
+        - message
+        
+    PitcherStatsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "메시지"
+          example: "Pitcher stats successfully recorded."
+      required:
+        - message
+        
+        
+
+    # 팀 정보 + 누적 득점/안타
+    TeamSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "팀 ID"
+          example: 1
+        name:
+          type: string
+          description: "팀 이름"
+          example: "관악사 야구부"
+        runs:
+          type: integer
+          description: "총 득점"
+          example: 4
+        hits:
+          type: integer
+          description: "총 안타 수"
+          example: 4
+      required:
+        - id
+        - runs
+        - hits
+
+    # 타자 당일 기록
+    HitterDailyStats:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          example: 101
+        playerName:
+          type: string
+          example: "김지찬"
+        AB:
+          type: integer
+          description: "타수"
+          example: 2
+        1B:
+          type: integer
+          description: "안타"
+          example: 1
+        2B:
+          type: integer
+          description: "2루타"
+          example: 0
+        3B:
+          type: integer
+          description: "3루타"
+          example: 0
+        HR:
+          type: integer
+          description: "홈런"
+          example: 0
+        BB:
+          type: integer
+          description: "볼넷"
+          example: 1
+        # 필요하면 doubles/triples/homeRuns/etc 확장
+      required:
+        - playerId
+        - playerName
+        - AB
+        - 1B
+        - 2B
+        - 3B
+        - HR
+        - BB
+        - SAC
+
+    # 투수 당일 기록
+    PitcherDailyStats:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          example: 110
+        playerName:
+          type: string
+          example: "발라조빅"
+        K:
+          type: integer
+          description: "삼진"
+          example: 5
+        # 필요하면 실점/이닝수/볼넷/ERA 등 추가 가능
+      required:
+        - playerId
+        - playerName
+        - K
+
+    # ----- GET /matches/{matchId}/results 응답 -----
+    MatchResultsResponse:
+      type: object
+      properties:
+        matchId:
+          type: integer
+          example: 101
+        scoreboard:
+          type: array
+          description: "이닝별 득점"
+          items:
+            $ref: "#/components/schemas/InningHalfScore"
+        awayTeam:
+          $ref: "#/components/schemas/TeamSummary"
+        homeTeam:
+          $ref: "#/components/schemas/TeamSummary"
+        awayHitters:
+          type: array
+          description: "원정팀 타자 기록"
+          items:
+            $ref: "#/components/schemas/HitterDailyStats"
+        homeHitters:
+          type: array
+          description: "홈팀 타자 기록"
+          items:
+            $ref: "#/components/schemas/HitterDailyStats"
+        awayPitchers:
+          type: array
+          description: "원정팀 투수 기록"
+          items:
+            $ref: "#/components/schemas/PitcherDailyStats"
+        homePitchers:
+          type: array
+          description: "홈팀 투수 기록"
+          items:
+            $ref: "#/components/schemas/PitcherDailyStats"
+      required:
+        - matchId
+        - scoreboard
+        - awayTeam
+        - homeTeam
+
+    # ----- PATCH /matches/{matchId}/results 요청 스키마 -----
+    UpdateMatchResultsRequest:
+      type: object
+      properties:
+        scoreboard:
+          type: array
+          description: |
+            이닝별 득점을 수정할 경우,
+            수정된 내용을 보내주세요 (전체 혹은 변경 이닝만).
+          items:
+            $ref: "#/components/schemas/InningHalfScore"
+        awayTeam:
+          $ref: "#/components/schemas/TeamSummary"
+        homeTeam:
+          $ref: "#/components/schemas/TeamSummary"
+        awayHitters:
+          type: array
+          description: "원정팀 타자 기록 수정"
+          items:
+            $ref: "#/components/schemas/HitterDailyStats"
+        homeHitters:
+          type: array
+          description: "홈팀 타자 기록 수정"
+          items:
+            $ref: "#/components/schemas/HitterDailyStats"
+        awayPitchers:
+          type: array
+          description: "원정팀 투수 기록 수정"
+          items:
+            $ref: "#/components/schemas/PitcherDailyStats"
+        homePitchers:
+          type: array
+          description: "홈팀 투수 기록 수정"
+          items:
+            $ref: "#/components/schemas/PitcherDailyStats"
+      description: |
+        보내지 않는 필드는 수정하지 않음.
+        보낸 필드는 백엔드에서 정합성 체크 후 DB 업데이트.
+      example:
+        scoreboard:
+          - inning: 1
+            inning_half: "TOP"
+            runs: 1
+          - inning: 1
+            inning_half: "BOT"
+            runs: 3
+          - inning: 2
+            inning_half: "TOP"
+            runs: 3
+          - inning: 2
+            inning_half: "BOT"
+            runs: 1
+        awayTeam:
+          id: 1
+          name: "관악사"
+          runs: 4
+          hits: 4
+        homeTeam:
+          id: 2
+          name: "건환"
+          runs: 5
+          hits: 6
+        awayHitters:
+          - playerId: 101
+            playerName: "김지찬"
+            AB: 2
+            1B: 1
+            2B: 0
+            3B: 0
+            HR: 0
+            BB: 1
+        homeHitters:
+          - playerId: 102
+            playerName: "박현우"
+            AB: 2
+            1B: 0
+            2B: 1
+            3B: 0
+            HR: 0
+            BB: 1
+
+        awayPitchers:
+          - playerId: 110
+            playerName: "발라조빅"
+            K: 5
+      # (homeHitters, homePitchers 생략 예시)
+
+    # ----- POST /matches/{matchId}/results/finalize 응답 -----
+    FinalizedMatchResultsResponse:
+      allOf:
+        - $ref: "#/components/schemas/MatchResultsResponse"
+        - type: object
+          properties:
+            finalized:
+              type: boolean
+              description: "경기 확정 여부 (true)"
+              example: true
+            message:
+              type: string
+              description: "확정 완료 메시지"
+              example: "경기가 최종 확정되어 승패 및 통산 기록에 반영되었습니다."
