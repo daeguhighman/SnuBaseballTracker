@@ -32,6 +32,11 @@ jobs:
       # 빌드된 Docker 이미지를 Docker Hub에 푸시
       - name: Push Docker image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/nest-app:latest
+      
+      - name: Debug
+        run: |
+          echo "Region: ap-northeast-2"
+          echo "Audience: sts.amazonaws.com"
 
       # AWS 자격 증명 설정
       - name: Configure AWS credentials using OIDC
