@@ -54,8 +54,7 @@ jobs:
 
       # 압축된 파일을 AWS S3 버킷에 업로드
       - name: Upload to S3
-        run: aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET_NAME }}/deploy.zip \
-          --region ${{ secrets.AWS_REGION }}
+        run: aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET_NAME }}/deploy.zip --region ap-northeast-2
 
       # AWS CodeDeploy를 사용하여 EC2 인스턴스에 배포
       # S3에 업로드된 ZIP 파일을 사용하여 배포 진행
@@ -65,4 +64,4 @@ jobs:
             --application-name ${{ secrets.CODEDEPLOY_APP_NAME }} \
             --deployment-group-name ${{ secrets.CODEDEPLOY_GROUP_NAME }} \
             --s3-location bucket=${{ secrets.S3_BUCKET_NAME }},bundleType=zip,key=deploy.zip \
-            --region ${{ secrets.AWS_REGION }}
+            --region ap-northeast-2
