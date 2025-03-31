@@ -40,4 +40,4 @@ RUN npm ci --only=production
 # 컨테이너가 3000번 포트를 사용함을 명시
 EXPOSE 3000
 # 애플리케이션 실행 명령어
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
