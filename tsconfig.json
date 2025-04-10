@@ -10,6 +10,14 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@teams/*": ["src/teams/*"],
+      "@players/*": ["src/players/*"],
+      "@users/*": ["src/users/*"],
+      "@records/*": ["src/records/*"],
+      "@tournament/*": ["src/tournament/*"]
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
