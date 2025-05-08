@@ -1,0 +1,28 @@
+name: Notify API changes to Slack
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "docs/api/SnuBaseballTournamentApi.yml"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate compare URL
+        id: vars
+        run: |
+          COMPARE_URL="https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}"
+          echo "compare_url=${COMPARE_URL}" >> $GITHUB_OUTPUT
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": ":mega: *API 명세 변경됨!*\n`SnuBaseballTournamentApi.yml` 파일이 `develop` 브랜치에서 수정되었어요.\n\n🔗 <${{ steps.vars.outputs.compare_url }}|변경 내용 확인하기>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

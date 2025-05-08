@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "scripts", "jest.config.ts", "**/*.test.ts", "**/__tests__/**"],
+  "compilerOptions": {
+    // 컴파일된 .js 파일이 저장될 디렉토리
+    "outDir": "./dist",
+    // 컴파일러가 소스 입력 파일을 찾을 최상위 디렉토리. rootDir 이외의 파일은 컴파일되지 않음
+    // "rootDir": "./src",
+    // 모듈 해석(import) 시 기준이 될 루트 디렉토리
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@teams/*": ["src/teams/*"],
+      "@players/*": ["src/players/*"],
+      "@users/*": ["src/users/*"],
+      "@records/*": ["src/records/*"],
+      "@tournaments/*": ["src/tournaments/*"],
+      "@games/*": ["src/games/*"],
+      "@umpires/*": ["src/umpires/*"],
+      "@mail/*": ["src/mail/*"],
+      "@auth/*": ["src/auth/*"],
+      "@common/*": ["src/common/*"],
+      "@config/*": ["src/config/*"],
+      "@admin/*": ["src/admin/*"]
+    }
+  }
+}

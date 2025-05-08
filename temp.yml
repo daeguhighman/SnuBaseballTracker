@@ -1,0 +1,70 @@
+# GitHub Actions 워크플로우의 이름을 정의
+name: CI/CD Deploy to EC2 via CodeDeploy
+
+# 워크플로우 트리거 조건 설정
+# develop 브랜치에 push가 발생할 때 실행
+on:
+  push:
+    branches:
+      - develop
+      - test
+
+# 실행할 작업(job) 정의
+jobs:
+  deploy:
+    # Ubuntu 최신 버전에서 실행
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      # 소스 코드를 체크아웃
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      # Docker Hub에 로그인
+      # GitHub Secrets에 저장된 인증 정보 사용
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Docker 이미지 빌드
+      # 이미지 태그는 'username/nest-app:latest' 형식
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/nest-app:latest .
+
+      # 빌드된 Docker 이미지를 Docker Hub에 푸시
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/nest-app:latest
+      
+      - name: Debug
+        run: |
+          echo "Region: ap-northeast-2"
+          echo "Audience: sts.amazonaws.com"
+
+      # AWS 자격 증명 설정
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::384232296528:role/SnuBaseballTracker-GitHubActions-OIDC-Role
+          aws-region: ap-northeast-2
+
+      # CodeDeploy에 필요한 파일들을 ZIP으로 압축
+      # appspec.yml과 scripts/ 폴더를 포함
+      - name: Zip artifacts for CodeDeploy
+        run: zip -r deploy.zip appspec.yml scripts/
+
+      # 압축된 파일을 AWS S3 버킷에 업로드
+      - name: Upload to S3
+        run: aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET_NAME }}/deploy.zip --region ap-northeast-2
+
+      # AWS CodeDeploy를 사용하여 EC2 인스턴스에 배포
+      # S3에 업로드된 ZIP 파일을 사용하여 배포 진행
+      - name: Deploy to EC2 via CodeDeploy
+        run: |
+          aws deploy create-deployment \
+            --application-name ${{ secrets.CODEDEPLOY_APP_NAME }} \
+            --deployment-group-name ${{ secrets.CODEDEPLOY_GROUP_NAME }} \
+            --s3-location bucket=${{ secrets.S3_BUCKET_NAME }},bundleType=zip,key=deploy.zip \
+            --region ap-northeast-2
+
+  
