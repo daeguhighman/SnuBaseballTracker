@@ -1,11 +1,5 @@
 // dto/get-games-by-date.query.ts
-import {
-  IsDateString,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
 export class GetGamesByDateQuery {
   @IsString()

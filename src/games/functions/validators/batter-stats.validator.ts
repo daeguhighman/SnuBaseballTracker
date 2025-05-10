@@ -1,6 +1,6 @@
 import { BaseException } from '@/common/exceptions/base.exception';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
-import { BadRequestException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 
 export class BatterStatsValidator {
   /**

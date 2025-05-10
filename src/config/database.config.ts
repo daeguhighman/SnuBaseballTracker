@@ -1,5 +1,4 @@
 import { registerAs } from '@nestjs/config';
-import { join } from 'path';
 import { Department } from '../players/entities/department.entity';
 import { Player } from '@/players/entities/player.entity';
 import { PlayerTournament } from '@/players/entities/player-tournament.entity';

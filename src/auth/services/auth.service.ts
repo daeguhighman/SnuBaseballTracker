@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { addMinutes } from 'date-fns';
 import { Umpire } from '@/umpires/entities/umpire.entity';
 import { UmpireEmailCode } from '@/umpires/entities/umpire-email-code.entity';

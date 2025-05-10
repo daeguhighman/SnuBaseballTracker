@@ -3,7 +3,6 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
-  IsObject,
   IsString,
   ValidateNested,
 } from 'class-validator';

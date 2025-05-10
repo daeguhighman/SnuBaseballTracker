@@ -9,7 +9,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-  Unique,
 } from 'typeorm';
 import { Game } from './game.entity';
 import { Team } from '@teams/entities/team.entity';

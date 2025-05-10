@@ -2,7 +2,7 @@ import {
   Controller,
   Post,
   Body,
-  Put,
+  Get,
   Patch,
   HttpCode,
   UsePipes,
@@ -22,6 +22,11 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class AdminController {
   constructor(private readonly gameCoreService: GameCoreService) {}
+
+  @Get('/debug-sentry')
+  getError() {
+    throw new Error('My first Sentry error!');
+  }
 
   @Post('assign-umpire')
   @HttpCode(201)

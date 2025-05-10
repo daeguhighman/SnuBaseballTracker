@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Unique,
-  Index,
 } from 'typeorm';
 
 @Entity('users')

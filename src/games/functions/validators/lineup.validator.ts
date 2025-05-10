@@ -1,6 +1,6 @@
-import { BadRequestException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { SubmitLineupRequestDto } from '@games/dtos/lineup.dto';
-import { Position } from '@common/enums/position.enum';
+import { Position } from '@/common/enums/position.enum';
 import { BaseException } from '@/common/exceptions/base.exception';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 
