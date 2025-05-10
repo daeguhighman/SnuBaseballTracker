@@ -20,7 +20,7 @@ import { PitcherGameParticipation } from './pitcher-game-participation.entity';
 import { GameStat } from './game-stat.entity';
 import { GameStatus } from '@common/enums/game-status.enum';
 import { GameRoaster } from './game-roaster.entity';
-import { MatchStage } from '@common/enums/match-stage.enum';
+import { BracketPosition, MatchStage } from '@common/enums/match-stage.enum';
 @Entity('games')
 export class Game {
   @PrimaryGeneratedColumn('increment')
@@ -34,16 +34,16 @@ export class Game {
   tournament: Tournament;
 
   @Index()
-  @Column({ name: 'home_team_id' })
+  @Column({ name: 'home_team_id', nullable: true })
   homeTeamId: number;
-  @ManyToOne(() => Team, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Team, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'home_team_id' })
   homeTeam: Team;
 
   @Index()
-  @Column({ name: 'away_team_id' })
+  @Column({ name: 'away_team_id', nullable: true })
   awayTeamId: number;
-  @ManyToOne(() => Team, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Team, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'away_team_id' })
   awayTeam: Team;
 
@@ -53,7 +53,7 @@ export class Game {
   @JoinColumn({ name: 'winner_team_id' })
   winnerTeam: Team;
 
-  @Column({ name: 'start_time', type: 'timestamp' })
+  @Column({ name: 'start_time', type: 'timestamp', nullable: true })
   startTime: Date;
 
   @Column({
@@ -100,10 +100,19 @@ export class Game {
 
   @Column({
     type: 'enum',
+    name: 'stage',
     enum: MatchStage,
     default: MatchStage.LEAGUE,
   })
   stage: MatchStage;
+
+  @Column({
+    type: 'enum',
+    name: 'bracket_position',
+    enum: BracketPosition,
+    nullable: true,
+  })
+  bracketPosition: BracketPosition;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

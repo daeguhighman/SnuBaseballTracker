@@ -1,9 +1,8 @@
-import { InningHalf } from '@common/enums/inning-half.enum';
+import { InningHalf } from '@/common/enums/inning-half.enum';
 import {
   IsArray,
   IsEnum,
   IsInt,
-  IsObject,
   IsString,
   ValidateNested,
 } from 'class-validator';

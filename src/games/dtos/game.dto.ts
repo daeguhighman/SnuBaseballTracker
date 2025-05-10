@@ -5,8 +5,6 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
-  IsNumber,
-  IsObject,
   IsOptional,
   IsString,
   ValidateNested,

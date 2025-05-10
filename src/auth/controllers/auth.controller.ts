@@ -8,7 +8,6 @@ import {
   ValidationPipe,
   Get,
   Req,
-  HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from '@auth/services/auth.service';
 import { RequestCodeDto, VerifyCodeDto } from '@auth/dtos/code.dto';
@@ -16,8 +15,6 @@ import { AuthCookieInterceptor } from '@/common/interceptors/auth-cookie.interce
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { BaseException } from '@/common/exceptions/base.exception';
-import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 @ApiTags('Auth')
 @Controller('auth')
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))

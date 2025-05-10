@@ -1,5 +1,4 @@
 import { registerAs } from '@nestjs/config';
-import { join } from 'path';
 import { Department } from '../players/entities/department.entity';
 import { Player } from '@/players/entities/player.entity';
 import { PlayerTournament } from '@/players/entities/player-tournament.entity';
@@ -37,7 +36,7 @@ export default registerAs('database', () => {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     synchronize: flags.isTest,
-    dropSchema: flags.isTest,
+    // dropSchema: flags.isTest,
     logging: flags.isDev || flags.isTest || process.env.LOG_SQL === 'true',
 
     entities: [

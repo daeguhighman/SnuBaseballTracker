@@ -8,10 +8,9 @@ import {
   DeleteDateColumn,
   Index,
   JoinColumn,
-  RelationId,
 } from 'typeorm';
 import { Game } from './game.entity';
-import { InningHalf } from '@common/enums/inning-half.enum';
+import { InningHalf } from '@/common/enums/inning-half.enum';
 
 @Entity('game_inning_stats')
 export class GameInningStat {

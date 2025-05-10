@@ -2,21 +2,8 @@ import { Repository, DataSource, EntityManager } from 'typeorm';
 import { Game } from '../entities/game.entity';
 import { GameStatus } from '@common/enums/game-status.enum';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-  InternalServerErrorException,
-  ConflictException,
-  HttpStatus,
-} from '@nestjs/common';
-import { Between } from 'typeorm';
-import {
-  GameDto,
-  GamesByDatesResponseDto,
-  GameScheduleResponseDto,
-} from '../dtos/game.dto';
+import { Injectable, Logger, HttpStatus } from '@nestjs/common';
+import { GameDto, GamesByDatesResponseDto } from '../dtos/game.dto';
 import { InningHalf } from '@common/enums/inning-half.enum';
 import { BatterGameParticipation } from '../entities/batter-game-participation.entity';
 import { PitcherGameParticipation } from '../entities/pitcher-game-participation.entity';
@@ -132,13 +119,13 @@ export class GameCoreService {
       inning: game.gameStat?.inning ?? null,
       inningHalf: game.gameStat?.inningHalf ?? null,
       homeTeam: {
-        id: game.homeTeamId,
-        name: game.homeTeam.name,
+        id: game.homeTeamId ?? null,
+        name: game.homeTeam?.name ?? null,
         score: game.gameStat?.homeScore ?? null,
       },
       awayTeam: {
-        id: game.awayTeamId,
-        name: game.awayTeam.name,
+        id: game.awayTeamId ?? null,
+        name: game.awayTeam?.name ?? null,
         score: game.gameStat?.awayScore ?? null,
       },
       isForfeit: game.isForfeit,
@@ -357,10 +344,30 @@ export class GameCoreService {
 
       // 6. 게임 상태 업데이트
       await manager.update(Game, gameId, { status: GameStatus.FINALIZED });
-
-      this.logger.log(`Successfully finalized game ID: ${gameId}`);
     });
     return { success: true, message: '게임 확정 완료.' };
+  }
+
+  private async setNextGame(
+    gameId: number,
+    winnerTeamId: number,
+    manager: EntityManager,
+  ) {
+    const game = await manager.findOne(Game, {
+      where: { id: gameId },
+    });
+
+    if (!game) {
+      throw new BaseException(
+        `게임 ID ${gameId}를 찾을 수 없습니다.`,
+        ErrorCodes.GAME_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // 다음 게임 설정
+    game.winnerTeamId = winnerTeamId;
+    return manager.save(game);
   }
 
   /**

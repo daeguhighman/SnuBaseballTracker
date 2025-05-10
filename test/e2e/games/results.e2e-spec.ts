@@ -63,7 +63,7 @@ describe('Game Results API', () => {
   describe('POST /games/{gameId}/results/finalize', () => {
     it('should finalize the game, update team tournament stats, and change status to FINALIZED', async () => {
       // 게임 상태가 EDITING인지 확인 (사전 조건)
-      let currentGame = await AppDataSource.getRepository(Game).findOne({
+      const currentGame = await AppDataSource.getRepository(Game).findOne({
         where: { id: game.id },
         relations: ['tournament', 'homeTeam', 'awayTeam', 'gameStat'],
       });

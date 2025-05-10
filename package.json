@@ -6,14 +6,14 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && npm run sentry:sourcemaps",
     "postbuild": "cp -R src/seed/csv dist/src/seed/csv",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:test": "cross-env NODE_ENV=test nest start",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "start:debug": "cross-env NODE_ENV=development nest start --debug --watch",
-    "start:prod": "cross-env NODE_ENV=production node dist/main",
+    "start:prod": "cross-env NODE_ENV=production node dist/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --config jest.config.ts",
     "test:watch": "jest --watch --config jest.config.ts",
@@ -30,7 +30,9 @@
     "migration:revert": "npx typeorm migration:revert -d dist/data-source.js",
     "seed:prod": "node dist/src/seed/seed-real.js",
     "seed:dev": "ts-node -r tsconfig-paths/register src/seed/seed-real.ts",
-    "seed:pt": "ts-node -r tsconfig-paths/register src/seed/seed-pt.ts"
+    "seed:pt": "ts-node -r tsconfig-paths/register src/seed/seed-pt.ts",
+    "seed:bracket": "ts-node -r tsconfig-paths/register src/seed/seed-bracket.ts",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
@@ -42,6 +44,8 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/typeorm": "^11.0.0",
+    "@sentry/cli": "^2.45.0",
+    "@sentry/nestjs": "^9.17.0",
     "cache-manager": "^6.4.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",

@@ -4,7 +4,6 @@ import {
   Column,
   OneToOne,
   JoinColumn,
-  RelationId,
   Unique,
   CreateDateColumn,
   UpdateDateColumn,

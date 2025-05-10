@@ -8,9 +8,11 @@ import {
 import { Request, Response } from 'express';
 import { ErrorCodes } from '../exceptions/error-codes.enum';
 import { AppLogger } from '../logger/logger.service';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: AppLogger) {}
+  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

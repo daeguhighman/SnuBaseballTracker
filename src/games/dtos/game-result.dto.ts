@@ -2,7 +2,6 @@ import { ScoreboardResponseDto } from './score.dto';
 import {
   IsArray,
   IsInt,
-  IsObject,
   IsOptional,
   IsString,
   Min,

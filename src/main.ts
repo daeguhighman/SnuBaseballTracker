@@ -11,6 +11,7 @@ import * as cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppLogger } from './common/logger/logger.service';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import './instrument';
 async function bootstrap() {
   const isProduction = process.env.NODE_ENV === 'production';
   const corsOptions = {

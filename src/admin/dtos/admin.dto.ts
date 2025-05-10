@@ -1,13 +1,7 @@
-import {
-  IsInt,
-  IsNotEmpty,
-  IsDateString,
-  IsEnum,
-  IsDate,
-} from 'class-validator';
+import { IsInt, IsDate } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { PhaseType } from '@/common/enums/phase-type.enum';
+
 export class UmpireRequestDto {
   @ApiProperty({
     description: '경기 ID',
