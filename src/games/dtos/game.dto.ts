@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { MatchStage } from '@/common/enums/match-stage.enum';
 export class TeamSummaryDto {
   @ApiProperty({
     description: '팀 ID',
@@ -55,6 +56,13 @@ export class GameDto {
     description: '경기 이닝',
     example: 1,
   })
+  @IsEnum(MatchStage)
+  @ApiProperty({
+    description: '경기 단계',
+    example: MatchStage.LEAGUE,
+  })
+  stage: MatchStage;
+
   @IsInt()
   @IsOptional()
   inning: number | null;

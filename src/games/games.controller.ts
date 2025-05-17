@@ -52,6 +52,7 @@ import {
   PlayerWithSubstitutableListResponseDto,
 } from '@/players/dtos/player.dto';
 import { GameStat } from '@games/entities/game-stat.entity';
+import { TournamentScheduleResponseDto } from './dtos/tournament-schedule.dto';
 @ApiTags('games')
 @Controller('games')
 export class GamesController {
@@ -77,6 +78,17 @@ export class GamesController {
       query.to,
     );
     return result;
+  }
+
+  @Get('bracket-schedule')
+  @ApiOperation({ summary: '토너먼트 일정 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '토너먼트 일정 조회 성공',
+    type: TournamentScheduleResponseDto,
+  })
+  async getTournamentSchedule(): Promise<TournamentScheduleResponseDto> {
+    return this.gameCoreService.getTournamentSchedule();
   }
   @UseGuards(UmpireAuthGuard)
   @Get(':gameId/players')

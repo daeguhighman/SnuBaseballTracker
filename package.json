@@ -32,7 +32,8 @@
     "seed:dev": "ts-node -r tsconfig-paths/register src/seed/seed-real.ts",
     "seed:pt": "ts-node -r tsconfig-paths/register src/seed/seed-pt.ts",
     "seed:bracket": "ts-node -r tsconfig-paths/register src/seed/seed-bracket.ts",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist"
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist",
+    "gen:swagger": "ts-node --project tsconfig.json scripts/swagger.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
