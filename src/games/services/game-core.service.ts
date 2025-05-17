@@ -1,4 +1,4 @@
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { Repository, DataSource, EntityManager, Not, IsNull } from 'typeorm';
 import { Game } from '../entities/game.entity';
 import { GameStatus } from '@common/enums/game-status.enum';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,6 +17,11 @@ import { BaseException } from '@/common/exceptions/base.exception';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 import { Tournament } from '@/tournaments/entities/tournament.entity';
 import { PhaseType } from '@/common/enums/phase-type.enum';
+import {
+  TournamentGameDto,
+  TournamentScheduleResponseDto,
+} from '../dtos/tournament-schedule.dto';
+import { MatchStage } from '@/common/enums/match-stage.enum';
 /*
   기본 조회, 상태 변경 등 핵심 로직
  */
@@ -84,23 +89,9 @@ export class GameCoreService {
     };
   }
 
-  private formatTime(date: Date): string {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
   private getDayOfWeek(date: Date): string {
     const dayOfWeekMap = ['일', '월', '화', '수', '목', '금', '토'];
     return dayOfWeekMap[date.getDay()];
-  }
-
-  private getStartEndOfDate(date: Date): [Date, Date] {
-    const start = new Date(date);
-    const end = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return [start, end];
   }
 
   private mapGameToDto(game: Game): GameDto {
@@ -115,6 +106,7 @@ export class GameCoreService {
       gameId: game.id,
       time: kstTime,
       status: game.status as GameStatus,
+      stage: game.stage as MatchStage,
       winnerTeamId: game.winnerTeamId ?? null,
       inning: game.gameStat?.inning ?? null,
       inningHalf: game.gameStat?.inningHalf ?? null,
@@ -129,6 +121,49 @@ export class GameCoreService {
         score: game.gameStat?.awayScore ?? null,
       },
       isForfeit: game.isForfeit,
+    };
+  }
+
+  async getTournamentSchedule(): Promise<TournamentScheduleResponseDto> {
+    const tournament = await this.tournamentRepository.findOne({
+      where: { id: 1 },
+    });
+    if (!tournament) {
+      throw new BaseException(
+        '토너먼트를 찾을 수 없습니다.',
+        ErrorCodes.TOURNAMENT_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const games = await this.gameRepository.find({
+      where: { tournamentId: 1, bracketPosition: Not(IsNull()) },
+    });
+
+    const tournamentGames: TournamentGameDto[] = games.map((game) =>
+      this.mapGameToTournamentGameDto(game),
+    );
+
+    return {
+      games: tournamentGames,
+    };
+  }
+
+  private mapGameToTournamentGameDto(game: Game): TournamentGameDto {
+    return {
+      gameId: game.id,
+      bracketPosition: game.bracketPosition,
+      winnerTeamId: game.winnerTeamId ?? null,
+      homeTeam: {
+        id: game.homeTeamId,
+        name: game.homeTeam?.name ?? null,
+        score: game.gameStat?.homeScore ?? null,
+      },
+      awayTeam: {
+        id: game.awayTeamId,
+        name: game.awayTeam?.name ?? null,
+        score: game.gameStat?.awayScore ?? null,
+      },
     };
   }
 

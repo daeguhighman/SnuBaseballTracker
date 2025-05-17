@@ -1,7 +1,7 @@
 export enum MatchStage {
   LEAGUE = 'LEAGUE', // 리그전
-  QF = 'QUARTERFINAL', // 8강
-  SF = 'SEMIFINAL', // 4강
+  QF = 'QUARTER_FINAL', // 8강
+  SF = 'SEMI_FINAL', // 4강
   THIRD_PLACE = 'THIRD_PLACE', // 3,4위전
   FINAL = 'FINAL', // 결승
 }
