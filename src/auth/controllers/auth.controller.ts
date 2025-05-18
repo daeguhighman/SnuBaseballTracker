@@ -32,8 +32,8 @@ export class AuthController {
     if (process.env.NODE_ENV !== 'production') {
       return {
         role: 'UMPIRE',
-        umpireId: 2,
-        gameIds: [3, 4, 5, 6, 7, 8, 9, 10, 11],
+        umpireId: 1,
+        gameIds: [3, 4, 5, 6, 7, 8, 9, 10, 11, 25, 26, 27, 28, 29, 30, 31, 32],
       };
     }
     const token = req.cookies?.accessToken;
