@@ -21,7 +21,7 @@ import {
   TournamentGameDto,
   TournamentScheduleResponseDto,
 } from '../dtos/tournament-schedule.dto';
-import { MatchStage } from '@/common/enums/match-stage.enum';
+import { BracketPosition, MatchStage } from '@/common/enums/match-stage.enum';
 /*
   기본 조회, 상태 변경 등 핵심 로직
  */
@@ -138,8 +138,10 @@ export class GameCoreService {
 
     const games = await this.gameRepository.find({
       where: { tournamentId: 1, bracketPosition: Not(IsNull()) },
+      relations: ['homeTeam', 'awayTeam', 'gameStat'],
     });
 
+    console.log(games);
     const tournamentGames: TournamentGameDto[] = games.map((game) =>
       this.mapGameToTournamentGameDto(game),
     );
@@ -372,7 +374,11 @@ export class GameCoreService {
       }
 
       // 4. 팀 토너먼트 통계 업데이트
-      await this.updateTeamTournamentStats(game, manager);
+      if (game.stage === MatchStage.LEAGUE) {
+        await this.updateTeamTournamentStats(game, manager);
+      } else {
+        await this.updateBracketStats(game, manager);
+      }
 
       // 5. 개별 선수 통계 업데이트
       await this.gameStatsService.updatePlayerStats(gameId);
@@ -381,28 +387,6 @@ export class GameCoreService {
       await manager.update(Game, gameId, { status: GameStatus.FINALIZED });
     });
     return { success: true, message: '게임 확정 완료.' };
-  }
-
-  private async setNextGame(
-    gameId: number,
-    winnerTeamId: number,
-    manager: EntityManager,
-  ) {
-    const game = await manager.findOne(Game, {
-      where: { id: gameId },
-    });
-
-    if (!game) {
-      throw new BaseException(
-        `게임 ID ${gameId}를 찾을 수 없습니다.`,
-        ErrorCodes.GAME_NOT_FOUND,
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    // 다음 게임 설정
-    game.winnerTeamId = winnerTeamId;
-    return manager.save(game);
   }
 
   /**
@@ -488,6 +472,102 @@ export class GameCoreService {
     this.logger.log(
       `Successfully updated team tournament stats for game ID: ${game.id}`,
     );
+  }
+  /**
+   * game.homeTeamId, game.awayTeamId 에 대해
+   * 1) 둘 다 비어 있으면 50% 확률로
+   * 2) 한쪽만 비어 있으면 그 반대편 슬롯에
+   * 3) 둘 다 차 있으면 아무 동작 없이
+   * teamId 를 할당합니다.
+   */
+
+  private async updateBracketStats(game: Game, manager: EntityManager) {
+    // 1) 승/패/무 결정
+    const { homeScore, awayScore } = game.gameStat;
+    const winnerTeamId =
+      homeScore > awayScore
+        ? game.homeTeamId
+        : homeScore < awayScore
+          ? game.awayTeamId
+          : null;
+
+    const loserTeamId =
+      homeScore !== awayScore
+        ? homeScore > awayScore
+          ? game.awayTeamId
+          : game.homeTeamId
+        : null;
+
+    // 2) 현재 게임에 승자 업데이트
+    await manager.update(Game, game.id, { winnerTeamId });
+
+    // 3) 다음 경기 매핑 (QF→SF, SF→F)
+    type Slot = 'homeTeamId' | 'awayTeamId';
+    const transitionMap: Partial<
+      Record<BracketPosition, { nextPos: BracketPosition; nextSlot: Slot }>
+    > = {
+      [BracketPosition.QF_1]: {
+        nextPos: BracketPosition.SF_1,
+        nextSlot: 'awayTeamId',
+      },
+      [BracketPosition.QF_2]: {
+        nextPos: BracketPosition.SF_1,
+        nextSlot: 'homeTeamId',
+      },
+      [BracketPosition.QF_3]: {
+        nextPos: BracketPosition.SF_2,
+        nextSlot: 'awayTeamId',
+      },
+      [BracketPosition.QF_4]: {
+        nextPos: BracketPosition.SF_2,
+        nextSlot: 'homeTeamId',
+      },
+      [BracketPosition.SF_1]: {
+        nextPos: BracketPosition.F,
+        nextSlot: 'awayTeamId',
+      },
+      [BracketPosition.SF_2]: {
+        nextPos: BracketPosition.F,
+        nextSlot: 'homeTeamId',
+      },
+    };
+
+    const transition = transitionMap[game.bracketPosition];
+    if (transition && winnerTeamId !== null) {
+      // 4) 다음 경기(준결승→결승 혹은 8강→준결승) 승자 배치
+      const nextGame = await manager.findOneOrFail(Game, {
+        where: {
+          tournamentId: game.tournamentId,
+          bracketPosition: transition.nextPos,
+        },
+      });
+      nextGame[transition.nextSlot] = winnerTeamId;
+      await manager.save(nextGame);
+
+      // 5) “준결승 → 결승” 이동일 때만 패자를 3·4위전에 고정 배치
+      if (
+        (game.bracketPosition === BracketPosition.SF_1 ||
+          game.bracketPosition === BracketPosition.SF_2) &&
+        loserTeamId !== null
+      ) {
+        const thirdGame = await manager.findOneOrFail(Game, {
+          where: {
+            tournamentId: game.tournamentId,
+            bracketPosition: BracketPosition.THIRD_PLACE,
+          },
+        });
+
+        if (game.bracketPosition === BracketPosition.SF_1) {
+          // SF1 패자는 awayTeam
+          thirdGame.awayTeamId = loserTeamId;
+        } else {
+          // SF2 패자는 homeTeam
+          thirdGame.homeTeamId = loserTeamId;
+        }
+
+        await manager.save(thirdGame);
+      }
+    }
   }
 
   async assignUmpireToGame(gameId: number, umpireId: number) {
