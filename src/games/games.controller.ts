@@ -258,8 +258,12 @@ export class GamesController {
     @Param('gameId', ParseIntPipe) gameId: number,
     @Body() scoreDto: SimpleScoreRequestDto,
   ): Promise<ScoreboardResponseDto> {
-    this.gameScoreboardService.changeInning(gameId);
-    return this.gameScoreboardService.createInningStat(gameId, scoreDto);
+    const result = await this.gameScoreboardService.createInningStat(
+      gameId,
+      scoreDto,
+    );
+    await this.gameScoreboardService.changeInning(gameId);
+    return result;
   }
   @UseGuards(UmpireAuthGuard)
   @Get(':gameId/scores')

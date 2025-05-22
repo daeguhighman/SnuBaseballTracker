@@ -37,7 +37,7 @@ export default registerAs('database', () => {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     synchronize: flags.isTest,
-    dropSchema: flags.isTest,
+    // dropSchema: flags.isTest,
     logging: flags.isDev || flags.isTest || process.env.LOG_SQL === 'true',
 
     entities: [
