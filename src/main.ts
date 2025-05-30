@@ -32,7 +32,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   app.enableCors({
     ...corsOptions,
-    origin: isProduction ? 'https://www.snubaseball.site' : true,
+    origin: isProduction ? 'https://snubaseball.site' : true,
   });
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalInterceptors(app.get(LoggingInterceptor));
