@@ -1,127 +1,117 @@
+// 외부 모듈
 import { Repository, DataSource, EntityManager, Not, IsNull } from 'typeorm';
-import { Game } from '../entities/game.entity';
-import { GameStatus } from '@common/enums/game-status.enum';
+
+// NestJS 관련 모듈
+import { Injectable, HttpStatus, Inject, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
-import { GameDto, GamesByDatesResponseDto } from '../dtos/game.dto';
+
+// Enums
+import { BracketPosition, MatchStage } from '@common/enums/match-stage.enum';
+import { GameStatus } from '@common/enums/game-status.enum';
 import { InningHalf } from '@common/enums/inning-half.enum';
-import { BatterGameParticipation } from '../entities/batter-game-participation.entity';
-import { PitcherGameParticipation } from '../entities/pitcher-game-participation.entity';
-import { GameStat } from '../entities/game-stat.entity';
-import { TeamTournament } from '@/teams/entities/team-tournament.entity';
-import { GameStatsService } from './game-stats.service';
-import { Umpire } from '@/umpires/entities/umpire.entity';
-import { SimpleScoreRequestDto } from '../dtos/score.dto';
-import { GameInningStat } from '../entities/game-inning-stat.entity';
-import { BaseException } from '@/common/exceptions/base.exception';
-import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
-import { Tournament } from '@/tournaments/entities/tournament.entity';
-import { PhaseType } from '@/common/enums/phase-type.enum';
+import { PhaseType } from '@common/enums/phase-type.enum';
+
+// Entities
+import { BatterGameParticipation } from '@games/entities/batter-game-participation.entity';
+import { Game } from '@games/entities/game.entity';
+import { GameInningStat } from '@games/entities/game-inning-stat.entity';
+import { GameStat } from '@/games/entities/game-stat.entity';
+import { PitcherGameParticipation } from '@games/entities/pitcher-game-participation.entity';
+import { TeamTournament } from '@teams/entities/team-tournament.entity';
+import { Tournament } from '@tournaments/entities/tournament.entity';
+import { Umpire } from '@umpires/entities/umpire.entity';
+
+// Repositories
+import { GameRepository } from '../repositories/game.repository';
+
+// DTOs
+import { GameDto, GamesByDatesResponseDto } from '@games/dtos/game.dto';
+import { SimpleScoreRequestDto } from '@games/dtos/score.dto';
 import {
   TournamentGameDto,
   TournamentScheduleResponseDto,
-} from '../dtos/tournament-schedule.dto';
-import { BracketPosition, MatchStage } from '@/common/enums/match-stage.enum';
-/*
-  기본 조회, 상태 변경 등 핵심 로직
- */
+} from '@games/dtos/tournament-schedule.dto';
+
+// Services
+import { GameStatsService } from '@games/services/game-stats.service';
+
+// Exceptions & Errors
+import { BaseException } from '@common/exceptions/base.exception';
+import { ErrorCodes } from '@common/exceptions/error-codes.enum';
+
+// Logger
+import { AppLogger } from '@common/logger/logger.service';
+
+import { mapGamesByDatesToDto, mapGameToDto } from '@games/mappers/game.mapper';
+import { DateUtils } from '@common/utils/date.utils';
+import { UmpireAuthGuard } from '@/auth/guards/umpire-auth-guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { Representative } from '@/players/entities/representative.entity';
+
 @Injectable()
 export class GameCoreService {
-  private readonly logger = new Logger(GameCoreService.name);
-
   constructor(
-    @InjectRepository(Game)
-    private readonly gameRepository: Repository<Game>,
     private readonly dataSource: DataSource,
+
+    // Services
     private readonly gameStatsService: GameStatsService,
+
+    // Repositories
+    @Inject('GAME_REPOSITORY')
+    private readonly gameRepository: ReturnType<typeof GameRepository>,
     @InjectRepository(Umpire)
     private readonly umpireRepository: Repository<Umpire>,
     @InjectRepository(Tournament)
     private readonly tournamentRepository: Repository<Tournament>,
+    @InjectRepository(Representative)
+    private readonly representativeRepository: Repository<Representative>,
   ) {}
 
   async getSchedules(
-    from: string,
-    to?: string,
+    startDate: string,
+    endDate: string,
+    userId?: string,
   ): Promise<GamesByDatesResponseDto> {
-    const start = new Date(`${from}T00:00:00+09:00`);
-    const end = to
-      ? new Date(`${to}T23:59:59+09:00`)
-      : new Date(start.getTime() + 7 * 86_400_000);
+    const startDateTime = DateUtils.startOfDay(startDate);
+    const endDateTime = DateUtils.endOfDay(endDate);
 
-    const games = await this.gameRepository
-      .createQueryBuilder('g')
-      .leftJoinAndSelect('g.homeTeam', 'homeTeam')
-      .leftJoinAndSelect('g.awayTeam', 'awayTeam')
-      .leftJoinAndSelect('g.gameStat', 'stat')
-      .where('g.start_time BETWEEN :s AND :e', { s: start, e: end })
-      .orderBy('g.start_time', 'ASC')
-      .getMany();
+    const games = await this.gameRepository.getGamesBetweenDates(
+      startDate,
+      endDate,
+    );
 
     // --- 날짜별 그룹핑 ---
-    const byDate = new Map<string, GameDto[]>();
-    games.forEach((g) => {
-      const kstDateKey = g.startTime.toLocaleDateString('en-CA', {
-        timeZone: 'Asia/Seoul',
-      }); // e.g. '2025-05-04'
-      const list = byDate.get(kstDateKey) ?? [];
-      list.push(this.mapGameToDto(g));
-      byDate.set(kstDateKey, list);
-    });
+    const groupedGames: Record<string, GameDto[]> = {};
 
-    // --- DTO 변환 ---
-    const days = Array.from(byDate.entries()).map(([date, games]) => ({
-      date,
-      dayOfWeek: this.getDayOfWeek(new Date(`${date}T00:00:00+09:00`)),
-      games,
-    }));
+    for (const game of games) {
+      const key = DateUtils.formatKst(game.startTime);
 
-    return {
-      range: {
-        from: start.toLocaleDateString('en-CA', {
-          timeZone: 'Asia/Seoul',
-        }),
-        to: end.toLocaleDateString('en-CA', {
-          timeZone: 'Asia/Seoul',
-        }),
-      },
-      days,
-    };
-  }
+      // 권한 정보 계산
+      let permissions:
+        | {
+            canRecord: boolean;
+            canSubmitLineup: { home: boolean; away: boolean };
+          }
+        | undefined;
+      if (userId) {
+        try {
+          permissions = await this.calculateGamePermissions(game.id, userId);
+        } catch (error) {
+          // 권한 계산 실패 시 기본값 사용
+          permissions = {
+            canRecord: false,
+            canSubmitLineup: { home: false, away: false },
+          };
+        }
+      }
 
-  private getDayOfWeek(date: Date): string {
-    const dayOfWeekMap = ['일', '월', '화', '수', '목', '금', '토'];
-    return dayOfWeekMap[date.getDay()];
-  }
+      if (!groupedGames[key]) {
+        groupedGames[key] = [];
+      }
+      groupedGames[key].push(mapGameToDto(game, permissions));
+    }
 
-  private mapGameToDto(game: Game): GameDto {
-    // 시간도 KST 기준으로 포맷
-    const kstTime = game.startTime.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Seoul',
-    }); // e.g. '14:30'
-
-    return {
-      gameId: game.id,
-      time: kstTime,
-      status: game.status as GameStatus,
-      stage: game.stage as MatchStage,
-      winnerTeamId: game.winnerTeamId ?? null,
-      inning: game.gameStat?.inning ?? null,
-      inningHalf: game.gameStat?.inningHalf ?? null,
-      homeTeam: {
-        id: game.homeTeamId ?? null,
-        name: game.homeTeam?.name ?? null,
-        score: game.gameStat?.homeScore ?? null,
-      },
-      awayTeam: {
-        id: game.awayTeamId ?? null,
-        name: game.awayTeam?.name ?? null,
-        score: game.gameStat?.awayScore ?? null,
-      },
-      isForfeit: game.isForfeit,
-    };
+    return mapGamesByDatesToDto(startDateTime, endDateTime, groupedGames);
   }
 
   async getTournamentSchedule(): Promise<TournamentScheduleResponseDto> {
@@ -141,7 +131,6 @@ export class GameCoreService {
       relations: ['homeTeam', 'awayTeam', 'gameStat'],
     });
 
-    console.log(games);
     const tournamentGames: TournamentGameDto[] = games.map((game) =>
       this.mapGameToTournamentGameDto(game),
     );
@@ -330,8 +319,6 @@ export class GameCoreService {
   async finalizeGame(
     gameId: number,
   ): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`Finalizing game with ID: ${gameId}`);
-
     await this.dataSource.transaction(async (manager) => {
       // 1. 게임 정보 로드 (필요한 관계 모두 포함)
       const game = await manager.findOne(Game, {
@@ -398,8 +385,6 @@ export class GameCoreService {
     game: Game,
     manager: EntityManager,
   ): Promise<void> {
-    this.logger.log(`Updating team tournament stats for game ID: ${game.id}`);
-
     // 1. 홈팀과 원정팀의 TeamTournament 레코드 조회
     const [homeTeamTournament, awayTeamTournament] = await Promise.all([
       manager.findOne(TeamTournament, {
@@ -441,24 +426,15 @@ export class GameCoreService {
       homeTeamTournament.wins += 1;
       awayTeamTournament.losses += 1;
       winnerTeamId = game.homeTeamId;
-      this.logger.debug(
-        `Home team win: ${game.homeTeam.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.name} (${game.gameStat.awayScore})`,
-      );
     } else if (game.gameStat.homeScore < game.gameStat.awayScore) {
       // 원정팀 승리
       homeTeamTournament.losses += 1;
       awayTeamTournament.wins += 1;
       winnerTeamId = game.awayTeamId;
-      this.logger.debug(
-        `Away team win: ${game.homeTeam.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.name} (${game.gameStat.awayScore})`,
-      );
     } else {
       // 무승부
       homeTeamTournament.draws += 1;
       awayTeamTournament.draws += 1;
-      this.logger.debug(
-        `Draw: ${game.homeTeam.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.name} (${game.gameStat.awayScore})`,
-      );
     }
 
     await manager.update(Game, game.id, { winnerTeamId });
@@ -468,10 +444,6 @@ export class GameCoreService {
       manager.save(TeamTournament, homeTeamTournament),
       manager.save(TeamTournament, awayTeamTournament),
     ]);
-
-    this.logger.log(
-      `Successfully updated team tournament stats for game ID: ${game.id}`,
-    );
   }
   /**
    * game.homeTeamId, game.awayTeamId 에 대해
@@ -739,5 +711,59 @@ export class GameCoreService {
 
     tournament.phase = PhaseType.KNOCKOUT;
     return this.tournamentRepository.save(tournament);
+  }
+
+  /**
+   * 경기에 대한 사용자의 권한을 계산합니다.
+   * @param gameId 경기 ID
+   * @param userId 사용자 ID
+   * @returns 권한 정보
+   */
+  async calculateGamePermissions(
+    gameId: number,
+    userId: string,
+  ): Promise<{
+    canRecord: boolean;
+    canSubmitLineup: { home: boolean; away: boolean };
+  }> {
+    const game = await this.gameRepository.findOne({
+      where: { id: gameId },
+      relations: ['homeTeam', 'awayTeam', 'recordUmpire'],
+    });
+
+    if (!game) {
+      throw new BaseException(
+        `게임 ID ${gameId}를 찾을 수 없습니다.`,
+        ErrorCodes.GAME_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // 심판 권한 확인
+    const canRecord = game.recordUmpireId === parseInt(userId);
+
+    // 팀 대표자 권한 확인
+    const [homeRepresentative, awayRepresentative] = await Promise.all([
+      this.representativeRepository.findOne({
+        where: {
+          teamTournamentId: game.homeTeamId,
+          userId: userId,
+        },
+      }),
+      this.representativeRepository.findOne({
+        where: {
+          teamTournamentId: game.awayTeamId,
+          userId: userId,
+        },
+      }),
+    ]);
+
+    return {
+      canRecord,
+      canSubmitLineup: {
+        home: !!homeRepresentative,
+        away: !!awayRepresentative,
+      },
+    };
   }
 }

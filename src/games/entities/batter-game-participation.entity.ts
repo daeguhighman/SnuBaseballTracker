@@ -10,12 +10,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { Game } from './game.entity';
 import { Team } from '@teams/entities/team.entity';
 import { Player } from '@players/entities/player.entity';
 import { BatterGameStat } from './batter-game-stat.entity';
 import { Position } from '@common/enums/position.enum';
+import { Play } from '@/plays/entities/play.entity';
 
 @Entity('batter_game_participations')
 @Unique(['game', 'player'])
@@ -68,6 +70,9 @@ export class BatterGameParticipation {
     cascade: ['insert', 'update'],
   })
   batterGameStat?: BatterGameStat;
+
+  @OneToMany(() => Play, (p) => p.batter, { cascade: true })
+  gamePlays: Play[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -111,33 +111,33 @@ export class TeamsService {
   /**
    * 팀별 선수 목록 조회 (department 포함)
    */
-  async getTeamPlayers(teamId: number): Promise<BasePlayerListResponseDto> {
-    const team = await this.teamRepository.findOne({
-      where: { id: teamId },
-      relations: ['players', 'players.department'],
-    });
-    if (!team) {
-      throw new BaseException(
-        `Team with id ${teamId} not found`,
-        ErrorCodes.TEAM_NOT_FOUND,
-        HttpStatus.NOT_FOUND,
-      );
-    }
+  // async getTeamPlayers(teamId: number): Promise<BasePlayerListResponseDto> {
+  //   const team = await this.teamRepository.findOne({
+  //     where: { id: teamId },
+  //     relations: ['players', 'players.department'],
+  //   });
+  //   if (!team) {
+  //     throw new BaseException(
+  //       `Team with id ${teamId} not found`,
+  //       ErrorCodes.TEAM_NOT_FOUND,
+  //       HttpStatus.NOT_FOUND,
+  //     );
+  //   }
 
-    const playersDto: BasePlayerDto[] = team.players
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        departmentName: p.department?.name ?? null,
-        isElite: p.isElite,
-        isWc: p.isWc,
-      }));
+  //   const playersDto: BasePlayerDto[] = team.players
+  //     .sort((a, b) => a.name.localeCompare(b.name))
+  //     .map((p) => ({
+  //       id: p.id,
+  //       name: p.name,
+  //       // departmentName: p.department?.name ?? null,
+  //       isElite: p.isElite,
+  //       isWc: p.isWc,
+  //     }));
 
-    return {
-      id: team.id,
-      name: team.name,
-      players: playersDto,
-    };
-  }
+  //   return {
+  //     id: team.id,
+  //     name: team.name,
+  //     players: playersDto,
+  //   };
+  // }
 }

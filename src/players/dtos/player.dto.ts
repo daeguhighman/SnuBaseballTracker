@@ -26,7 +26,7 @@ export class BasePlayerDto {
     example: '홍길동',
   })
   @IsString()
-  departmentName: string;
+  departmentName?: string;
   @ApiProperty({
     description: '와일드카드 여부',
     example: true,

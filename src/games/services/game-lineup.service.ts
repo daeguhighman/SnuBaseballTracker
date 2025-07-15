@@ -78,7 +78,7 @@ export class GameLineupService {
       players: players.map((player) => ({
         id: player.id,
         name: player.name,
-        departmentName: player.department.name,
+        // departmentName: player.department.name,
         isElite: player.isElite,
         isWc: player.isWc,
       })),
@@ -423,7 +423,7 @@ export class GameLineupService {
     const playerDtos = players.map((player) => ({
       id: player.id,
       name: player.name,
-      departmentName: player.department.name,
+      // departmentName: player.department?.name,
       isElite: player.isElite,
       isWc: player.isWc,
       inLineup: playersInLineup.has(player.id),
@@ -680,7 +680,7 @@ export class GameLineupService {
       return {
         id: roaster.player.id,
         name: roaster.player.name,
-        departmentName: roaster.player.department.name,
+        // departmentName: roaster.player.department.name,
         isElite: roaster.player.isElite,
         isWc: roaster.player.isWc,
         isSubstitutable,

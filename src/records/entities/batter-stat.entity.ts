@@ -9,11 +9,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  Index,
 } from 'typeorm';
 import { PlayerTournament } from '@players/entities/player-tournament.entity';
 
 @Entity('batter_stats')
 @Unique(['playerTournament'])
+@Index(['hits', 'playerTournamentId'])
 export class BatterStat {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -53,6 +55,12 @@ export class BatterStat {
 
   @Column({ default: 0 })
   etcs: number;
+
+  @Column({ name: 'runs', default: 0 })
+  runs: number;
+
+  @Column({ name: 'runs_batted_in', default: 0 })
+  runsBattedIn: number;
 
   @Column({
     name: 'batting_average',

@@ -24,7 +24,12 @@
       "@auth/*": ["src/auth/*"],
       "@common/*": ["src/common/*"],
       "@config/*": ["src/config/*"],
-      "@admin/*": ["src/admin/*"]
+      "@admin/*": ["src/admin/*"],
+      "@profile/*": ["src/profile/*"],
+      "@sessions/*": ["src/sessions/*"],
+      "@plays/*": ["src/plays/*"],
+      "@seed/*": ["src/seed/*"],
+      "@test/*": ["src/test/*"]
     },
 
     "incremental": true,
@@ -35,10 +40,29 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "inlineSources": true,
+    
+    // Enhanced IntelliSense and AI suggestions
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "lib": ["ES2021"],
+    "types": ["node", "jest"],
 
     // Set `sourceRoot` to  "/" to strip the build path prefix
     // from generated source code references.
     // This improves issue grouping in Sentry.
     "sourceRoot": "/"
-  }
+  },
+  
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
+  
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts"
+  ]
 }

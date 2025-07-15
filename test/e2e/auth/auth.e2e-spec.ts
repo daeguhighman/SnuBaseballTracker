@@ -6,7 +6,7 @@ import { AppDataSource } from '../../../data-source';
 import { truncateAllTables } from '../../utils/truncate';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { UmpireEmailCode } from '../../../src/umpires/entities/umpire-email-code.entity';
+import { UmpireEmailCode } from '../../../src/mail/email-code.entity';
 import { seedUser, seedUmpire } from '../../utils/seedTestData';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';

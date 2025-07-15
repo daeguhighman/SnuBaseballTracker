@@ -22,7 +22,7 @@ import {
 } from '@/games/dtos/lineup.dto';
 import { Player } from '@/players/entities/player.entity';
 import { JwtService } from '@nestjs/jwt';
-import { Department } from '@/players/entities/department.entity';
+import { Department } from '@/profile/entities/department.entity';
 import * as cookieParser from 'cookie-parser';
 describe('/games/{gameId}/lineup API (Submit & Get)', () => {
   let app: INestApplication;

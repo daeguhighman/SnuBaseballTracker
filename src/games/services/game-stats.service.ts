@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
-import { GameStat } from '@games/entities/game-stat.entity';
+import { GameStat } from '@/games/entities/game-stat.entity';
 import { InningHalf } from '@common/enums/inning-half.enum';
 import { Game } from '@games/entities/game.entity';
 import { GameStatus } from '@common/enums/game-status.enum';
@@ -136,6 +136,46 @@ export class GameStatsService {
       position: 'P',
       isWc: currentPitcher.player.isWc,
       isElite: currentPitcher.player.isElite,
+    };
+  }
+
+  async getOutCount(
+    gameId: number,
+  ): Promise<{
+    gameId: number;
+    inning: number;
+    inningHalf: string;
+    outCount: number;
+  }> {
+    const game = await this.gameRepository.findOne({
+      where: { id: gameId },
+      relations: ['gameStat'],
+    });
+    if (!game) {
+      throw new BaseException(
+        `게임 ID ${gameId}를 찾을 수 없습니다.`,
+        ErrorCodes.GAME_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const gameStat = game.gameStat;
+
+    // 현재 이닝의 아웃 수를 조회
+    const currentInningStat = await this.gameInningStatRepository.findOne({
+      where: {
+        gameId: gameId,
+        inning: gameStat.inning,
+        inningHalf: gameStat.inningHalf,
+      },
+      order: { id: 'DESC' }, // 가장 최근 이닝 스탯
+    });
+
+    return {
+      gameId: gameId,
+      inning: gameStat.inning,
+      inningHalf: gameStat.inningHalf,
+      outCount: currentInningStat?.outs || 0,
     };
   }
 

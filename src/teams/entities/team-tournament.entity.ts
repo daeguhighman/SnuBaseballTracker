@@ -9,9 +9,12 @@ import {
   Unique,
   Index,
   JoinColumn,
+  OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { Team } from './team.entity';
 import { Tournament } from '@tournaments/entities/tournament.entity';
+import { Representative } from '@/players/entities/representative.entity';
 
 @Entity('team_tournaments')
 @Unique(['team', 'tournament'])
@@ -57,6 +60,12 @@ export class TeamTournament {
 
   @Column({ name: 'runs_allowed', default: 0 })
   runsAllowed: number;
+
+  @OneToOne(
+    () => Representative,
+    (representative) => representative.teamTournament,
+  )
+  representative: Representative;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

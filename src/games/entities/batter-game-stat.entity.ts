@@ -55,6 +55,12 @@ export class BatterGameStat {
   @Column({ default: 0 })
   etcs: number;
 
+  @Column({ name: 'runs', default: 0 })
+  runs: number;
+
+  @Column({ name: 'runs_batted_in', default: 0 })
+  runsBattedIn: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

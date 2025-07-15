@@ -27,6 +27,15 @@ export class PitcherStat {
   @Column({ default: 0 })
   strikeouts: number;
 
+  @Column({ default: 0 })
+  inningsPitched: number;
+
+  @Column({ name: 'runs_allowed', default: 0 })
+  runsAllowed: number;
+
+  @Column({ default: 0 })
+  earnedRuns: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

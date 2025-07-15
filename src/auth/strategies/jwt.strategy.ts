@@ -2,27 +2,29 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { UsersService } from '@/users/users.service';
+
+interface JwtPayload {
+  sub: string; // userId
+  email: string;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly userService: UsersService,
+  ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        // 쿠키에서 토큰 추출
-        (request: Request) => {
-          return request?.cookies?.accessToken;
-        },
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'secret',
+      secretOrKey: configService.get<string>('JWT_ACCESS_SECRET'),
     });
   }
 
-  async validate(payload: any) {
-    return {
-      userId: payload.sub,
-      umpireId: payload.umpireId,
-      role: payload.role,
-    };
+  async validate(payload: JwtPayload) {
+    const user = await this.userService.findByIdWithRoles(payload.sub);
+    return user; // attaches to req.user
   }
 }

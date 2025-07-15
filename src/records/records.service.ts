@@ -25,7 +25,7 @@ export class RecordsService {
 
   /** 안타가 1개 이상인 모든 타자 기록을 조회 */
   async getBatterRecords(): Promise<BatterRecordsResponse> {
-    const raw = await this.batterStatsRepository
+    const qb = this.batterStatsRepository
       .createQueryBuilder('stat')
       .innerJoin('stat.playerTournament', 'pt')
       .innerJoin('pt.player', 'player')
@@ -56,8 +56,9 @@ export class RecordsService {
         'stat.onBasePercentage AS "OBP"',
         'stat.sluggingPercentage AS "SLG"',
         'stat.ops              AS "OPS"',
-      ])
-      .getRawMany();
+      ]);
+    console.log(qb.getQueryAndParameters());
+    const raw = await qb.getRawMany();
 
     return {
       count: raw.length,

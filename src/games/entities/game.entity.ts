@@ -21,6 +21,9 @@ import { GameStat } from './game-stat.entity';
 import { GameStatus } from '@common/enums/game-status.enum';
 import { GameRoaster } from './game-roaster.entity';
 import { BracketPosition, MatchStage } from '@common/enums/match-stage.enum';
+import { Play } from '@/plays/entities/play.entity';
+import { RunnerEvent } from '@/plays/entities/runner-event-entity';
+import { GameHistory } from '@/plays/entities/game-history.entity';
 @Entity('games')
 export class Game {
   @PrimaryGeneratedColumn('increment')
@@ -91,6 +94,17 @@ export class Game {
     cascade: ['insert', 'update'],
   })
   gameRoasters: GameRoaster[];
+
+  @OneToMany(() => Play, (p) => p.game, {
+    cascade: ['insert', 'update'],
+  })
+  plays: Play[];
+
+  @OneToMany(() => RunnerEvent, (re) => re.game, { cascade: true })
+  runnerEvents: RunnerEvent[];
+
+  @OneToMany(() => GameHistory, (h) => h.game, { cascade: true })
+  gameHistories: GameHistory[];
 
   @OneToOne(() => GameStat, (stat) => stat.game, {
     cascade: ['insert', 'update', 'soft-remove'],

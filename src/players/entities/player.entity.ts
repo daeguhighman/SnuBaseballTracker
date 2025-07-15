@@ -9,10 +9,12 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { Team } from '@teams/entities/team.entity';
-import { Department } from './department.entity';
+import { Department } from '../../profile/entities/department.entity';
 import { PlayerTournament } from './player-tournament.entity';
+import { College } from '@/profile/entities/college.entity';
 
 @Entity('players')
 export class Player {
@@ -21,6 +23,14 @@ export class Player {
 
   @Column({ length: 50 })
   name: string;
+
+  @ManyToOne(() => College, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn()
+  college!: Relation<College>;
+
+  @ManyToOne(() => Department, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn()
+  department!: Relation<Department>;
 
   @Column({ name: 'is_wildcard', default: false })
   isWc: boolean;
@@ -38,17 +48,6 @@ export class Player {
 
   @Column({ name: 'team_id', nullable: true })
   teamId: number;
-
-  @Index()
-  @ManyToOne(() => Department, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'department_id' })
-  department?: Department;
-
-  @Column({ name: 'department_id', nullable: true })
-  departmentId?: number;
 
   @OneToMany(
     () => PlayerTournament,

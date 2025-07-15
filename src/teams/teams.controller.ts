@@ -69,16 +69,9 @@ export class TeamsController {
     return this.teamsService.getGroupedTeams();
   }
 
-  @Get(':teamId/players')
-  @ApiOperation({ summary: '팀 선수 조회' })
-  @ApiResponse({
-    status: 200,
-    description: '팀 선수 조회 성공',
-    type: BasePlayerListResponseDto,
-  })
-  async getTeamPlayers(
-    @Param('teamId', ParseIntPipe) teamId: number,
-  ): Promise<BasePlayerListResponseDto> {
-    return this.teamsService.getTeamPlayers(teamId);
-  }
+  // async getTeamPlayers(
+  //   @Param('teamId', ParseIntPipe) teamId: number,
+  // ): Promise<BasePlayerListResponseDto> {
+  //   return this.teamsService.getTeamPlayers(teamId);
+  // }
 }

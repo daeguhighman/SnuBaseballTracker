@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { mailerConfig } from '@/config/mailer.config';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 
 /* 도메인 모듈들 */
 import { TeamsModule } from '@teams/teams.module';
@@ -15,12 +17,16 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { AdminModule } from '@admin/admin.module';
-import { TestModule } from './test/test.module';
+// import { TestModule } from './test/test.module';
 import databaseConfig from './config/database.config';
 import authConfig from './config/auth.config';
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { SentryModule } from '@sentry/nestjs/setup';
+import { JwtModule } from '@nestjs/jwt';
+import { ProfileModule } from './profile/profile.module';
+import { PlaysModule } from './plays/plays.module';
+
 const imports = [
   /* 1️⃣  설정 */
   ConfigModule.forRoot({
@@ -47,7 +53,16 @@ const imports = [
     inject: [ConfigService],
     useFactory: (cs: ConfigService) => ({
       ...cs.get('database'),
+      logging: true,
     }),
+  }),
+  JwtModule.registerAsync({
+    imports: [ConfigModule],
+    useFactory: (cfg: ConfigService) => ({
+      secret: cfg.get<string>('auth.jwtAccessSecret'),
+      signOptions: { expiresIn: cfg.get('auth.jwtAccessExpiresIn') },
+    }),
+    inject: [ConfigService],
   }),
 
   /* 4️⃣  도메인 */
@@ -61,18 +76,26 @@ const imports = [
   AuthModule,
   MailModule,
   AdminModule,
-
+  ProfileModule,
+  PlaysModule,
   /* 5️⃣  로깅 */
   LoggerModule,
   SentryModule.forRoot(),
 ];
 
-if (process.env.NODE_ENV === 'test') {
-  imports.push(TestModule);
-}
+// if (process.env.NODE_ENV === 'test') {
+//   imports.push(TestModule);
+// }
 
 @Module({
   imports,
-  providers: [LoggingInterceptor],
+  providers: [
+    LoggingInterceptor,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
+  controllers: [],
 })
 export class AppModule {}

@@ -12,6 +12,7 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  Request,
 } from '@nestjs/common';
 import { GamesByDatesResponseDto } from '@games/dtos/game.dto';
 import { GetGamesByDateQuery } from '@games/dtos/game-request.dto';
@@ -43,7 +44,7 @@ import { GameScoreboardService } from '@games/services/game-scoreboard.service';
 import { GameStatsService } from '@games/services/game-stats.service';
 import { GameCoreService } from '@games/services/game-core.service';
 import { BatterPlateAppearanceRequestDto } from './dtos/plate-appearance.dto';
-import { UmpireAuthGuard } from '@/umpires/guards/umpire-auth-guard';
+import { UmpireAuthGuard } from '@/auth/guards/umpire-auth-guard';
 import { GameRole } from '@common/enums/game-role.enum';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
@@ -51,9 +52,11 @@ import {
   PlayerWithLineupListResponseDto,
   PlayerWithSubstitutableListResponseDto,
 } from '@/players/dtos/player.dto';
-import { GameStat } from '@games/entities/game-stat.entity';
+import { GameStat } from '@/games/entities/game-stat.entity';
 import { TournamentScheduleResponseDto } from './dtos/tournament-schedule.dto';
-@ApiTags('games')
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { GameRepresentativeGuard } from '@/auth/guards/representative-auth-guard';
+import { PlayService } from '@/plays/services/play.service';
 @Controller('games')
 export class GamesController {
   constructor(
@@ -61,6 +64,7 @@ export class GamesController {
     private readonly gameScoreboardService: GameScoreboardService,
     private readonly gameStatsService: GameStatsService,
     private readonly gameCoreService: GameCoreService,
+    private readonly playService: PlayService,
   ) {}
 
   @Get()
@@ -72,10 +76,13 @@ export class GamesController {
   })
   async getSchedules(
     @Query() query: GetGamesByDateQuery,
+    @Request() req: any,
   ): Promise<GamesByDatesResponseDto> {
+    const userId = req.user?.id;
     const result = await this.gameCoreService.getSchedules(
       query.from,
       query.to,
+      userId,
     );
     return result;
   }
@@ -154,8 +161,7 @@ export class GamesController {
       GameRole.PITCHER,
     );
   }
-
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(JwtAuthGuard, GameRepresentativeGuard)
   @Get(':gameId/lineup')
   @ApiOperation({ summary: '경기 라인업 조회' })
   @ApiResponse({
@@ -202,28 +208,6 @@ export class GamesController {
 
   @UseGuards(UmpireAuthGuard)
   @Post(':gameId/start')
-  @ApiOperation({ summary: '경기 시작' })
-  @ApiResponse({
-    status: 200,
-    description: '경기 시작 성공',
-    example: {
-      success: true,
-      message: '경기 시작 성공',
-      gameStat: {
-        gameId: 1001,
-        homeScore: 0,
-        awayScore: 0,
-        homeHits: 0,
-        awayHits: 0,
-        inning: 1,
-        inningHalf: 'TOP',
-        homePitcherParticipationId: 101,
-        homeBatterParticipationId: 201,
-        awayPitcherParticipationId: 102,
-        awayBatterParticipationId: 202,
-      },
-    },
-  })
   async startGame(
     @Param('gameId') gameId: number,
   ): Promise<{ success: boolean; message: string; gameStat: GameStat }> {
@@ -257,6 +241,23 @@ export class GamesController {
   ): Promise<CurrentPitcherResponseDto> {
     return this.gameStatsService.getCurrentPitcher(gameId, teamType);
   }
+
+  @UseGuards(UmpireAuthGuard)
+  @Get(':gameId/out-count')
+  @ApiOperation({ summary: '현재 아웃카운트 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '아웃카운트 조회 성공',
+  })
+  async getOutCount(@Param('gameId', ParseIntPipe) gameId: number): Promise<{
+    gameId: number;
+    inning: number;
+    inningHalf: string;
+    outCount: number;
+  }> {
+    return this.gameStatsService.getOutCount(gameId);
+  }
+
   @UseGuards(UmpireAuthGuard)
   @Post(':gameId/scores')
   @HttpCode(201)
@@ -413,5 +414,13 @@ export class GamesController {
       pitcherGameStatsId,
       updateDto,
     );
+  }
+
+  @Post(':gameId/plays')
+  async createPlay(
+    @Param('gameId', ParseIntPipe) gameId: number,
+    // @Body() body: CreatePlayDto,
+  ) {
+    return this.playService.createPlay(gameId);
   }
 }
