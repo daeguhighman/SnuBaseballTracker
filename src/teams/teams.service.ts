@@ -114,7 +114,12 @@ export class TeamsService {
   async getTeamPlayers(teamId: number): Promise<BasePlayerListResponseDto> {
     const team = await this.teamRepository.findOne({
       where: { id: teamId },
-      relations: ['players', 'players.department'],
+      relations: [
+        'teamTournaments',
+        'teamTournaments.playerTournaments',
+        'teamTournaments.playerTournaments.player',
+        'teamTournaments.playerTournaments.player.department',
+      ],
     });
     if (!team) {
       throw new BaseException(
@@ -124,14 +129,18 @@ export class TeamsService {
       );
     }
 
-    const playersDto: BasePlayerDto[] = team.players
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        departmentName: p.department?.name ?? null,
-        isElite: p.isElite,
-        isWc: p.isWc,
+    const playersDto: BasePlayerDto[] = team.teamTournaments
+      .sort((a, b) =>
+        a.playerTournaments[0].player.name.localeCompare(
+          b.playerTournaments[0].player.name,
+        ),
+      )
+      .map((tt) => ({
+        id: tt.playerTournaments[0].player.id,
+        name: tt.playerTournaments[0].player.name,
+        departmentName: tt.playerTournaments[0].player.department?.name ?? null,
+        isElite: tt.playerTournaments[0].isElite,
+        isWc: tt.playerTournaments[0].isWildcard,
       }));
 
     return {

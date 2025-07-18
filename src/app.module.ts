@@ -15,12 +15,13 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { AdminModule } from '@admin/admin.module';
-import { TestModule } from './test/test.module';
 import databaseConfig from './config/database.config';
 import authConfig from './config/auth.config';
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { SentryModule } from '@sentry/nestjs/setup';
+import { ProfileModule } from './profiles/profiles.module';
+
 const imports = [
   /* 1️⃣  설정 */
   ConfigModule.forRoot({
@@ -61,15 +62,12 @@ const imports = [
   AuthModule,
   MailModule,
   AdminModule,
+  ProfileModule,
 
   /* 5️⃣  로깅 */
   LoggerModule,
   SentryModule.forRoot(),
 ];
-
-if (process.env.NODE_ENV === 'test') {
-  imports.push(TestModule);
-}
 
 @Module({
   imports,

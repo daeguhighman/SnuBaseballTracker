@@ -32,6 +32,7 @@
     "seed:dev": "ts-node -r tsconfig-paths/register src/seed/seed-real.ts",
     "seed:pt": "ts-node -r tsconfig-paths/register src/seed/seed-pt.ts",
     "seed:bracket": "ts-node -r tsconfig-paths/register src/seed/seed-bracket.ts",
+    "import-players": "ts-node -r tsconfig-paths/register scripts/import-players.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist",
     "gen:swagger": "ts-node --project tsconfig.json scripts/swagger.ts"
   },
@@ -47,6 +48,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "@sentry/cli": "^2.45.0",
     "@sentry/nestjs": "^9.17.0",
+    "bcrypt": "^6.0.0",
     "cache-manager": "^6.4.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -54,14 +56,17 @@
     "csv-parse": "^5.6.0",
     "date-fns": "^4.1.0",
     "decimal.js": "^10.5.0",
+    "js-sha256": "^0.11.1",
     "mysql2": "^3.14.0",
     "nodemailer": "^6.10.1",
     "passport-jwt": "^4.0.1",
+    "path": "^0.12.7",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "sqlite3": "^5.1.7",
     "swagger-ui-express": "^5.0.1",
-    "typeorm": "^0.3.21"
+    "typeorm": "^0.3.21",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

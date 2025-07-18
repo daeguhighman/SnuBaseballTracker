@@ -10,7 +10,6 @@ import {
   Index,
 } from 'typeorm';
 import { TeamTournament } from '@teams/entities/team-tournament.entity';
-import { Player } from '@players/entities/player.entity';
 
 @Unique(['name'])
 @Entity('teams')
@@ -23,9 +22,6 @@ export class Team {
 
   @OneToMany(() => TeamTournament, (tt) => tt.team)
   teamTournaments: TeamTournament[];
-
-  @OneToMany(() => Player, (player) => player.team)
-  players: Player[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

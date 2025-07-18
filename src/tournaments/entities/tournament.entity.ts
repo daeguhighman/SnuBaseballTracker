@@ -10,12 +10,10 @@ import {
   Index,
 } from 'typeorm';
 import { TeamTournament } from '@teams/entities/team-tournament.entity';
-import { PlayerTournament } from '@players/entities/player-tournament.entity';
-import { TournamentSeason } from '@common/enums/tournament-season.enum';
 import { UmpireTournament } from '@umpires/entities/umpire-tournament.entity';
 import { PhaseType } from '@common/enums/phase-type.enum';
 @Entity('tournaments')
-@Unique(['year', 'season', 'name'])
+@Unique(['year', 'name'])
 export class Tournament {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -28,21 +26,10 @@ export class Tournament {
   @Column()
   year: number;
 
-  @Column({
-    type: 'enum',
-    enum: TournamentSeason,
-  })
-  season: TournamentSeason;
-
   @OneToMany(() => TeamTournament, (tt) => tt.tournament, {
     cascade: ['insert', 'update'],
   })
   teamTournaments: TeamTournament[];
-
-  @OneToMany(() => PlayerTournament, (pt) => pt.tournament, {
-    cascade: ['insert', 'update'],
-  })
-  playerTournaments: PlayerTournament[];
 
   @OneToMany(() => UmpireTournament, (ut) => ut.tournament, {
     cascade: ['insert', 'update'],

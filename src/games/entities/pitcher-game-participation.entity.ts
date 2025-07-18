@@ -12,8 +12,8 @@ import {
 } from 'typeorm';
 import { Game } from './game.entity';
 import { Team } from '@teams/entities/team.entity';
-import { Player } from '@players/entities/player.entity';
 import { PitcherGameStat } from './pitcher-game-stat.entity';
+import { PlayerTournament } from '@/players/entities/player-tournament.entity';
 
 @Entity('pitcher_game_participations')
 // @Unique(['game', 'player'])
@@ -36,11 +36,13 @@ export class PitcherGameParticipation {
   teamId: number;
 
   @Index()
-  @ManyToOne(() => Player, { nullable: false, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'player_id' })
-  player: Player;
-  @Column({ name: 'player_id' })
-  playerId: number;
+  @ManyToOne(() => PlayerTournament, (pt) => pt.pitcherGameParticipations, {
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'player_tournament_id' })
+  playerTournament: PlayerTournament;
+  @Column({ name: 'player_tournament_id' })
+  playerTournamentId: number;
 
   @Column({ name: 'substitution_order', default: 0 })
   substitutionOrder: number;

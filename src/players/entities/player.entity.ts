@@ -9,11 +9,14 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  OneToOne,
+  Relation,
 } from 'typeorm';
-import { Team } from '@teams/entities/team.entity';
-import { Department } from './department.entity';
 import { PlayerTournament } from './player-tournament.entity';
-
+import { TeamTournament } from '@/teams/entities/team-tournament.entity';
+import { User } from '@/users/entities/user.entity';
+import { College } from '@/profiles/entities/college.entity';
+import { Department } from '@/profiles/entities/department.entity';
 @Entity('players')
 export class Player {
   @PrimaryGeneratedColumn('increment')
@@ -22,33 +25,21 @@ export class Player {
   @Column({ length: 50 })
   name: string;
 
-  @Column({ name: 'is_wildcard', default: false })
-  isWc: boolean;
+  @Column({ name: 'email', length: 100 })
+  email: string;
 
-  @Column({ name: 'is_elite', default: false })
-  isElite: boolean;
+  @Column({ name: 'student_id', length: 50 })
+  studentId: string;
 
-  @Index()
-  @ManyToOne(() => Team, (team) => team.players, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'team_id' })
-  team: Team;
+  @Column({ name: 'birth_date' })
+  birthDate: Date;
 
-  @Column({ name: 'team_id', nullable: true })
-  teamId: number;
+  @Column({ name: 'phone_number', length: 20 })
+  phoneNumber: string;
 
-  @Index()
-  @ManyToOne(() => Department, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'department_id' })
-  department?: Department;
-
-  @Column({ name: 'department_id', nullable: true })
-  departmentId?: number;
+  @OneToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 
   @OneToMany(
     () => PlayerTournament,
@@ -59,6 +50,15 @@ export class Player {
     },
   )
   playerTournaments: PlayerTournament[];
+
+  /* ───────── 학적/프로필 ───────── */
+  @ManyToOne(() => College, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'college_id' })
+  college: Relation<College>;
+
+  @ManyToOne(() => Department, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'department_id' })
+  department: Relation<Department>;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

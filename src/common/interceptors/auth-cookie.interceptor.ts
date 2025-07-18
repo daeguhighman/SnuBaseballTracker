@@ -8,8 +8,9 @@ const COOKIE_NAME = 'accessToken';
 const isProduction = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true, // JavaScript에서 접근 불가
-  secure: isProduction,
-  sameSite: 'none' as const,
+  secure: false,
+  // sameSite: 'none' as const,
+  sameSite: 'lax' as const,
   maxAge: 1000 * 60 * 60 * 24 * 30, // 쿠키 유효기간 (30일)
   path: '/', // 모든 경로에서 쿠키 사용 가능
 };

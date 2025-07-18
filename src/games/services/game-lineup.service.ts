@@ -31,6 +31,8 @@ import { BatterGameStat } from '../entities/batter-game-stat.entity';
 import { PitcherGameStat } from '../entities/pitcher-game-stat.entity';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 import { BaseException } from '@/common/exceptions/base.exception';
+import { TeamTournament } from '@/teams/entities/team-tournament.entity';
+import { PlayerTournament } from '@/players/entities/player-tournament.entity';
 @Injectable()
 export class GameLineupService {
   constructor(
@@ -49,6 +51,10 @@ export class GameLineupService {
     private readonly playerRepository: Repository<Player>,
     @InjectRepository(GameRoaster)
     private readonly gameRoasterRepository: Repository<GameRoaster>,
+    @InjectRepository(TeamTournament)
+    private readonly teamTournamentRepository: Repository<TeamTournament>,
+    @InjectRepository(PlayerTournament)
+    private readonly playerTournamentRepository: Repository<PlayerTournament>,
   ) {}
 
   async getPlayers(
@@ -67,20 +73,24 @@ export class GameLineupService {
       );
     }
     const team = teamType === 'home' ? game.homeTeam : game.awayTeam;
-    const players = await this.playerRepository.find({
+    const teamTournament = await this.teamTournamentRepository.findOne({
       where: { team: { id: team.id } },
-      relations: ['department'],
+    });
+
+    const playerTournaments = await this.playerTournamentRepository.find({
+      where: { teamTournament: { id: teamTournament.id } },
+      relations: ['player', 'player.department'],
       order: { name: 'ASC' },
     });
     return {
       id: team.id,
       name: team.name,
-      players: players.map((player) => ({
-        id: player.id,
-        name: player.name,
-        departmentName: player.department.name,
-        isElite: player.isElite,
-        isWc: player.isWc,
+      players: playerTournaments.map((playerTournament) => ({
+        id: playerTournament.player.id,
+        name: playerTournament.player.name,
+        departmentName: playerTournament.player.department.name,
+        isElite: playerTournament.isElite,
+        isWc: playerTournament.isWildcard,
       })),
     };
   }
@@ -160,18 +170,18 @@ export class GameLineupService {
     return {
       battingOrder: batter.battingOrder,
       substitutionOrder: batter.substitutionOrder,
-      playerId: batter.playerId,
-      playerName: batter.player.name,
+      playerId: batter.playerTournament.player.id,
+      playerName: batter.playerTournament.player.name,
       position: batter.position,
-      isWc: batter.player.isWc,
+      isWc: batter.playerTournament.isWildcard,
     };
   }
 
   private mapToPitcherDto(pitcher: PitcherGameParticipation) {
     return {
-      playerId: pitcher.playerId,
-      playerName: pitcher.player.name,
-      isWc: pitcher.player.isWc,
+      playerId: pitcher.playerTournament.player.id,
+      playerName: pitcher.playerTournament.player.name,
+      isWc: pitcher.playerTournament.isWildcard,
     };
   }
 
@@ -195,7 +205,10 @@ export class GameLineupService {
       const teamId = this.getTeamIdByType(game, teamType);
       // 이미 라인업이 제출되었는지 확인
       const existingLineup = await manager.findOne(BatterGameParticipation, {
-        where: { game: { id: gameId }, player: { team: { id: teamId } } },
+        where: {
+          game: { id: gameId },
+          playerTournament: { teamTournament: { team: { id: teamId } } },
+        },
       });
 
       if (existingLineup) {
@@ -214,10 +227,15 @@ export class GameLineupService {
         ...submitLineupDto.batters.map((batter) => batter.playerId),
         submitLineupDto.pitcher.playerId,
       ];
-      const players = await manager.find(Player, {
+      const playerTournaments = await manager.find(PlayerTournament, {
         where: { id: In(playerIds) },
       });
-      const playerMap = new Map(players.map((player) => [player.id, player]));
+      const playerMap = new Map(
+        playerTournaments.map((playerTournament) => [
+          playerTournament.player.id,
+          playerTournament,
+        ]),
+      );
 
       for (const batter of submitLineupDto.batters) {
         const player = playerMap.get(batter.playerId);
@@ -230,15 +248,15 @@ export class GameLineupService {
         }
         const gameRoaster = manager.create(GameRoaster, {
           game: { id: gameId },
-          team: { id: player.teamId },
-          player: { id: batter.playerId },
+          team: { id: player.teamTournament.team.id },
+          playerTournament: { id: batter.playerId },
         });
         await manager.save(GameRoaster, gameRoaster);
 
         const entity = manager.create(BatterGameParticipation, {
           game: { id: gameId },
-          team: { id: player.teamId },
-          player: { id: batter.playerId },
+          team: { id: player.teamTournament.team.id },
+          playerTournament: { id: batter.playerId },
           position: batter.position as Position,
           battingOrder: batter.battingOrder,
           substitutionOrder: 0,
@@ -263,7 +281,10 @@ export class GameLineupService {
         );
       }
       const existing = await manager.findOne(PitcherGameParticipation, {
-        where: { game: { id: gameId }, player: { id: pitcherPlayerId } },
+        where: {
+          game: { id: gameId },
+          playerTournament: { id: pitcherPlayerId },
+        },
       });
       if (existing) {
         throw new BaseException(
@@ -273,20 +294,23 @@ export class GameLineupService {
         );
       }
       const existingGameRoaster = await manager.findOne(GameRoaster, {
-        where: { game: { id: gameId }, player: { id: pitcherPlayerId } },
+        where: {
+          game: { id: gameId },
+          playerTournament: { id: pitcherPlayerId },
+        },
       });
       if (!existingGameRoaster) {
         const gameRoaster = manager.create(GameRoaster, {
           game: { id: gameId },
-          team: { id: pitcherPlayer.teamId },
-          player: { id: pitcherPlayerId },
+          team: { id: pitcherPlayer.teamTournament.team.id },
+          playerTournament: { id: pitcherPlayerId },
         });
         await manager.save(GameRoaster, gameRoaster);
       }
       const pitcherEntity = manager.create(PitcherGameParticipation, {
         game: { id: gameId },
-        team: { id: pitcherPlayer.teamId },
-        player: { id: pitcherPlayerId },
+        team: { id: pitcherPlayer.teamTournament.team.id },
+        playerTournament: { id: pitcherPlayerId },
         substitutionOrder: 0,
         isActive: true,
       });
@@ -320,10 +344,15 @@ export class GameLineupService {
           HttpStatus.NOT_FOUND,
         );
       }
-      const players = await manager.find(Player, {
+      const playerTournaments = await manager.find(PlayerTournament, {
         where: { id: In(submitSubstituteDto.playerIds) },
       });
-      const playerMap = new Map(players.map((player) => [player.id, player]));
+      const playerMap = new Map(
+        playerTournaments.map((playerTournament) => [
+          playerTournament.player.id,
+          playerTournament,
+        ]),
+      );
       for (const playerId of submitSubstituteDto.playerIds) {
         const player = playerMap.get(playerId);
         if (!player) {
@@ -336,8 +365,8 @@ export class GameLineupService {
         const existing = await manager.findOne(GameRoaster, {
           where: {
             game: { id: gameId },
-            team: { id: player.teamId },
-            player: { id: playerId },
+            team: { id: player.teamTournament.team.id },
+            playerTournament: { id: playerId },
           },
         });
 
@@ -350,8 +379,8 @@ export class GameLineupService {
         }
         const gameRoaster = manager.create(GameRoaster, {
           game: { id: gameId },
-          team: { id: player.teamId },
-          player: { id: playerId },
+          team: { id: player.teamTournament.team.id },
+          playerTournament: { id: playerId },
         });
         await manager.save(GameRoaster, gameRoaster);
       }
@@ -388,9 +417,9 @@ export class GameLineupService {
         HttpStatus.NOT_FOUND,
       );
     }
-    const players = await this.playerRepository.find({
-      where: { team: { id: teamId } },
-      relations: ['department'],
+    const playerTournaments = await this.playerTournamentRepository.find({
+      where: { teamTournament: { team: { id: teamId } } },
+      relations: ['player', 'player.department'],
       order: { name: 'ASC' },
     });
 
@@ -401,7 +430,7 @@ export class GameLineupService {
           team: { id: teamId },
           isActive: true,
         },
-        relations: ['player'],
+        relations: ['playerTournament'],
       }),
       this.pitcherGameParticipationRepository.find({
         where: {
@@ -409,24 +438,24 @@ export class GameLineupService {
           team: { id: teamId },
           isActive: true,
         },
-        relations: ['player'],
+        relations: ['playerTournament'],
       }),
     ]);
 
     // 5. 라인업에 있는 선수 ID Set 생성
     const playersInLineup = new Set([
-      ...batterParticipations.map((b) => b.player.id),
-      ...pitcherParticipations.map((p) => p.player.id),
+      ...batterParticipations.map((b) => b.playerTournament.player.id),
+      ...pitcherParticipations.map((p) => p.playerTournament.player.id),
     ]);
 
     // 6. 응답 DTO 생성
-    const playerDtos = players.map((player) => ({
-      id: player.id,
-      name: player.name,
-      departmentName: player.department.name,
-      isElite: player.isElite,
-      isWc: player.isWc,
-      inLineup: playersInLineup.has(player.id),
+    const playerDtos = playerTournaments.map((playerTournament) => ({
+      id: playerTournament.player.id,
+      name: playerTournament.player.name,
+      departmentName: playerTournament.player.department.name,
+      isElite: playerTournament.isElite,
+      isWc: playerTournament.isWildcard,
+      inLineup: playersInLineup.has(playerTournament.player.id),
     }));
 
     return {
@@ -530,14 +559,14 @@ export class GameLineupService {
       if (!prev) continue;
 
       // player 변경
-      if (prev.playerId !== newBatter.playerId) {
+      if (prev.playerTournament.player.id !== newBatter.playerId) {
         prev.isActive = false;
         await manager.save(prev);
 
         const newEntity = manager.create(BatterGameParticipation, {
           gameId,
           teamId,
-          playerId: newBatter.playerId,
+          playerTournament: { id: newBatter.playerId },
           position: newBatter.position as Position,
           battingOrder: newBatter.battingOrder,
           substitutionOrder: prev.substitutionOrder + 1,
@@ -573,14 +602,14 @@ export class GameLineupService {
     existing: PitcherGameParticipation,
     currentPitcherId: number,
   ): Promise<number | null> {
-    if (existing.playerId !== newPitcherId) {
+    if (existing.playerTournament.player.id !== newPitcherId) {
       existing.isActive = false;
       await manager.save(existing);
 
       const newEntity = manager.create(PitcherGameParticipation, {
         gameId,
         teamId,
-        playerId: newPitcherId,
+        playerTournament: { id: newPitcherId },
         substitutionOrder: existing.substitutionOrder + 1,
         isActive: true,
       });
@@ -621,8 +650,12 @@ export class GameLineupService {
         game: { id: gameId },
         team: { id: teamId },
       },
-      relations: ['player', 'player.department'],
-      order: { player: { name: 'ASC' } },
+      relations: [
+        'playerTournament',
+        'playerTournament.player',
+        'playerTournament.player.department',
+      ],
+      order: { playerTournament: { player: { name: 'ASC' } } },
     });
 
     if (roasters.length === 0) {
@@ -636,11 +669,11 @@ export class GameLineupService {
     const [batterParticipations, pitcherParticipations] = await Promise.all([
       this.batterGameParticipationRepository.find({
         where: { game: { id: gameId }, team: { id: teamId } },
-        relations: ['player'],
+        relations: ['playerTournament'],
       }),
       this.pitcherGameParticipationRepository.find({
         where: { game: { id: gameId }, team: { id: teamId } },
-        relations: ['player'],
+        relations: ['playerTournament'],
       }),
     ]);
 
@@ -648,8 +681,12 @@ export class GameLineupService {
     const isPitcherActiveMap = this.getActiveMap(pitcherParticipations);
 
     const playerDtos = roasters.map((roaster) => {
-      const batterActive = isBatterActiveMap.get(roaster.player.id);
-      const pitcherActive = isPitcherActiveMap.get(roaster.player.id);
+      const batterActive = isBatterActiveMap.get(
+        roaster.playerTournament.player.id,
+      );
+      const pitcherActive = isPitcherActiveMap.get(
+        roaster.playerTournament.player.id,
+      );
 
       let isSubstitutable = true;
       if (role === GameRole.BATTER) {
@@ -678,11 +715,11 @@ export class GameLineupService {
       }
 
       return {
-        id: roaster.player.id,
-        name: roaster.player.name,
-        departmentName: roaster.player.department.name,
-        isElite: roaster.player.isElite,
-        isWc: roaster.player.isWc,
+        id: roaster.playerTournament.player.id,
+        name: roaster.playerTournament.player.name,
+        departmentName: roaster.playerTournament.player.department.name,
+        isElite: roaster.playerTournament.isElite,
+        isWc: roaster.playerTournament.isWildcard,
         isSubstitutable,
       };
     });
@@ -699,7 +736,7 @@ export class GameLineupService {
   ): Map<number, boolean> {
     const map = new Map<number, boolean>();
     for (const p of participations) {
-      map.set(p.player.id, p.isActive);
+      map.set(p.playerTournament.player.id, p.isActive);
     }
     return map;
   }

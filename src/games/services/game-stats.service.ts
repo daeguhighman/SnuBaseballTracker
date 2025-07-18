@@ -89,12 +89,12 @@ export class GameStatsService {
       );
     }
     return {
-      playerId: currentBatter.playerId,
-      playerName: currentBatter.player.name,
+      playerId: currentBatter.playerTournament.player.id,
+      playerName: currentBatter.playerTournament.player.name,
       position: currentBatter.position,
       battingOrder: currentBatter.battingOrder,
-      isWc: currentBatter.player.isWc,
-      isElite: currentBatter.player.isElite,
+      isWc: currentBatter.playerTournament.isWildcard,
+      isElite: currentBatter.playerTournament.isElite,
     };
   }
 
@@ -131,11 +131,11 @@ export class GameStatsService {
       );
     }
     return {
-      playerId: currentPitcher.playerId,
-      playerName: currentPitcher.player.name,
+      playerId: currentPitcher.playerTournament.player.id,
+      playerName: currentPitcher.playerTournament.player.name,
       position: 'P',
-      isWc: currentPitcher.player.isWc,
-      isElite: currentPitcher.player.isElite,
+      isWc: currentPitcher.playerTournament.isWildcard,
+      isElite: currentPitcher.playerTournament.isElite,
     };
   }
 
@@ -455,7 +455,8 @@ export class GameStatsService {
     // 8. Return the response DTO
     return {
       batterGameStatsId: batterStats.id,
-      playerName: batterStats.batterGameParticipation.player.name,
+      playerName:
+        batterStats.batterGameParticipation.playerTournament.player.name,
       battingOrder: batterStats.batterGameParticipation.battingOrder,
       substitutionOrder: batterStats.batterGameParticipation.substitutionOrder,
       PA: batterStats.plateAppearances,
@@ -523,7 +524,8 @@ export class GameStatsService {
     // 6. Return the response DTO
     return {
       pitcherGameStatsId: pitcherGameStat.id,
-      playerName: pitcherGameStat.pitcherGameParticipation.player.name,
+      playerName:
+        pitcherGameStat.pitcherGameParticipation.playerTournament.player.name,
       K: pitcherGameStat.strikeouts || 0,
     };
   }
@@ -639,14 +641,14 @@ export class GameStatsService {
 
     // 2. 필요한 PlayerTournament ID 목록 수집
     const playerIds = batterGameStats
-      .map((stat) => stat.batterGameParticipation?.playerId)
+      .map((stat) => stat.batterGameParticipation?.playerTournament.player.id)
       .filter((id) => id !== undefined);
 
     // 3. 필요한 PlayerTournament 레코드 한 번에 조회
     const playerTournaments = await queryRunner.manager.find(PlayerTournament, {
       where: {
         player: { id: In(playerIds) },
-        tournament: { id: tournamentId },
+        teamTournament: { tournament: { id: tournamentId } },
       },
       relations: ['player'],
     });
@@ -675,7 +677,8 @@ export class GameStatsService {
     const cumulativeBatterStatsToSave: BatterStat[] = [];
 
     for (const gameStat of batterGameStats) {
-      const playerId = gameStat.batterGameParticipation?.playerId;
+      const playerId =
+        gameStat.batterGameParticipation?.playerTournament.player.id;
       if (!playerId) continue;
 
       const playerTournament = playerTournamentMap.get(playerId);
@@ -724,14 +727,14 @@ export class GameStatsService {
 
     // 3. 해당 경기에 투수로 참여한 선수들의 ID 추출
     const playerIds = pitcherGameStats
-      .map((stat) => stat.pitcherGameParticipation?.playerId)
+      .map((stat) => stat.pitcherGameParticipation?.playerTournament.player.id)
       .filter((id) => id !== undefined);
 
     // 4. 해당 경기에 투수로 참여한 선수들의 PlayerTournament 레코드 조회
     const playerTournaments = await queryRunner.manager.find(PlayerTournament, {
       where: {
         player: { id: In(playerIds) },
-        tournament: { id: tournamentId },
+        teamTournament: { tournament: { id: tournamentId } },
       },
       relations: ['player'],
     });
@@ -758,7 +761,8 @@ export class GameStatsService {
 
     // 9. 각 경기별 투수 스탯을 순회하며 누적 스탯을 갱신
     for (const gameStat of pitcherGameStats) {
-      const playerId = gameStat.pitcherGameParticipation?.playerId;
+      const playerId =
+        gameStat.pitcherGameParticipation?.playerTournament.player.id;
       if (!playerId) continue;
 
       // 10. 해당 경기에 투수로 참여한 선수들의 PlayerTournament 레코드 조회
@@ -971,13 +975,13 @@ export class GameStatsService {
     const homeBatterParticipations =
       await this.batterGameParticipationRepository.find({
         where: { game: { id: gameId }, team: { id: game.homeTeamId } },
-        relations: ['player', 'batterGameStat'],
+        relations: ['playerTournament', 'batterGameStat'],
         order: { battingOrder: 'ASC', substitutionOrder: 'ASC' }, // Order by substitution first, then batting order
       });
     const awayBatterParticipations =
       await this.batterGameParticipationRepository.find({
         where: { game: { id: gameId }, team: { id: game.awayTeamId } },
-        relations: ['player', 'batterGameStat'],
+        relations: ['playerTournament', 'batterGameStat'],
         order: { battingOrder: 'ASC', substitutionOrder: 'ASC' },
       });
 
@@ -985,13 +989,13 @@ export class GameStatsService {
     const homePitcherParticipations =
       await this.pitcherGameParticipationRepository.find({
         where: { game: { id: gameId }, team: { id: game.homeTeamId } },
-        relations: ['player', 'pitcherGameStat'],
+        relations: ['playerTournament', 'pitcherGameStat'],
         order: { substitutionOrder: 'ASC' }, // Order by substitution order
       });
     const awayPitcherParticipations =
       await this.pitcherGameParticipationRepository.find({
         where: { game: { id: gameId }, team: { id: game.awayTeamId } },
-        relations: ['player', 'pitcherGameStat'],
+        relations: ['playerTournament', 'pitcherGameStat'],
         order: { substitutionOrder: 'ASC' },
       });
 
@@ -1021,7 +1025,7 @@ export class GameStatsService {
 
     const mapBatterStats = (participation: BatterGameParticipation) => ({
       batterGameStatsId: participation.batterGameStat?.id ?? 0, // Use the ID from the related stats entity
-      playerName: participation.player.name,
+      playerName: participation.playerTournament.player.name,
       battingOrder: participation.battingOrder,
       substitutionOrder: participation.substitutionOrder,
       PA: participation.batterGameStat?.plateAppearances ?? 0,
@@ -1040,25 +1044,25 @@ export class GameStatsService {
 
     response.batterStats = {
       home: homeBatterParticipations
-        .filter((p) => p.player && p.batterGameStat)
+        .filter((p) => p.playerTournament && p.batterGameStat)
         .map(mapBatterStats),
       away: awayBatterParticipations
-        .filter((p) => p.player && p.batterGameStat)
+        .filter((p) => p.playerTournament && p.batterGameStat)
         .map(mapBatterStats),
     };
 
     const mapPitcherStats = (participation: PitcherGameParticipation) => ({
       pitcherGameStatsId: participation.pitcherGameStat?.id ?? 0, // Use the ID from the related stats entity
-      playerName: participation.player.name,
+      playerName: participation.playerTournament.player.name,
       K: participation.pitcherGameStat?.strikeouts ?? 0,
     });
 
     response.pitcherStats = {
       home: homePitcherParticipations
-        .filter((p) => p.player && p.pitcherGameStat)
+        .filter((p) => p.playerTournament && p.pitcherGameStat)
         .map(mapPitcherStats),
       away: awayPitcherParticipations
-        .filter((p) => p.player && p.pitcherGameStat)
+        .filter((p) => p.playerTournament && p.pitcherGameStat)
         .map(mapPitcherStats),
     };
 

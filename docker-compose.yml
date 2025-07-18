@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  # ─────────────────── NestJS 애플리케이션 ───────────────────
+  app:
+    # Docker Hub 저장소에 푸시된 이미지를 가져옵니다.
+    # <DOCKERHUB_USERNAME>/<repository>:<tag> 형식으로 변경하세요.
+    image: docker.io/daeguhighman/snubaseball:nestjs:latest
+    container_name: nestjs
+    env_file: .env
+    restart: always
+    ports:
+      - "3000:3000"           # 내부 통신용 → 외부는 Nginx가 80 포트로 노출
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # ─────────────────────── Nginx 리버스 프록시 ───────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"               # HTTP (443은 Certbot/ALB 계획에 따라 추가)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 3s
+      retries: 3

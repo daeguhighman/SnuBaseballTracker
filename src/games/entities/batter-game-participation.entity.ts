@@ -13,12 +13,12 @@ import {
 } from 'typeorm';
 import { Game } from './game.entity';
 import { Team } from '@teams/entities/team.entity';
-import { Player } from '@players/entities/player.entity';
 import { BatterGameStat } from './batter-game-stat.entity';
 import { Position } from '@common/enums/position.enum';
+import { PlayerTournament } from '@/players/entities/player-tournament.entity';
 
 @Entity('batter_game_participations')
-@Unique(['game', 'player'])
+@Unique(['game', 'playerTournament'])
 export class BatterGameParticipation {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -33,20 +33,20 @@ export class BatterGameParticipation {
   gameId: number;
 
   @Index()
-  @ManyToOne(() => Team, (t) => t.players, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Team, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'team_id' })
   team: Team;
   @Column({ name: 'team_id' })
   teamId: number;
 
   @Index()
-  @ManyToOne(() => Player, (p) => p.playerTournaments, {
+  @ManyToOne(() => PlayerTournament, (pt) => pt.batterGameParticipations, {
     onDelete: 'RESTRICT',
   })
-  @JoinColumn({ name: 'player_id' })
-  player: Player;
-  @Column({ name: 'player_id' })
-  playerId: number;
+  @JoinColumn({ name: 'player_tournament_id' })
+  playerTournament: PlayerTournament;
+  @Column({ name: 'player_tournament_id' })
+  playerTournamentId: number;
 
   @Column({
     type: 'enum',

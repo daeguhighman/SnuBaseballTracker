@@ -9,9 +9,13 @@ import {
   Unique,
   Index,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Team } from './team.entity';
 import { Tournament } from '@tournaments/entities/tournament.entity';
+import { Player } from '@/players/entities/player.entity';
+import { PlayerTournament } from '@/players/entities/player-tournament.entity';
+import { User } from '@/users/entities/user.entity';
 
 @Entity('team_tournaments')
 @Unique(['team', 'tournament'])
@@ -37,6 +41,16 @@ export class TeamTournament {
   @Column({ name: 'tournament_id' })
   tournamentId: number;
 
+  @OneToMany(() => PlayerTournament, (pt) => pt.teamTournament)
+  playerTournaments: PlayerTournament[];
+
+  @Index()
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'representative_user_id' })
+  representativeUser?: User;
+
+  @Column({ name: 'representative_user_id', nullable: true })
+  representativeUserId?: string;
   @Column({ name: 'group_name', length: 50 })
   groupName: string;
 

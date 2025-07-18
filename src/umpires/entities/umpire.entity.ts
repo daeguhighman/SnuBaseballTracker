@@ -19,10 +19,13 @@ export class Umpire {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Index()
+  // @Index()
   @OneToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @Column({ length: 150 })
+  name: string;
 
   @OneToMany(() => Game, (game) => game.recordUmpire)
   games: Game[];

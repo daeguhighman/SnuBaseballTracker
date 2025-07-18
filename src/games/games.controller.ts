@@ -43,7 +43,8 @@ import { GameScoreboardService } from '@games/services/game-scoreboard.service';
 import { GameStatsService } from '@games/services/game-stats.service';
 import { GameCoreService } from '@games/services/game-core.service';
 import { BatterPlateAppearanceRequestDto } from './dtos/plate-appearance.dto';
-import { UmpireAuthGuard } from '@/umpires/guards/umpire-auth-guard';
+import { UmpireAuthGuard } from '@/auth/guards/umpire-auth.guard';
+import { SubmitLineupGuard } from '@/auth/guards/submit-lineup.guard';
 import { GameRole } from '@common/enums/game-role.enum';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
@@ -169,7 +170,7 @@ export class GamesController {
   ): Promise<LineupResponseDto> {
     return this.gameLineupService.getLineup(gameId, teamType);
   }
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(SubmitLineupGuard)
   @Post(':gameId/lineup')
   @ApiOperation({ summary: '경기 라인업 제출' })
   @ApiResponse({
@@ -184,7 +185,7 @@ export class GamesController {
   ): Promise<{ success: boolean; message: string }> {
     return this.gameLineupService.submitLineup(gameId, teamType, body);
   }
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(SubmitLineupGuard)
   @Patch(':gameId/lineup')
   @ApiOperation({ summary: '경기 라인업 수정' })
   @ApiResponse({
@@ -321,7 +322,7 @@ export class GamesController {
   ): Promise<{ success: boolean; message: string }> {
     return this.gameStatsService.recordPlateAppearance(gameId, body);
   }
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(SubmitLineupGuard)
   @Post(':gameId/substitution')
   @ApiOperation({ summary: '교체 명단 등록' })
   @ApiResponse({

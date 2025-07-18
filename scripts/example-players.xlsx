@@ -1,0 +1,32 @@
+# 선수명단 엑셀 파일 예시
+
+## 파일 형식: players.xlsx
+
+## 컬럼 구조:
+| name | email | college | department | backNumber | birthDate | phoneNumber |
+|------|-------|---------|------------|------------|-----------|-------------|
+| 홍길동 | hong@example.com | 공과대학 | 컴퓨터공학과 | 2020123456 | 2002-03-15 | 010-1234-5678 |
+| 김철수 | kim@example.com | 자연과학대학 | 화학과 | 2020987654 | 2001-12-25 | 010-9876-5432 |
+| 이영희 | lee@example.com | 인문대학 | 국어국문학과 | 2020555555 | 2003-08-07 | 010-5555-5555 |
+
+## 필수 컬럼:
+- name: 선수명
+- email: 이메일 (user 연결용)
+- college: 대학명
+- department: 학과명  
+- backNumber: 등번호/학번 (studentId로 사용)
+
+## 선택 컬럼:
+- birthDate: 생년월일 (YYYY-MM-DD 형식 권장)
+- phoneNumber: 전화번호
+
+## 사용법:
+```bash
+npm run import-players ./players.xlsx 1 1
+```
+
+## 주의사항:
+1. 생년월일은 YYYY-MM-DD 형식을 권장합니다
+2. 등번호는 고유해야 합니다 (학번으로 사용)
+3. 이메일은 기존 user와 연결됩니다
+4. 대학/학과는 자동으로 생성됩니다 

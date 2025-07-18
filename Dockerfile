@@ -1,34 +1,40 @@
-### 0) 공통 ###
-FROM node:20-alpine AS base
+# ─────────────── 1) 빌드 스테이지 ───────────────
+FROM node:20-alpine AS builder
+
+# 1‑1. 기본 설정
 WORKDIR /app
-COPY package*.json ./
-
-### 1) 빌드 ###
-FROM base AS builder   
-ENV NODE_ENV=development
-RUN npm ci 
-COPY . .
-RUN npm run build          # dist/ 생성
-
-### 2-a) 런타임-prod  (devDeps 제거) ###
-FROM node:20-alpine AS runtime-prod
 ENV NODE_ENV=production
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY package*.json ./
-RUN npm ci --omit=dev
-EXPOSE 3000
-CMD ["node", "dist/src/main.js"]
 
-### 2-b) 런타임-dev  (devDeps 포함 + 소스까지) ###
-FROM node:20-alpine AS runtime-dev
-ENV NODE_ENV=development
-WORKDIR /app
-# devDeps까지 설치!
+# 1‑2. 의존성 설치
+# package*.json만 먼저 복사해 캐시 활용
 COPY package*.json ./
-RUN npm install
-# 서비스 실행용 dist + 테스트·Lint용 소스 모두 복사
+RUN npm ci --ignore-scripts            # devDependencies 포함 전체 설치
+
+# 1‑3. 소스 복사 & 컴파일
+COPY . .
+RUN npm run build                      # dist/ 생성
+# prebuild/postinstall 스크립트에 prisma generate 등 포함 시 여기서 실행
+
+# 1‑4. 프로덕션 의존성만 추출
+RUN npm prune --omit=dev
+
+# ─────────────── 2) 런타임 스테이지 ───────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+# 1000:1000 계정 생성 → root 실행 방지
+RUN addgroup -S app && adduser -S nestjs -G app
+USER nestjs
+
+# 2‑1. 빌드 결과 받기
 COPY --from=builder /app/dist ./dist
-COPY . .                    
+COPY --from=builder /app/node_modules ./node_modules
+# (설정 파일이 dist 밖에 있으면 추가 COPY)
+
 EXPOSE 3000
-CMD ["node", "dist/src/main.js"]
+# 2‑2. 헬스체크 (포트 3000 기준)
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD \
+  wget -qO- http://localhost:3000/health || exit 1
+
+CMD ["node", "dist/main.js"]

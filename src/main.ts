@@ -16,7 +16,8 @@ async function bootstrap() {
   const isProduction = process.env.NODE_ENV === 'production';
   const corsOptions = {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: 'http://localhost:3001',
     credentials: true,
   };
   const app = await NestFactory.create(AppModule, {
@@ -29,10 +30,15 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
+  const whitelist = [
+    'http://localhost:3001',
+    'https://snubaseball.site',
+    'https://www.snubaseball.site',
+  ];
   SwaggerModule.setup('api', app, document);
   app.enableCors({
     ...corsOptions,
-    origin: isProduction ? 'https://snubaseball.site' : true,
+    // origin: isProduction ? 'https://snubaseball.site' : true,
   });
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalInterceptors(app.get(LoggingInterceptor));
