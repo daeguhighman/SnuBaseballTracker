@@ -3,8 +3,6 @@ version: "3.9"
 services:
   # ─────────────────── NestJS 애플리케이션 ───────────────────
   app:
-    # Docker Hub 저장소에 푸시된 이미지를 가져옵니다.
-    # <DOCKERHUB_USERNAME>/<repository>:<tag> 형식으로 변경하세요.
     image: docker.io/daeguhighman/snubaseball:nestjs:latest
     container_name: nestjs
     env_file: .env

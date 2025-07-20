@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../app.module';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Player } from '../src/players/entities/player.entity';
-import { User } from '../src/users/entities/user.entity';
-import { College } from '../src/profiles/entities/college.entity';
-import { Department } from '../src/profiles/entities/department.entity';
-import { PlayerTournament } from '../src/players/entities/player-tournament.entity';
-import { TeamTournament } from '../src/teams/entities/team-tournament.entity';
-import { Tournament } from '../src/tournaments/entities/tournament.entity';
+import { Player } from '../players/entities/player.entity';
+import { User } from '../users/entities/user.entity';
+import { College } from '../profiles/entities/college.entity';
+import { Department } from '../profiles/entities/department.entity';
+import { PlayerTournament } from '../players/entities/player-tournament.entity';
+import { TeamTournament } from '../teams/entities/team-tournament.entity';
+import { Tournament } from '../tournaments/entities/tournament.entity';
 import * as XLSX from 'xlsx';
 
 interface PlayerData {
@@ -17,7 +17,7 @@ interface PlayerData {
   college: string;
   department: string;
   backNumber: string;
-  birthDate?: string; // YYYY-MM-DD 형식 권장
+  birthDate: string; // YYYY-MM-DD 형식
 }
 
 export class PlayerImporter {

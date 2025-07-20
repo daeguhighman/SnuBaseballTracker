@@ -1,40 +1,55 @@
-# ─────────────── 1) 빌드 스테이지 ───────────────
-FROM node:20-alpine AS builder
+# Multi-stage build for production
+FROM node:18-alpine AS builder
 
-# 1‑1. 기본 설정
+# Set working directory
 WORKDIR /app
-ENV NODE_ENV=production
 
-# 1‑2. 의존성 설치
-# package*.json만 먼저 복사해 캐시 활용
+# Copy package files
 COPY package*.json ./
-RUN npm ci --ignore-scripts            # devDependencies 포함 전체 설치
 
-# 1‑3. 소스 복사 & 컴파일
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
-RUN npm run build                      # dist/ 생성
-# prebuild/postinstall 스크립트에 prisma generate 등 포함 시 여기서 실행
 
-# 1‑4. 프로덕션 의존성만 추출
-RUN npm prune --omit=dev
+# Build the application
+RUN npm run build
 
-# ─────────────── 2) 런타임 스테이지 ───────────────
-FROM node:20-alpine AS runner
+# Production stage
+FROM node:18-alpine AS production
 
+# Create app user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nestjs -u 1001
+
+# Set working directory
 WORKDIR /app
-ENV NODE_ENV=production
-# 1000:1000 계정 생성 → root 실행 방지
-RUN addgroup -S app && adduser -S nestjs -G app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Copy necessary files
+COPY --from=builder /app/src/seed/csv ./dist/src/seed/csv
+
+# Change ownership to app user
+RUN chown -R nestjs:nodejs /app
+
+# Switch to app user
 USER nestjs
 
-# 2‑1. 빌드 결과 받기
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-# (설정 파일이 dist 밖에 있으면 추가 COPY)
-
+# Expose port
 EXPOSE 3000
-# 2‑2. 헬스체크 (포트 3000 기준)
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD \
-  wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "dist/main.js"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node healthcheck.js
+
+# Start the application
+CMD ["npm", "run", "start:prod"]

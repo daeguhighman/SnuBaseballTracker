@@ -34,9 +34,6 @@ export class Player {
   @Column({ name: 'birth_date' })
   birthDate: Date;
 
-  @Column({ name: 'phone_number', length: 20 })
-  phoneNumber: string;
-
   @OneToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })
   user?: User;
