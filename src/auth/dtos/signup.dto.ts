@@ -7,7 +7,7 @@ import {
 } from 'class-validator';
 
 export class SignupDto {
-  @IsEmail()
+  @IsEmail({}, { message: '이메일 형식이 올바르지 않습니다.' })
   email: string;
 
   @IsString()

@@ -10,7 +10,7 @@ import { EmailCode } from '@/mail/entities/email-code.entity';
 import { PasswordResetToken } from '@/mail/entities/password-reset-token.entity';
 import { MailService } from '@/mail/mail.service';
 import * as crypto from 'crypto';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RequestCodeDto, VerifyCodeDto } from '@/auth/dtos/code.dto';
 import {
@@ -89,6 +89,33 @@ export class AuthService {
         );
       }
 
+      if (nickname.length < 2 || nickname.length > 8) {
+        throw new BaseException(
+          '닉네임은 2자 이상 8자 이하여야 합니다.',
+          ErrorCodes.INVALID_NICKNAME,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (nickname.includes(' ')) {
+        throw new BaseException(
+          '닉네임에 공백을 포함할 수 없습니다.',
+          ErrorCodes.INVALID_NICKNAME,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const nicknameExists = await manager.exists(User, {
+        where: { nickname },
+      });
+      if (nicknameExists) {
+        throw new BaseException(
+          '이미 존재하는 닉네임입니다.',
+          ErrorCodes.NICKNAME_ALREADY_EXISTS,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const user = manager.create(User, {
         email,
         passwordHash: await bcrypt.hash(password, 12),
@@ -110,8 +137,11 @@ export class AuthService {
       select: ['id', 'passwordHash', 'email'],
     });
     console.log(user);
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!user) {
+      throw new UnauthorizedException('존재하지 않는 이메일입니다.');
+    }
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw new UnauthorizedException('비밀번호가 일치하지 않습니다.');
     }
     return this.issueTokenPair(user);
   }
@@ -124,7 +154,11 @@ export class AuthService {
       const payload = await this.verifyRefresh(oldToken);
 
       const session = await manager.findOne(Session, {
-        where: { id: payload.jid },
+        where: {
+          id: payload.jid,
+          revoked: false,
+          expiresAt: MoreThan(new Date()),
+        },
         relations: ['user'],
       });
       if (
@@ -423,7 +457,7 @@ export class AuthService {
     await this.passwordResetTokenRepository.save(resetTokenEntity);
 
     // 재설정 URL 생성
-    const resetUrl = `${this.frontendUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = `${this.frontendUrl}//login/findPassword/resetPassword?token=${resetToken}`;
 
     // 이메일 발송
     await this.mail.sendPasswordResetEmail(dto.email, resetToken, resetUrl);

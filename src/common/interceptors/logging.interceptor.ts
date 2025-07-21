@@ -14,8 +14,18 @@ export class LoggingInterceptor implements NestInterceptor {
 
   intercept(ctx: ExecutionContext, next: CallHandler) {
     const req = ctx.switchToHttp().getRequest<Request>();
-    const { method, url } = req;
+    const { method, url, headers } = req;
     const correlationId = req.headers['x-request-id'] ?? randomUUID();
+
+    // Authorization 헤더 값 콘솔 출력
+    if (headers['authorization']) {
+      this.logger.log(
+        `[${correlationId}] [Authorization] ${headers['authorization']}`,
+        'HTTP',
+      );
+    } else {
+      this.logger.log(`[${correlationId}] [Authorization] (없음)`, 'HTTP');
+    }
 
     this.logger.log(`[${correlationId}] → ${method} ${url}`, 'HTTP');
 

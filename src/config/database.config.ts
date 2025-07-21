@@ -42,8 +42,6 @@ export default registerAs('database', () => {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     synchronize: true,
-    // dropSchema: flags.isTest,
-    logging: flags.isDev || flags.isTest || process.env.LOG_SQL === 'true',
 
     entities: [
       Player,
@@ -68,8 +66,6 @@ export default registerAs('database', () => {
       College,
       Department,
       UserProfile,
-      // PlayerEntry,
-      // UmpireEntry,
       Session,
       PasswordResetToken,
     ],
