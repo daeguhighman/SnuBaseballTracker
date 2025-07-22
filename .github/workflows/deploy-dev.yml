@@ -27,8 +27,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/snubaseball:nestjs:latest
-            ${{ secrets.DOCKER_USERNAME }}/snubaseball:nestjs:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/snubaseball-nestjs:latest
+            ${{ secrets.DOCKER_USERNAME }}/snubaseball-nestjs:${{ github.sha }}
 
       - name: Image digest
         run: echo "Image pushed with digest ${{ steps.buildpush.outputs.digest }}"
