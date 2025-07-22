@@ -8,11 +8,15 @@ ENV NODE_ENV=production
 # 1‑2. 의존성 설치
 # package*.json만 먼저 복사해 캐시 활용
 COPY package*.json ./
-RUN npm ci --ignore-scripts            # devDependencies 포함 전체 설치
+# devDependencies 포함 전체 설치
+RUN npm ci --ignore-scripts            
 
 # 1‑3. 소스 복사 & 컴파일
 COPY . .
-RUN npm run build                      # dist/ 생성
+
+# dist/ 생성
+RUN npm run build                      
+
 # prebuild/postinstall 스크립트에 prisma generate 등 포함 시 여기서 실행
 
 # 1‑4. 프로덕션 의존성만 추출
