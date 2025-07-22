@@ -11,8 +11,15 @@ COPY package*.json ./
 # devDependencies 포함 전체 설치
 RUN npm ci --ignore-scripts            
 
+RUN echo "=== Node version ===" && node --version
+RUN echo "=== NPM version ===" && npm --version
+RUN echo "=== Installed packages ===" && npm list --depth=0
+RUN echo "=== tsc-alias location ===" && find node_modules -name "tsc-alias" 2>/dev/null || echo "Not found"
+RUN echo "=== .bin contents ===" && ls -la node_modules/.bin/ | head -10
+
 # 1‑3. 소스 복사 & 컴파일
 COPY . .
+RUN npm install
 
 # dist/ 생성
 RUN npm run build                      
