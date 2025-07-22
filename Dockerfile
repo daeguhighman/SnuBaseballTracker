@@ -9,7 +9,7 @@ ENV NODE_ENV=production
 # package*.json만 먼저 복사해 캐시 활용
 COPY package*.json ./
 # devDependencies 포함 전체 설치
-RUN npm ci --ignore-scripts            
+RUN npm ci          
 
 RUN echo "=== Node version ===" && node --version
 RUN echo "=== NPM version ===" && npm --version
