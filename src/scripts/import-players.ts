@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../app.module';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Player } from '../src/players/entities/player.entity';
-import { User } from '../src/users/entities/user.entity';
-import { College } from '../src/profiles/entities/college.entity';
-import { Department } from '../src/profiles/entities/department.entity';
-import { PlayerTournament } from '../src/players/entities/player-tournament.entity';
-import { TeamTournament } from '../src/teams/entities/team-tournament.entity';
-import { Tournament } from '../src/tournaments/entities/tournament.entity';
+import { Player } from '../players/entities/player.entity';
+import { User } from '../users/entities/user.entity';
+import { College } from '../profiles/entities/college.entity';
+import { Department } from '../profiles/entities/department.entity';
+import { PlayerTournament } from '../players/entities/player-tournament.entity';
+import { TeamTournament } from '../teams/entities/team-tournament.entity';
+import { Tournament } from '../tournaments/entities/tournament.entity';
 import * as XLSX from 'xlsx';
 
 interface PlayerData {
@@ -17,7 +17,7 @@ interface PlayerData {
   college: string;
   department: string;
   backNumber: string;
-  birthDate?: string; // YYYY-MM-DD 형식 권장
+  birthDate: string; // YYYY-MM-DD 형식
 }
 
 export class PlayerImporter {
@@ -79,6 +79,7 @@ export class PlayerImporter {
 
     for (const playerData of data) {
       try {
+        console.log(playerData);
         await this.processPlayer(playerData, tournamentId, teamTournamentId);
         processedCount++;
         console.log(`✅ ${playerData.name} 처리 완료`);
@@ -191,23 +192,16 @@ async function main() {
 
   const importer = new PlayerImporter(dataSource);
 
-  // 사용 예시
   const excelFilePath = process.argv[2];
   const tournamentId = parseInt(process.argv[3]);
   const teamTournamentId = parseInt(process.argv[4]);
 
-  if (!excelFilePath || !tournamentId || !teamTournamentId) {
-    console.log(
-      '사용법: npm run import-players <엑셀파일경로> <대회ID> <팀대회ID>',
-    );
-    console.log('예시: npm run import-players ./players.xlsx 1 1');
-    console.log('\n엑셀 파일 형식:');
-    console.log('- name: 선수명');
-    console.log('- email: 이메일 (Player에 저장)');
-    console.log('- college: 대학명');
-    console.log('- department: 학과명');
-    console.log('- backNumber: 등번호 (학번)');
-    console.log('- birthDate: 생년월일 (YYYY-MM-DD 형식 권장)');
+  if (!excelFilePath) {
+    console.error('엑셀 파일이 존재하지 않습니다.');
+    process.exit(1);
+  }
+  if (!tournamentId || !teamTournamentId) {
+    console.error('팀 또는 대회가 존재하지 않습니다.');
     process.exit(1);
   }
 

@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
+import { AppModule } from '../app.module';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Team } from '../src/teams/entities/team.entity';
-import { TeamTournament } from '../src/teams/entities/team-tournament.entity';
-import { Tournament } from '../src/tournaments/entities/tournament.entity';
-import { User } from '../src/users/entities/user.entity';
+import { Team } from '../teams/entities/team.entity';
+import { TeamTournament } from '../teams/entities/team-tournament.entity';
+import { Tournament } from '../tournaments/entities/tournament.entity';
+import { User } from '../users/entities/user.entity';
 import * as XLSX from 'xlsx';
 
 interface TeamData {
