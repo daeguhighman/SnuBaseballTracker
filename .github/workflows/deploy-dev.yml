@@ -46,7 +46,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
-            cd /snubaseball
+            cd snubaseball
             docker compose pull
             docker compose up -d
             docker image prune -f
