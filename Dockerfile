@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 # 1‑1. 기본 설정
 WORKDIR /app
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
 # 1‑2. 의존성 설치
 # package*.json만 먼저 복사해 캐시 활용
@@ -19,7 +19,6 @@ RUN echo "=== .bin contents ===" && ls -la node_modules/.bin/ | head -10
 
 # 1‑3. 소스 복사 & 컴파일
 COPY . .
-RUN npm install
 
 # dist/ 생성
 RUN npm run build                      
