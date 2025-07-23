@@ -47,7 +47,7 @@ jobs:
           script: |
             set -e
             cd snubaseball
-            docker compose pull
-            docker compose up -d
+            docker-compose pull
+            docker-compose up -d
             docker image prune -f
             echo "Deploy done on $(hostname) at $(date)"
