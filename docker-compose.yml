@@ -1,9 +1,7 @@
-version: "3.9"
-
 services:
   # ─────────────────── NestJS 애플리케이션 ───────────────────
   app:
-    image: docker.io/daeguhighman/snubaseball:nestjs:latest
+    image: docker.io/daeguhighman/snubaseball-nestjs:latest
     container_name: nestjs
     env_file: .env
     restart: always
