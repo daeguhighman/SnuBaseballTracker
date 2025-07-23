@@ -48,6 +48,6 @@ jobs:
             set -e
             cd snubaseball
             sudo docker compose pull
-            sudo docker compose up -d --remove-orphansㅌ
+            sudo docker compose up -d --remove-orphans
             sudo docker image prune -f
             echo "Deploy done on $(hostname) at $(date)"
