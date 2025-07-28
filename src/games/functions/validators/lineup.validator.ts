@@ -120,7 +120,7 @@ export class LineupValidator {
       }
 
       // 타순의 투수와 지정된 투수가 일치하는지 확인
-      if (pitcherInLineup.playerId !== pitcher.playerId) {
+      if (pitcherInLineup.id !== pitcher.id) {
         return {
           isValid: false,
           error: '포지션이 P인 타자와 지정된 투수는 같은 선수여야 합니다.',
@@ -142,7 +142,7 @@ export class LineupValidator {
 
         // 지정된 투수가 타자로 타순에 포함되어 있는지 확인
         const isPitcherInBattingOrder = batters.some(
-          (b) => b.playerId === pitcher.playerId,
+          (b) => b.id === pitcher.id,
         );
 
         if (isPitcherInBattingOrder) {
@@ -169,9 +169,7 @@ export class LineupValidator {
       }
 
       // 지정된 투수가 타자로 타순에 포함되어 있는지 확인
-      const isPitcherInBattingOrder = batters.some(
-        (b) => b.playerId === pitcher.playerId,
-      );
+      const isPitcherInBattingOrder = batters.some((b) => b.id === pitcher.id);
 
       if (isPitcherInBattingOrder) {
         return {
@@ -190,14 +188,14 @@ export class LineupValidator {
     const playerSet = new Set<number>();
 
     for (const batter of batters) {
-      if (playerSet.has(batter.playerId)) {
+      if (playerSet.has(batter.id)) {
         return {
           isValid: false,
-          error: `중복된 선수가 있습니다: ${batter.playerId}`,
+          error: `중복된 선수가 있습니다: ${batter.id}`,
           code: ErrorCodes.INVALID_LINEUP_DUPLICATE_PLAYER,
         };
       }
-      playerSet.add(batter.playerId);
+      playerSet.add(batter.id);
     }
 
     return { isValid: true };

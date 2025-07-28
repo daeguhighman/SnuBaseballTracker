@@ -2,6 +2,7 @@ import { IS_PUBLIC_KEY } from '@common/decorators/public.decorator';
 import {
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -9,6 +10,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  private readonly logger = new Logger(JwtAuthGuard.name);
   constructor(private readonly reflector: Reflector) {
     super();
   }
@@ -32,8 +34,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   handleRequest(err: any, user: any, info: any, _ctx: ExecutionContext) {
     if (err || !user) {
       // info?.message === 'jwt expired' | 'invalid signature'…
+      this.logger.error(
+        `JWT Auth Guard - Authentication failed: ${info?.message}`,
+      );
       throw err || new UnauthorizedException(info?.message);
     }
+
     return user; // req.user 에 주입
   }
 }

@@ -50,7 +50,7 @@ export class TeamTournament {
   representativeUser?: User;
 
   @Column({ name: 'representative_user_id', nullable: true })
-  representativeUserId?: string;
+  representativeUserId?: number;
   @Column({ name: 'group_name', length: 50 })
   groupName: string;
 

@@ -10,17 +10,17 @@ import {
 
 @Entity('sessions')
 export class Session {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, { cascade: false })
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column()
+  @Column({ type: 'text' })
   tokenHash: string;
 
-  @Column()
+  @Column({ name: 'expires_at' })
   expiresAt: Date;
 
   @Column({ default: false })

@@ -25,6 +25,10 @@ import { UserProfile } from '@/profiles/entities/profile.entity';
 // import { UmpireEntry } from '@/tournaments/entities/umpire-entry.entity';
 import { Session } from '@/sessions/entities/session.entity';
 import { PasswordResetToken } from '@/mail/entities/password-reset-token.entity';
+import { Play } from '@/plays/entities/play.entity';
+import { RunnerEvent } from '@/plays/entities/runner-event.entity';
+import { Runner } from '@/plays/entities/runner.entity';
+import { VirtualInningStat } from '@/games/entities/virtual-inning-stat.entity';
 
 export default registerAs('database', () => {
   const env = process.env.NODE_ENV ?? 'development';
@@ -41,7 +45,8 @@ export default registerAs('database', () => {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    synchronize: true,
+    synchronize: true, // 개발/테스트 환경에서만 동기화
+    dropSchema: false,
 
     entities: [
       Player,
@@ -54,6 +59,7 @@ export default registerAs('database', () => {
       BatterGameParticipation,
       PitcherGameParticipation,
       GameInningStat,
+      VirtualInningStat,
       Game,
       GameStat,
       GameRoaster,
@@ -68,6 +74,9 @@ export default registerAs('database', () => {
       UserProfile,
       Session,
       PasswordResetToken,
+      Play,
+      RunnerEvent,
+      Runner,
     ],
     charset: 'utf8mb4',
   };

@@ -2,11 +2,11 @@ import { IsBoolean, IsInt, IsString } from 'class-validator';
 
 export class BasePlayerDto {
   @IsInt()
-  id: number;
+  id: number; // playerTournamentId
   @IsString()
   name: string;
   @IsString()
-  departmentName: string;
+  department: string;
   @IsBoolean()
   isWc: boolean;
 
@@ -15,31 +15,34 @@ export class BasePlayerDto {
 }
 
 export class PlayerWithLineupDto extends BasePlayerDto {
+  @IsBoolean()
   inLineup: boolean;
 }
 
-export class PlayerWithSubstitutableDto extends BasePlayerDto {
+export class PlayerWithSubstitutionFlagDto extends BasePlayerDto {
+  @IsBoolean()
   isSubstitutable: boolean;
 }
 
 export class BasePlayerListResponseDto {
   @IsInt()
-  id: number;
+  id: number; // teamTournamentId
   @IsString()
   name: string;
   players: BasePlayerDto[];
 }
 export class PlayerWithLineupListResponseDto {
   @IsInt()
-  id: number;
+  id: number; // teamTournamentId
   @IsString()
   name: string;
   players: PlayerWithLineupDto[];
 }
+
 export class PlayerWithSubstitutableListResponseDto {
   @IsInt()
-  id: number;
+  id: number; // teamTournamentId
   @IsString()
   name: string;
-  players: PlayerWithSubstitutableDto[];
+  players: PlayerWithSubstitutionFlagDto[];
 }

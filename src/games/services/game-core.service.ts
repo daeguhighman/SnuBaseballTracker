@@ -22,12 +22,16 @@ import {
   TournamentScheduleResponseDto,
 } from '../dtos/tournament-schedule.dto';
 import { BracketPosition, MatchStage } from '@/common/enums/match-stage.enum';
+import { Observable, ReplaySubject } from 'rxjs';
+import { MessageEvent } from '@nestjs/common';
+import { Play, PlayStatus } from '@/plays/entities/play.entity';
 /*
   기본 조회, 상태 변경 등 핵심 로직
  */
 @Injectable()
 export class GameCoreService {
   private readonly logger = new Logger(GameCoreService.name);
+  private snapshotStreams = new Map<number, ReplaySubject<MessageEvent>>();
 
   constructor(
     @InjectRepository(Game)
@@ -43,6 +47,7 @@ export class GameCoreService {
   async getSchedules(
     from: string,
     to?: string,
+    userId?: string,
   ): Promise<GamesByDatesResponseDto> {
     const start = new Date(`${from}T00:00:00+09:00`);
     const end = to
@@ -60,14 +65,14 @@ export class GameCoreService {
 
     // --- 날짜별 그룹핑 ---
     const byDate = new Map<string, GameDto[]>();
-    games.forEach((g) => {
+    for (const g of games) {
       const kstDateKey = g.startTime.toLocaleDateString('en-CA', {
         timeZone: 'Asia/Seoul',
       }); // e.g. '2025-05-04'
       const list = byDate.get(kstDateKey) ?? [];
-      list.push(this.mapGameToDto(g));
+      list.push(await this.mapGameToDto(g, userId));
       byDate.set(kstDateKey, list);
-    });
+    }
 
     // --- DTO 변환 ---
     const days = Array.from(byDate.entries()).map(([date, games]) => ({
@@ -94,7 +99,7 @@ export class GameCoreService {
     return dayOfWeekMap[date.getDay()];
   }
 
-  private mapGameToDto(game: Game): GameDto {
+  private async mapGameToDto(game: Game, userId?: string): Promise<GameDto> {
     // 시간도 KST 기준으로 포맷
     const kstTime = game.startTime.toLocaleTimeString('en-GB', {
       hour: '2-digit',
@@ -102,25 +107,34 @@ export class GameCoreService {
       timeZone: 'Asia/Seoul',
     }); // e.g. '14:30'
 
+    // 유저 권한 확인
+    const canRecord = await this.checkUserCanRecord(game.id, userId);
+    const canSubmitLineup = await this.checkUserCanSubmitLineup(
+      game.id,
+      userId,
+    );
+
     return {
-      gameId: game.id,
+      id: game.id,
       time: kstTime,
       status: game.status as GameStatus,
       stage: game.stage as MatchStage,
-      winnerTeamId: game.winnerTeamId ?? null,
+      winnerTeamId: game.winnerTeam?.team.id ?? null,
       inning: game.gameStat?.inning ?? null,
       inningHalf: game.gameStat?.inningHalf ?? null,
       homeTeam: {
-        id: game.homeTeamId ?? null,
-        name: game.homeTeam?.name ?? null,
+        id: game.homeTeam?.team.id ?? null,
+        name: game.homeTeam?.team.name ?? null,
         score: game.gameStat?.homeScore ?? null,
       },
       awayTeam: {
-        id: game.awayTeamId ?? null,
-        name: game.awayTeam?.name ?? null,
+        id: game.awayTeam?.team.id ?? null,
+        name: game.awayTeam?.team.name ?? null,
         score: game.gameStat?.awayScore ?? null,
       },
       isForfeit: game.isForfeit,
+      canRecord,
+      canSubmitLineup,
     };
   }
 
@@ -138,7 +152,13 @@ export class GameCoreService {
 
     const games = await this.gameRepository.find({
       where: { tournamentId: 1, bracketPosition: Not(IsNull()) },
-      relations: ['homeTeam', 'awayTeam', 'gameStat'],
+      relations: [
+        'homeTeam',
+        'awayTeam',
+        'homeTeam.team',
+        'awayTeam.team',
+        'gameStat',
+      ],
     });
 
     console.log(games);
@@ -155,34 +175,36 @@ export class GameCoreService {
     return {
       gameId: game.id,
       bracketPosition: game.bracketPosition,
-      winnerTeamId: game.winnerTeamId ?? null,
+      winnerTeamId: game.winnerTeam?.team.id ?? null,
       homeTeam: {
-        id: game.homeTeamId,
-        name: game.homeTeam?.name ?? null,
+        id: game.homeTeam?.team.id ?? null,
+        name: game.homeTeam?.team.name ?? null,
         score: game.gameStat?.homeScore ?? null,
       },
       awayTeam: {
-        id: game.awayTeamId,
-        name: game.awayTeam?.name ?? null,
+        id: game.awayTeam?.team.id ?? null,
+        name: game.awayTeam?.team.name ?? null,
         score: game.gameStat?.awayScore ?? null,
       },
     };
   }
 
-  async startGame(
-    gameId: number,
-  ): Promise<{ success: boolean; message: string; gameStat: GameStat }> {
+  async startGame(gameId: number): Promise<{
+    success: boolean;
+    message: string;
+    snapshot: any;
+  }> {
     return this.dataSource.transaction(async (m) => {
       const game = await this.findGameWithTeams(gameId, m);
 
       // 1) 선발 batter/pitcher 조회 & 검증
       const [homeBat, awayBat] = await Promise.all([
-        this.getStartingBatter(gameId, game.homeTeamId, m),
-        this.getStartingBatter(gameId, game.awayTeamId, m),
+        this.getStartingBatter(gameId, game.homeTeam.team.id, m),
+        this.getStartingBatter(gameId, game.awayTeam.team.id, m),
       ]);
       const [homePit, awayPit] = await Promise.all([
-        this.getStartingPitcher(gameId, game.homeTeamId, m),
-        this.getStartingPitcher(gameId, game.awayTeamId, m),
+        this.getStartingPitcher(gameId, game.homeTeam.team.id, m),
+        this.getStartingPitcher(gameId, game.awayTeam.team.id, m),
       ]);
 
       if (!homeBat || !awayBat || !homePit || !awayPit) {
@@ -206,13 +228,67 @@ export class GameCoreService {
         }),
       );
 
+      const inningStat = await m.save(
+        m.create(GameInningStat, {
+          gameId,
+          inning: 1,
+          inningHalf: InningHalf.TOP,
+        }),
+      );
+
+      // 2.5) 첫번째 Play(seq=1) 생성
+      const firstPlay = await m.save(
+        m.create(Play, {
+          gameId,
+          seq: 1,
+          batterGpId: awayBat.id, // 원정팀 1번 타자
+          pitcherGpId: homePit.id, // 홈팀 선발 투수
+          gameInningStat: inningStat,
+          status: PlayStatus.LIVE,
+        }),
+      );
+
       // 3) 부모(Game) 상태만 UPDATE (stat FK 건드릴 필요 없음)
       await m.update(Game, gameId, { status: GameStatus.IN_PROGRESS });
+
+      // 4) 최초 스냅샷 생성 (GameStatsService.makePlaySnapshotUmpire 활용)
+      // 트랜잭션 내에서 Game을 다시 조회하여 GameStat relation을 포함
+      const gameWithStat = await m.findOne(Game, {
+        where: { id: gameId },
+        relations: [
+          'homeTeam.team',
+          'awayTeam.team',
+          'gameStat',
+          'inningStats',
+          'batterGameParticipations',
+          'batterGameParticipations.playerTournament',
+          'batterGameParticipations.playerTournament.player',
+          'batterGameParticipations.batterGameStat',
+          'pitcherGameParticipations',
+          'pitcherGameParticipations.playerTournament',
+          'pitcherGameParticipations.playerTournament.player',
+          'pitcherGameParticipations.pitcherGameStat',
+        ],
+      });
+
+      if (!gameWithStat || !gameWithStat.gameStat) {
+        throw new BaseException(
+          'GameStat을 찾을 수 없습니다.',
+          ErrorCodes.GAME_STAT_NOT_FOUND,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      // Game 객체를 직접 전달하여 스냅샷 생성
+      const snapshot = await this.gameStatsService.makePlaySnapshotUmpire(
+        gameWithStat,
+        firstPlay.id,
+      );
 
       return {
         success: true,
         message: '게임이 시작되었습니다.',
-        gameStat,
+        snapshot,
       };
     });
   }
@@ -223,7 +299,7 @@ export class GameCoreService {
   ): Promise<Game> {
     const game = await manager.findOne(Game, {
       where: { id: gameId },
-      relations: ['homeTeam', 'awayTeam'],
+      relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],
     });
     if (!game) {
       throw new BaseException(
@@ -404,13 +480,13 @@ export class GameCoreService {
     const [homeTeamTournament, awayTeamTournament] = await Promise.all([
       manager.findOne(TeamTournament, {
         where: {
-          team: { id: game.homeTeamId },
+          team: { id: game.homeTeam.team.id },
           tournament: { id: game.tournamentId },
         },
       }),
       manager.findOne(TeamTournament, {
         where: {
-          team: { id: game.awayTeamId },
+          team: { id: game.awayTeam.team.id },
           tournament: { id: game.tournamentId },
         },
       }),
@@ -440,28 +516,30 @@ export class GameCoreService {
       // 홈팀 승리
       homeTeamTournament.wins += 1;
       awayTeamTournament.losses += 1;
-      winnerTeamId = game.homeTeamId;
+      winnerTeamId = game.homeTeam.team.id;
       this.logger.debug(
-        `Home team win: ${game.homeTeam.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.name} (${game.gameStat.awayScore})`,
+        `Home team win: ${game.homeTeam.team.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.team.name} (${game.gameStat.awayScore})`,
       );
     } else if (game.gameStat.homeScore < game.gameStat.awayScore) {
       // 원정팀 승리
       homeTeamTournament.losses += 1;
       awayTeamTournament.wins += 1;
-      winnerTeamId = game.awayTeamId;
+      winnerTeamId = game.awayTeam.team.id;
       this.logger.debug(
-        `Away team win: ${game.homeTeam.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.name} (${game.gameStat.awayScore})`,
+        `Away team win: ${game.homeTeam.team.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.team.name} (${game.gameStat.awayScore})`,
       );
     } else {
       // 무승부
       homeTeamTournament.draws += 1;
       awayTeamTournament.draws += 1;
       this.logger.debug(
-        `Draw: ${game.homeTeam.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.name} (${game.gameStat.awayScore})`,
+        `Draw: ${game.homeTeam.team.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.team.name} (${game.gameStat.awayScore})`,
       );
     }
 
-    await manager.update(Game, game.id, { winnerTeamId });
+    await manager.update(Game, game.id, {
+      winnerTeam: { team: { id: winnerTeamId } },
+    });
 
     // 5. 팀 토너먼트 통계 저장
     await Promise.all([
@@ -486,49 +564,51 @@ export class GameCoreService {
     const { homeScore, awayScore } = game.gameStat;
     const winnerTeamId =
       homeScore > awayScore
-        ? game.homeTeamId
+        ? game.homeTeam.team.id
         : homeScore < awayScore
-          ? game.awayTeamId
+          ? game.awayTeam.team.id
           : null;
 
     const loserTeamId =
       homeScore !== awayScore
         ? homeScore > awayScore
-          ? game.awayTeamId
-          : game.homeTeamId
+          ? game.awayTeam.team.id
+          : game.homeTeam.team.id
         : null;
 
     // 2) 현재 게임에 승자 업데이트
-    await manager.update(Game, game.id, { winnerTeamId });
+    await manager.update(Game, game.id, {
+      winnerTeamTournamentId: winnerTeamId,
+    });
 
     // 3) 다음 경기 매핑 (QF→SF, SF→F)
-    type Slot = 'homeTeamId' | 'awayTeamId';
+    type Slot = 'homeTeamTournamentId' | 'awayTeamTournamentId';
     const transitionMap: Partial<
       Record<BracketPosition, { nextPos: BracketPosition; nextSlot: Slot }>
     > = {
       [BracketPosition.QF_1]: {
         nextPos: BracketPosition.SF_1,
-        nextSlot: 'awayTeamId',
+        nextSlot: 'awayTeamTournamentId',
       },
       [BracketPosition.QF_2]: {
         nextPos: BracketPosition.SF_1,
-        nextSlot: 'homeTeamId',
+        nextSlot: 'homeTeamTournamentId',
       },
       [BracketPosition.QF_3]: {
         nextPos: BracketPosition.SF_2,
-        nextSlot: 'awayTeamId',
+        nextSlot: 'awayTeamTournamentId',
       },
       [BracketPosition.QF_4]: {
         nextPos: BracketPosition.SF_2,
-        nextSlot: 'homeTeamId',
+        nextSlot: 'homeTeamTournamentId',
       },
       [BracketPosition.SF_1]: {
         nextPos: BracketPosition.F,
-        nextSlot: 'awayTeamId',
+        nextSlot: 'awayTeamTournamentId',
       },
       [BracketPosition.SF_2]: {
         nextPos: BracketPosition.F,
-        nextSlot: 'homeTeamId',
+        nextSlot: 'homeTeamTournamentId',
       },
     };
 
@@ -544,7 +624,7 @@ export class GameCoreService {
       nextGame[transition.nextSlot] = winnerTeamId;
       await manager.save(nextGame);
 
-      // 5) “준결승 → 결승” 이동일 때만 패자를 3·4위전에 고정 배치
+      // 5) "준결승 → 결승" 이동일 때만 패자를 3·4위전에 고정 배치
       if (
         (game.bracketPosition === BracketPosition.SF_1 ||
           game.bracketPosition === BracketPosition.SF_2) &&
@@ -559,10 +639,10 @@ export class GameCoreService {
 
         if (game.bracketPosition === BracketPosition.SF_1) {
           // SF1 패자는 awayTeam
-          thirdGame.awayTeamId = loserTeamId;
+          thirdGame.awayTeamTournamentId = loserTeamId;
         } else {
           // SF2 패자는 homeTeam
-          thirdGame.homeTeamId = loserTeamId;
+          thirdGame.homeTeamTournamentId = loserTeamId;
         }
 
         await manager.save(thirdGame);
@@ -652,6 +732,7 @@ export class GameCoreService {
     await this.dataSource.transaction(async (manager) => {
       const game = await manager.findOne(Game, {
         where: { id: gameId },
+        relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],
       });
 
       if (!game) {
@@ -662,8 +743,8 @@ export class GameCoreService {
         );
       }
       if (
-        winnerTeamId !== game.homeTeamId &&
-        winnerTeamId !== game.awayTeamId
+        winnerTeamId !== game.homeTeam.team.id &&
+        winnerTeamId !== game.awayTeam.team.id
       ) {
         throw new BaseException(
           '유효하지 않은 승자 팀 ID입니다.',
@@ -672,19 +753,19 @@ export class GameCoreService {
         );
       }
       game.status = GameStatus.FINALIZED;
-      game.winnerTeamId = winnerTeamId;
+      game.winnerTeamTournamentId = winnerTeamId;
       game.isForfeit = true;
 
       const [homeTeamTournament, awayTeamTournament] = await Promise.all([
         manager.findOne(TeamTournament, {
           where: {
-            team: { id: game.homeTeamId },
+            team: { id: game.homeTeam.team.id },
             tournament: { id: game.tournamentId },
           },
         }),
         manager.findOne(TeamTournament, {
           where: {
-            team: { id: game.awayTeamId },
+            team: { id: game.awayTeam.team.id },
             tournament: { id: game.tournamentId },
           },
         }),
@@ -702,7 +783,7 @@ export class GameCoreService {
       homeTeamTournament.games += 1;
       awayTeamTournament.games += 1;
 
-      if (winnerTeamId === game.homeTeamId) {
+      if (winnerTeamId === game.homeTeam.team.id) {
         homeTeamTournament.wins += 1;
         awayTeamTournament.losses += 1;
       } else {
@@ -737,7 +818,122 @@ export class GameCoreService {
       );
     }
 
-    tournament.phase = PhaseType.KNOCKOUT;
     return this.tournamentRepository.save(tournament);
+  }
+
+  // 관중용 스냅샷을 push하는 메서드
+  async pushSnapshotAudience(gameId: number, playId: number) {
+    const snapshot = await this.gameStatsService.makePlaySnapshotAudience(
+      gameId,
+      playId,
+    );
+    if (!this.snapshotStreams.has(gameId)) {
+      this.snapshotStreams.set(gameId, new ReplaySubject<MessageEvent>(1));
+    }
+    this.snapshotStreams.get(gameId).next({ data: snapshot });
+  }
+
+  getSnapshotStream(gameId: number): Observable<MessageEvent> {
+    if (!this.snapshotStreams.has(gameId)) {
+      this.snapshotStreams.set(gameId, new ReplaySubject<MessageEvent>(1));
+    }
+    // 구독 시 최신 playId로 관중용 스냅샷 push
+    this.pushLatestAudienceSnapshot(gameId);
+    return this.snapshotStreams.get(gameId).asObservable();
+  }
+
+  // 최신 playId로 관중용 스냅샷 push
+  private async pushLatestAudienceSnapshot(gameId: number) {
+    // Play 엔티티에서 해당 gameId의 가장 최신 playId를 조회
+    const latestPlay = await this.dataSource.getRepository('Play').findOne({
+      where: { gameId },
+      order: { seq: 'DESC' },
+    });
+    if (latestPlay) {
+      await this.pushSnapshotAudience(gameId, latestPlay.id);
+    }
+  }
+
+  private async checkUserCanRecord(
+    gameId: number,
+    userId?: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+
+    try {
+      // 해당 경기의 심판인지 확인
+      const umpire = await this.umpireRepository.findOne({
+        where: { userId: parseInt(userId) },
+        relations: ['umpireTournaments'],
+      });
+
+      if (!umpire) return false;
+
+      // 해당 경기가 속한 대회의 심판인지 확인
+      const game = await this.gameRepository.findOne({
+        where: { id: gameId },
+        relations: ['tournament'],
+      });
+
+      if (!game) return false;
+
+      const isUmpireForGame = umpire.umpireTournaments.some(
+        (ut) => ut.tournamentId === game.tournamentId,
+      );
+
+      return isUmpireForGame;
+    } catch (error) {
+      this.logger.error(`Error checking user can record: ${error.message}`);
+      return false;
+    }
+  }
+
+  private async checkUserCanSubmitLineup(
+    gameId: number,
+    userId?: string,
+  ): Promise<{ home: boolean; away: boolean }> {
+    if (!userId) return { home: false, away: false };
+
+    try {
+      // 해당 경기의 팀 대표자인지 확인
+      const game = await this.gameRepository.findOne({
+        where: { id: gameId },
+        relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],
+      });
+
+      if (!game) return { home: false, away: false };
+
+      // 홈팀과 원정팀의 대표자 확인
+      const homeTeamTournament = await this.dataSource
+        .getRepository('TeamTournament')
+        .findOne({
+          where: {
+            teamId: game.homeTeam.team.id,
+            tournamentId: game.tournamentId,
+          },
+        });
+
+      const awayTeamTournament = await this.dataSource
+        .getRepository('TeamTournament')
+        .findOne({
+          where: {
+            teamId: game.awayTeam.team.id,
+            tournamentId: game.tournamentId,
+          },
+        });
+
+      const isHomeTeamRep = homeTeamTournament?.representativeUserId === userId;
+      const isAwayTeamRep = awayTeamTournament?.representativeUserId === userId;
+
+      return {
+        home: isHomeTeamRep,
+        away: isAwayTeamRep,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error checking user can submit lineup: ${error.message}`,
+      );
+      return { home: false, away: false };
+    }
   }
 }

@@ -36,13 +36,6 @@ export class Tournament {
   })
   umpireTournaments: UmpireTournament[];
 
-  @Column({
-    type: 'enum',
-    enum: PhaseType,
-    default: PhaseType.LEAGUE,
-  })
-  phase: PhaseType;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

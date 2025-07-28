@@ -4,7 +4,7 @@ import { ApiProperty, getSchemaPath } from '@nestjs/swagger';
 export class TeamDto {
   @IsNumber()
   @ApiProperty({
-    description: '팀 ID',
+    description: '팀-토너먼트 ID (TeamTournament ID)',
     example: 1,
   })
   id: number;
@@ -49,13 +49,6 @@ export class TeamDto {
     example: 1,
   })
   rank: number;
-
-  @Exclude()
-  @ApiProperty({
-    description: '승률',
-    example: 0.5,
-  })
-  winningPercentage: number;
 }
 
 export class GroupedTeamResponseDto {

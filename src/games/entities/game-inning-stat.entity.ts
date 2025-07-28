@@ -36,6 +36,12 @@ export class GameInningStat {
   @Column({ type: 'int', default: 0 })
   runs: number;
 
+  @Column({ type: 'int', default: 0 })
+  outs: number;
+
+  @Column({ type: 'boolean', default: false, name: 'error_flag' })
+  errorFlag: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

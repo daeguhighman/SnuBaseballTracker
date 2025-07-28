@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Player } from '@players/entities/player.entity';
 import { TeamTournament } from '@teams/entities/team-tournament.entity';
+import { PlayerTournament } from '@players/entities/player-tournament.entity';
 import { GroupedTeamResponseDto, TeamDto } from '@teams/dtos/team.dto';
 import {
   BasePlayerDto,
@@ -20,6 +21,8 @@ export class TeamsService {
     private readonly playerRepository: Repository<Player>,
     @InjectRepository(TeamTournament)
     private readonly teamTournamentRepository: Repository<TeamTournament>,
+    @InjectRepository(PlayerTournament)
+    private readonly playerTournamentRepository: Repository<PlayerTournament>,
   ) {}
 
   /**
@@ -34,7 +37,6 @@ export class TeamsService {
       wins: number;
       draws: number;
       losses: number;
-      winningPercentage: number;
     };
 
     const rawTeams: Raw[] = await this.teamTournamentRepository
@@ -48,13 +50,8 @@ export class TeamsService {
         'tt.wins AS wins',
         'tt.draws AS draws',
         'tt.losses AS losses',
-        `CASE
-            WHEN tt.games = 0 THEN 0
-            ELSE CAST(tt.wins / (tt.wins + tt.losses) AS DECIMAL(10,5))
-            END AS winningPercentage`,
       ])
       .orderBy('tt.group_name', 'ASC')
-      .addOrderBy('winningPercentage', 'DESC')
       .addOrderBy('tt.wins', 'DESC')
       .getRawMany();
 
@@ -70,7 +67,6 @@ export class TeamsService {
         draws: t.draws,
         losses: t.losses,
         rank: 0,
-        winningPercentage: Number(Number(t.winningPercentage).toFixed(3)),
       });
     });
 
@@ -83,29 +79,59 @@ export class TeamsService {
   }
 
   /**
-   * 같은 winningPercentage는 동일 랭크, 이후 팀 수만큼 순위 오프셋
+   * 토너먼트별 그룹별 팀 순위 조회
    */
-  private assignRankToTeams(teams: TeamDto[]): TeamDto[] {
-    let currentRank = 1;
-    let sameRankCount = 1;
-    let prevPercentage = -1;
+  async getTournamentGroupedTeams(
+    tournamentId: number,
+  ): Promise<GroupedTeamResponseDto> {
+    type Raw = {
+      teamTournamentId: number;
+      name: string;
+      groupName: string;
+      games: number;
+      wins: number;
+      draws: number;
+      losses: number;
+    };
 
-    return teams.map((team, index) => {
-      if (index === 0) {
-        prevPercentage = team.winningPercentage;
-        return { ...team, rank: currentRank };
-      }
+    const rawTeams: Raw[] = await this.teamTournamentRepository
+      .createQueryBuilder('tt') // tt는 alias
+      .innerJoin('tt.team', 'team') // team은 alias
+      .select([
+        'tt.id AS teamTournamentId',
+        'team.name AS name',
+        'tt.group_name AS groupName',
+        'tt.games AS games',
+        'tt.wins AS wins',
+        'tt.draws AS draws',
+        'tt.losses AS losses',
+      ])
+      .where('tt.tournament_id = :tournamentId', { tournamentId })
+      .orderBy('tt.group_name', 'ASC')
+      .addOrderBy('tt.wins', 'DESC')
+      .getRawMany();
 
-      if (team.winningPercentage === prevPercentage) {
-        sameRankCount++;
-        return { ...team, rank: currentRank };
-      } else {
-        currentRank += sameRankCount;
-        sameRankCount = 1;
-        prevPercentage = team.winningPercentage;
-        return { ...team, rank: currentRank };
-      }
+    // 그룹핑
+    const grouped: Record<string, TeamDto[]> = {};
+    rawTeams.forEach((t) => {
+      grouped[t.groupName] = grouped[t.groupName] || [];
+      grouped[t.groupName].push({
+        id: t.teamTournamentId, // teamTournamentId 사용
+        name: t.name,
+        games: t.games,
+        wins: t.wins,
+        draws: t.draws,
+        losses: t.losses,
+        rank: 0,
+      });
     });
+
+    // 랭크 부여
+    Object.keys(grouped).forEach((group) => {
+      grouped[group] = this.assignRankToTeams(grouped[group]);
+    });
+
+    return grouped;
   }
 
   /**
@@ -138,7 +164,7 @@ export class TeamsService {
       .map((tt) => ({
         id: tt.playerTournaments[0].player.id,
         name: tt.playerTournaments[0].player.name,
-        departmentName: tt.playerTournaments[0].player.department?.name ?? null,
+        department: tt.playerTournaments[0].player.department?.name ?? null,
         isElite: tt.playerTournaments[0].isElite,
         isWc: tt.playerTournaments[0].isWildcard,
       }));
@@ -148,5 +174,62 @@ export class TeamsService {
       name: team.name,
       players: playersDto,
     };
+  }
+
+  /**
+   * 토너먼트별 팀 선수 목록 조회 (playerTournamentId와 teamTournamentId 사용)
+   */
+  async getTournamentTeamPlayers(
+    tournamentId: number,
+    teamTournamentId: number,
+  ): Promise<BasePlayerListResponseDto> {
+    // TeamTournament 조회 및 검증
+    const teamTournament = await this.teamTournamentRepository.findOne({
+      where: {
+        id: teamTournamentId,
+        tournamentId: tournamentId,
+      },
+      relations: [
+        'team',
+        'playerTournaments',
+        'playerTournaments.player',
+        'playerTournaments.player.department',
+      ],
+    });
+
+    if (!teamTournament) {
+      throw new BaseException(
+        `TeamTournament with id ${teamTournamentId} in tournament ${tournamentId} not found`,
+        ErrorCodes.TEAM_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // 선수 목록을 이름순으로 정렬하고 playerTournamentId 사용
+    const playersDto: BasePlayerDto[] = teamTournament.playerTournaments
+      .sort((a, b) => a.player.name.localeCompare(b.player.name))
+      .map((pt) => ({
+        id: pt.id, // playerTournamentId 사용
+        name: pt.player.name,
+        department: pt.player.department?.name ?? null,
+        isElite: pt.isElite,
+        isWc: pt.isWildcard,
+      }));
+
+    return {
+      id: teamTournament.id, // teamTournamentId 사용
+      name: teamTournament.team.name,
+      players: playersDto,
+    };
+  }
+
+  /**
+   * 팀 순위 부여
+   */
+  private assignRankToTeams(teams: TeamDto[]): TeamDto[] {
+    return teams.map((team, index) => ({
+      ...team,
+      rank: index + 1,
+    }));
   }
 }

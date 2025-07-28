@@ -7,7 +7,6 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Unique,
-  Index,
 } from 'typeorm';
 import { TeamTournament } from '@teams/entities/team-tournament.entity';
 

@@ -39,7 +39,7 @@ export class GameDto {
     example: 1,
   })
   @IsInt()
-  gameId: number;
+  id: number;
   @ApiProperty({
     description: '경기 시간',
     example: '2025-04-30T12:00:00',
@@ -98,6 +98,22 @@ export class GameDto {
   isForfeit: boolean;
 
   @ApiProperty({
+    description: '기록 가능 여부 (심판인 경우 true)',
+    example: true,
+  })
+  @IsBoolean()
+  canRecord: boolean;
+
+  @ApiProperty({
+    description: '라인업 제출 가능 여부',
+    example: { home: false, away: true },
+  })
+  canSubmitLineup: {
+    home: boolean;
+    away: boolean;
+  };
+
+  @ApiProperty({
     description: '승자 팀 ID',
     example: 1,
   })
@@ -146,19 +162,10 @@ export class RangeDto {
 }
 
 export class GamesByDatesResponseDto {
-  @ApiProperty({
-    description: '날짜 범위',
-    type: RangeDto,
-  })
   @ValidateNested()
   @Type(() => RangeDto)
   range: RangeDto;
 
-  @ApiProperty({
-    description: '날짜별 경기 목록',
-    type: GameScheduleResponseDto,
-    isArray: true,
-  })
   @IsArray()
   @ValidateNested()
   @Type(() => GameScheduleResponseDto)

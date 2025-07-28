@@ -16,7 +16,7 @@ export class SubmitLineupGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest();
     const gameId = +req.params.gameId; // /games/:gameId/lineup
     const teamType = (req.query.teamType as string)?.toLowerCase(); // home | away
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     /* 0) teamType 유효성 */
     if (!['home', 'away'].includes(teamType)) {

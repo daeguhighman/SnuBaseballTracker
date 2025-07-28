@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { join, resolve } from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
-import databaseConfig from './src/config/database.config';
+import databaseConfig from './src/database.config';
 import { existsSync } from 'fs';
 
 const NODE_ENV = process.env.NODE_ENV ?? 'development';

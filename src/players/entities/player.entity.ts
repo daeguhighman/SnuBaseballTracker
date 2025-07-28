@@ -8,12 +8,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-  Index,
   OneToOne,
   Relation,
 } from 'typeorm';
 import { PlayerTournament } from './player-tournament.entity';
-import { TeamTournament } from '@/teams/entities/team-tournament.entity';
 import { User } from '@/users/entities/user.entity';
 import { College } from '@/profiles/entities/college.entity';
 import { Department } from '@/profiles/entities/department.entity';

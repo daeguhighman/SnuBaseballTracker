@@ -25,7 +25,11 @@ export class UmpireAuthGuard implements CanActivate {
       relations: ['recordUmpire', 'recordUmpire.user'],
     });
 
-    if (!game || !game.recordUmpire || game.recordUmpire.user.id !== user.id) {
+    if (
+      !game ||
+      !game.recordUmpire ||
+      game.recordUmpire.user.id !== user.userId
+    ) {
       throw new ForbiddenException();
     }
 

@@ -14,7 +14,7 @@ export class ProfileService {
 
   async getByUserId(userId: string) {
     const profile = await this.profiles.findOne({
-      where: { user: { id: userId } },
+      where: { user: { id: parseInt(userId) } },
       relations: ['user'],
     });
     if (!profile) throw new NotFoundException();
@@ -27,10 +27,10 @@ export class ProfileService {
   }
 
   async upsert(userId: string, dto: UpdateProfileDto) {
-    const user = await this.users.findOneByOrFail({ id: userId });
+    const user = await this.users.findOneByOrFail({ id: parseInt(userId) });
 
     let profile = await this.profiles.findOne({
-      where: { user: { id: userId } },
+      where: { user: { id: parseInt(userId) } },
     });
     if (!profile) profile = this.profiles.create({ user });
 

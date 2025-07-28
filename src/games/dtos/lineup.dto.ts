@@ -13,8 +13,8 @@ export class BaseLineupBatterDto {
   battingOrder: number;
 
   @IsInt()
-  @ApiProperty({ description: '선수 ID', example: 1 })
-  playerId: number;
+  @ApiProperty({ description: 'playerTournamentId', example: 1 })
+  id: number;
 
   @IsString()
   @ApiProperty({ description: '포지션', example: '1루수' })
@@ -24,11 +24,11 @@ export class LineupRequestBatterDto extends BaseLineupBatterDto {}
 
 export class BaseLineupPitcherDto {
   @ApiProperty({
-    description: '선수 ID',
+    description: 'playerTournamentId',
     example: 1,
   })
   @IsInt()
-  playerId: number;
+  id: number;
 }
 export class LineupRequestPitcherDto extends BaseLineupPitcherDto {}
 export class SubmitLineupRequestDto {
@@ -66,7 +66,7 @@ export class LineupBatterResponseDto extends BaseLineupBatterDto {
     description: '선수 이름',
     example: '홍길동',
   })
-  playerName: string;
+  name: string;
 
   @IsBoolean()
   @ApiProperty({
@@ -81,7 +81,7 @@ export class LineupPitcherResponseDto extends BaseLineupPitcherDto {
     description: '선수 이름',
     example: '홍길동',
   })
-  playerName: string;
+  name: string;
 
   @IsBoolean()
   @ApiProperty({

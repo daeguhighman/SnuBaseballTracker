@@ -1,8 +1,9 @@
 // src/games/games.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Game } from '@games/entities/game.entity';
 import { GameInningStat } from '@games/entities/game-inning-stat.entity';
+import { VirtualInningStat } from '@games/entities/virtual-inning-stat.entity';
 import { GamesController } from '@games/games.controller';
 import { GameStat } from '@games/entities/game-stat.entity';
 import { BatterGameParticipation } from '@games/entities/batter-game-participation.entity';
@@ -18,11 +19,13 @@ import { GameStatsService } from '@games/services/game-stats.service';
 import { GameRoaster } from '@games/entities/game-roaster.entity';
 import { UmpiresModule } from '@umpires/umpires.module';
 import { TournamentsModule } from '@tournaments/tournaments.module';
+import { PlaysModule } from '@/plays/plays.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Game,
       GameInningStat,
+      VirtualInningStat,
       GameStat,
       BatterGameParticipation,
       BatterGameStat,
@@ -34,6 +37,7 @@ import { TournamentsModule } from '@tournaments/tournaments.module';
     TeamsModule,
     UmpiresModule,
     TournamentsModule,
+    forwardRef(() => PlaysModule),
   ],
   controllers: [GamesController],
   providers: [
@@ -42,6 +46,11 @@ import { TournamentsModule } from '@tournaments/tournaments.module';
     GameLineupService,
     GameScoreboardService,
   ],
-  exports: [TypeOrmModule, GameCoreService],
+  exports: [
+    TypeOrmModule,
+    GameCoreService,
+    GameScoreboardService,
+    GameStatsService,
+  ],
 })
 export class GamesModule {}

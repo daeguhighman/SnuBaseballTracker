@@ -23,8 +23,8 @@ export enum AppRole {
 @Entity('users')
 @Unique(['email'])
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
   @Column({ type: 'enum', enum: AppRole, default: AppRole.NORMAL })
   role: AppRole;
@@ -35,7 +35,7 @@ export class User {
   @Column({ length: 150 })
   nickname: string;
 
-  @Column({ name: 'password_hash' })
+  @Column({ name: 'password_hash', type: 'text' })
   passwordHash: string;
 
   @OneToMany(() => UmpireTournament, (ut) => ut.umpire)

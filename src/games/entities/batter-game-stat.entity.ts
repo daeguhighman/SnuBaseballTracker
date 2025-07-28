@@ -10,10 +10,11 @@ import {
   DeleteDateColumn,
 } from 'typeorm';
 import { BatterGameParticipation } from './batter-game-participation.entity';
+import { BaseBatterStat } from '../../common/entities/base-batter-stat.entity';
 
 @Entity('batter_game_stats')
 @Unique(['batterGameParticipation'])
-export class BatterGameStat {
+export class BatterGameStat extends BaseBatterStat {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
@@ -24,36 +25,6 @@ export class BatterGameStat {
   batterGameParticipation: BatterGameParticipation;
   @Column({ name: 'batter_game_participation_id' })
   batterGameParticipationId: number;
-
-  @Column({ name: 'plate_appearances', default: 0 })
-  plateAppearances: number;
-
-  @Column({ name: 'at_bats', default: 0 })
-  atBats: number;
-
-  @Column({ default: 0 })
-  hits: number;
-
-  @Column({ default: 0 })
-  singles: number;
-
-  @Column({ default: 0 })
-  doubles: number;
-
-  @Column({ default: 0 })
-  triples: number;
-
-  @Column({ name: 'home_runs', default: 0 })
-  homeRuns: number;
-
-  @Column({ default: 0 })
-  walks: number;
-
-  @Column({ name: 'sacrifice_flies', default: 0 })
-  sacrificeFlies: number;
-
-  @Column({ default: 0 })
-  etcs: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

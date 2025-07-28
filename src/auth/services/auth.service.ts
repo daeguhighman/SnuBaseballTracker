@@ -150,6 +150,7 @@ export class AuthService {
   /*  3) 리프레시 & 세션 회전                                             */
   /* ------------------------------------------------------------------ */
   async refresh(oldToken: string) {
+    console.log('[POST] auth/refresh -> oldToken:', oldToken);
     return this.dataSource.transaction(async (manager) => {
       const payload = await this.verifyRefresh(oldToken);
 
@@ -161,6 +162,7 @@ export class AuthService {
         },
         relations: ['user'],
       });
+      console.log('[POST] auth/refresh -> session:', session);
       if (
         !session ||
         session.revoked ||
@@ -235,32 +237,42 @@ export class AuthService {
     user: User,
     manager: any,
   ) {
-    // ① 애플리케이션에서 세션 ID 생성
-    const sessionId = randomUUID();
-
-    // ② JID를 포함해 토큰 서명
+    // ② JID를 포함해 토큰 서명 (세션 ID는 자동 생성)
     const token = await this.jwt.signAsync(
-      { ...payload, jid: sessionId },
+      { ...payload },
       {
         secret: this.configService.get('auth.jwtRefreshSecret'),
         expiresIn: this.configService.get('auth.jwtRefreshExpiresIn'),
         issuer: this.configService.get('auth.jwtIssuer'),
       },
     );
-    const tokenHash = sha256(token);
 
     // ③ 해시를 포함해 세션을 한 번에 저장
     const session = manager.create(Session, {
-      id: sessionId,
-      user,
+      user: { id: user.id },
       expiresAt: new Date(
         Date.now() + ms(this.configService.get('auth.jwtRefreshExpiresIn')),
       ),
-      tokenHash,
+      tokenHash: '', // 임시값, 나중에 업데이트
     });
-    await manager.save(session);
+    const savedSession = await manager.save(session);
 
-    return { token, session };
+    // ④ 저장된 세션의 ID를 토큰에 포함
+    const tokenWithJid = await this.jwt.signAsync(
+      { ...payload, jid: savedSession.id },
+      {
+        secret: this.configService.get('auth.jwtRefreshSecret'),
+        expiresIn: this.configService.get('auth.jwtRefreshExpiresIn'),
+        issuer: this.configService.get('auth.jwtIssuer'),
+      },
+    );
+
+    // ⑤ 최종 토큰(JID 포함)의 해시를 계산하여 세션 업데이트
+    const tokenHash = sha256(tokenWithJid);
+    savedSession.tokenHash = tokenHash;
+    await manager.save(savedSession);
+
+    return { token: tokenWithJid, session: savedSession };
   }
 
   /* ------------------------------------------------------------------ */
@@ -377,7 +389,7 @@ export class AuthService {
   ) {
     return this.dataSource.transaction(async (manager) => {
       const user = await manager.findOne(User, {
-        where: { id: userId },
+        where: { id: parseInt(userId) },
         select: ['id', 'passwordHash', 'email'],
       });
       if (!user) throw new NotFoundException('User not found');
@@ -414,8 +426,8 @@ export class AuthService {
 
   async deleteAccount(userId: string) {
     await this.dataSource.transaction(async (manager) => {
-      await manager.delete(Session, { user: { id: userId } });
-      await manager.delete(User, { id: userId });
+      await manager.delete(Session, { user: { id: parseInt(userId) } });
+      await manager.delete(User, { id: parseInt(userId) });
     });
   }
 
@@ -552,7 +564,7 @@ export class AuthService {
     await this.dataSource.transaction(async (manager) => {
       await manager.update(
         Session,
-        { user: { id: userId } },
+        { user: { id: parseInt(userId) } },
         { revoked: true },
       );
     });

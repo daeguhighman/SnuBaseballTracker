@@ -50,14 +50,14 @@ describe('TeamsController', () => {
       {
         id: 1,
         name: '김선수',
-        departmentName: '컴퓨터공학부',
+        department: '컴퓨터공학부',
         isElite: false,
         isWildcard: false,
       },
       {
         id: 2,
         name: '이선수',
-        departmentName: '수학과',
+        department: '수학과',
         isElite: true,
         isWildcard: false,
       },

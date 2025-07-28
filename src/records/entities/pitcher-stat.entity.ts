@@ -11,10 +11,11 @@ import {
   DeleteDateColumn,
 } from 'typeorm';
 import { PlayerTournament } from '@players/entities/player-tournament.entity';
+import { BasePitcherStat } from '../../common/entities/base-pitcher-stat.entity';
 
 @Entity('pitcher_stats')
 @Unique(['playerTournament'])
-export class PitcherStat {
+export class PitcherStat extends BasePitcherStat {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
@@ -24,8 +25,14 @@ export class PitcherStat {
   @Column({ name: 'player_tournament_id' })
   playerTournamentId: number;
 
-  @Column({ default: 0 })
-  strikeouts: number;
+  @Column({
+    name: 'era',
+    type: 'decimal',
+    precision: 4,
+    scale: 3,
+    default: 0,
+  })
+  era: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

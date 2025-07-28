@@ -32,6 +32,11 @@
     "seed:pt": "ts-node -r tsconfig-paths/register src/seed/seed-pt.ts",
     "seed:bracket": "ts-node -r tsconfig-paths/register src/seed/seed-bracket.ts",
     "import-players": "ts-node -r tsconfig-paths/register src/scripts/import-players.ts",
+    "seed:tournament": "ts-node -r tsconfig-paths/register src/scripts/seed-tournament.ts",
+    "seed:teams": "ts-node -r tsconfig-paths/register src/scripts/seed-teams.ts",
+    "seed:players": "ts-node -r tsconfig-paths/register src/scripts/seed-players.ts",
+    "seed:games": "ts-node -r tsconfig-paths/register src/scripts/seed-games.ts",
+    "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed-all.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist",
     "gen:swagger": "ts-node --project tsconfig.json scripts/swagger.ts"
   },

@@ -43,6 +43,15 @@ export class GameStat {
   @Column({ type: 'enum', enum: InningHalf, default: InningHalf.TOP })
   inningHalf: InningHalf;
 
+  @Column({ name: 'on_first_gp_id', type: 'bigint', nullable: true })
+  onFirstGpId: number | null;
+
+  @Column({ name: 'on_second_gp_id', type: 'bigint', nullable: true })
+  onSecondGpId: number | null;
+
+  @Column({ name: 'on_third_gp_id', type: 'bigint', nullable: true })
+  onThirdGpId: number | null;
+
   @OneToOne(() => PitcherGameParticipation)
   @JoinColumn({ name: 'home_pitcher_participation_id' })
   homePitcherParticipation: PitcherGameParticipation;

@@ -1205,23 +1205,23 @@ components:
         name: "공대"
         players:
           - id: 101
-            departmentName: "수학교육과"
+            department: "수학교육과"
             name: "윤동현"
             isElite: false
             isWc: false
           - id: 102
-            departmentName: "언론정보학과"
-            playerName: "김준기"
+            department: "언론정보학과"
+            name: "김준기"
             isElite: false
             isWc: false
           - id: 103
-            departmentName: "사회학과"
-            playerName: "김태균"
+            department: "사회학과"
+            name: "김태균"
             isElite: true
             isWc: false
           - id: 104
-            departmentName: "컴퓨터공학과"
-            playerName: "박야구"
+            department: "컴퓨터공학과"
+            name: "박야구"
             isElite: false
             isWc: false   # 이미 선택되어 더 이상 선택 불가
 
@@ -1233,11 +1233,11 @@ components:
           type: integer
           description: "선수 ID"
           example: 101
-        departmentName:
+        department:
           type: string
           description: "학과"
           example: "수학교육과"
-        playerName:
+        name:
           type: string
           description: "선수 이름"
           example: "윤동현"
@@ -1251,8 +1251,8 @@ components:
           example: false  
       required:
         - id
-        - departmentName
-        - playerName
+        - department
+        - name
         - isElite
         - isWc
 

@@ -4,16 +4,16 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { Game } from '../entities/game.entity';
 import { GameStat } from '../entities/game-stat.entity';
+import { GameInningStat } from '../entities/game-inning-stat.entity';
 import { InningHalf } from '@common/enums/inning-half.enum';
 import {
   ScoreboardResponseDto,
   SimpleScoreRequestDto,
   InningHalfScoreUpdateDto,
 } from '../dtos/score.dto';
-import { GameInningStat } from '../entities/game-inning-stat.entity';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseException } from '@/common/exceptions/base.exception';
@@ -84,19 +84,40 @@ export class GameScoreboardService {
     }
   }
 
-  async changeInning(gameId: number) {
-    const game = await this.gameRepository.findOne({
-      where: { id: gameId },
-      relations: ['gameStat'],
-    });
-    if (!game) {
-      throw new BaseException(
-        `게임 ID ${gameId}를 찾을 수 없습니다.`,
-        ErrorCodes.GAME_NOT_FOUND,
-        HttpStatus.NOT_FOUND,
-      );
+  async changeInning(gameId: number, em: EntityManager, playSeq: number) {
+    let game: Game;
+    let gameStat: GameStat;
+
+    if (em) {
+      // 같은 EntityManager 사용
+      game = await em.findOne(Game, {
+        where: { id: gameId },
+        relations: ['gameStat'],
+      });
+      if (!game) {
+        throw new BaseException(
+          `게임 ID ${gameId}를 찾을 수 없습니다.`,
+          ErrorCodes.GAME_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      gameStat = game.gameStat;
+    } else {
+      // 기존 로직 (별도 EntityManager 사용)
+      game = await this.gameRepository.findOne({
+        where: { id: gameId },
+        relations: ['gameStat'],
+      });
+      if (!game) {
+        throw new BaseException(
+          `게임 ID ${gameId}를 찾을 수 없습니다.`,
+          ErrorCodes.GAME_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      gameStat = game.gameStat;
     }
-    const gameStat = game.gameStat;
+
     const isLastInning =
       gameStat.inning === 7 && gameStat.inningHalf === InningHalf.BOT;
 
@@ -108,20 +129,49 @@ export class GameScoreboardService {
       );
     }
 
+    console.log('Debug - changeInning called with gameId:', gameId);
     this.advanceInning(gameStat);
-    await this.gameStatRepository.save(gameStat);
+    console.log('Debug - advanceInning completed:', {
+      gameStat: {
+        inning: gameStat.inning,
+        inningHalf: gameStat.inningHalf,
+        onFirstGpId: gameStat.onFirstGpId,
+        onSecondGpId: gameStat.onSecondGpId,
+        onThirdGpId: gameStat.onThirdGpId,
+      },
+    });
+    await em.save(gameStat);
+
+    // 새로운 이닝의 GameInningStat 생성
+    const newInningStat = em.create(GameInningStat, {
+      game: { id: gameId },
+      gameId: gameId,
+      inning: gameStat.inning,
+      inningHalf: gameStat.inningHalf,
+      runs: 0,
+      outs: 0,
+      errorFlag: false,
+    });
+    await em.save(newInningStat);
+    console.log('Debug - new GameInningStat created:', {
+      inning: newInningStat.inning,
+      inningHalf: newInningStat.inningHalf,
+    });
+
+    console.log('Debug - advanceInning saved successfully');
   }
 
   async getScoreboard(gameId: number): Promise<ScoreboardResponseDto> {
     const game = await this.gameRepository.findOne({
       where: { id: gameId },
-      relations: ['homeTeam', 'awayTeam', 'gameStat', 'inningStats'],
-      order: {
-        inningStats: {
-          inning: 'ASC',
-          inningHalf: 'ASC',
-        },
-      },
+      relations: [
+        'inningStats',
+        'gameStat',
+        'homeTeam',
+        'awayTeam',
+        'homeTeam.team',
+        'awayTeam.team',
+      ],
     });
 
     if (!game) {
@@ -140,14 +190,14 @@ export class GameScoreboardService {
 
     const teamSummary = {
       home: {
-        id: game.homeTeamId,
-        name: game.homeTeam.name,
+        id: game.homeTeam.team.id,
+        name: game.homeTeam.team.name,
         runs: game.gameStat.homeScore,
         hits: game.gameStat.homeHits,
       },
       away: {
-        id: game.awayTeamId,
-        name: game.awayTeam.name,
+        id: game.awayTeam.team.id,
+        name: game.awayTeam.team.name,
         runs: game.gameStat.awayScore,
         hits: game.gameStat.awayHits,
       },
@@ -217,5 +267,10 @@ export class GameScoreboardService {
       gameStat.inning += 1;
       gameStat.inningHalf = InningHalf.TOP;
     }
+
+    // ✅ 주자판 비우기 추가
+    gameStat.onFirstGpId = null;
+    gameStat.onSecondGpId = null;
+    gameStat.onThirdGpId = null;
   }
 }

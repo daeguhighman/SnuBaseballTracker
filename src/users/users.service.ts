@@ -10,7 +10,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async findByIdWithRoles(id: string): Promise<User> {
+  async findByIdWithRoles(id: number): Promise<User> {
     return this.userRepository.findOne({
       where: { id },
       relations: ['roles'],
