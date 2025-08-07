@@ -18,7 +18,6 @@ import {
 } from '@nestjs/common';
 import { GamesByDatesResponseDto } from '@games/dtos/game.dto';
 import { GetGamesByDateQuery } from '@games/dtos/game-request.dto';
-import { InningHalf } from '@common/enums/inning-half.enum';
 import {
   SubmitLineupRequestDto,
   SubmitSubstituteRequestDto,
@@ -32,7 +31,6 @@ import {
 import {
   InningHalfScoreUpdateDto,
   ScoreboardResponseDto,
-  SimpleScoreRequestDto,
 } from '@games/dtos/score.dto';
 import {
   BatterDailyStats,
@@ -146,7 +144,7 @@ export class GamesController {
   ): Promise<{ success: boolean; message: string }> {
     return this.gameLineupService.submitLineup(gameId, teamTournamentId, body);
   }
-  @UseGuards(SubmitLineupGuard)
+  // @UseGuards(SubmitLineupGuard)
   @Patch(':gameId/teams/:teamTournamentId/lineup')
   async updateLineup(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -181,50 +179,8 @@ export class GamesController {
   // ): Promise<CurrentPitcherResponseDto> {
   //   return this.gameStatsService.getCurrentPitcher(gameId, teamType);
   // }
-  // @UseGuards(UmpireAuthGuard)
-  // @Post(':gameId/scores')
-  // @HttpCode(201)
 
-  // async createScore(
-  //   @Param('gameId', ParseIntPipe) gameId: number,
-  //   @Body() scoreDto: SimpleScoreRequestDto,
-  // ): Promise<ScoreboardResponseDto> {
-  //   this.gameScoreboardService.changeInning(gameId);
-  //   return this.gameScoreboardService.createInningStat(gameId, scoreDto);
-  // }
-  // @UseGuards(UmpireAuthGuard)
-  // @Get(':gameId/scores')
-  // async getScores(
-  //   @Param('gameId', ParseIntPipe) gameId: number,
-  // ): Promise<ScoreboardResponseDto> {
-  //   return this.gameScoreboardService.getScoreboard(gameId);
-  // }
-  // @UseGuards(UmpireAuthGuard)
-  // @Patch(':gameId/scores/:inning/:inningHalf')
-
-  // async updateScore(
-  //   @Param('gameId', ParseIntPipe) gameId: number,
-  //   @Param('inning', ParseIntPipe) inning: number,
-  //   @Param('inningHalf', new ParseEnumPipe(InningHalf)) inningHalf: InningHalf,
-  //   @Body() scoreDto: InningHalfScoreUpdateDto,
-  // ): Promise<ScoreboardResponseDto> {
-  //   return this.gameScoreboardService.updateInningStat(
-  //     gameId,
-  //     inning,
-  //     inningHalf,
-  //     scoreDto,
-  //   );
-  // }
-  // @UseGuards(UmpireAuthGuard)
-  // @Post(':gameId/plate-appearance')
-
-  // async createPlateAppearance(
-  //   @Param('gameId', ParseIntPipe) gameId: number,
-  //   @Body() body: BatterPlateAppearanceRequestDto,
-  // ): Promise<{ success: boolean; message: string }> {
-  //   return this.gameStatsService.recordPlateAppearance(gameId, body);
-  // }
-  @UseGuards(SubmitLineupGuard)
+  // @UseGuards(SubmitLineupGuard)
   @Post(':gameId/teams/:teamTournamentId/substitution')
   async submitSubstitution(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -238,29 +194,22 @@ export class GamesController {
     );
   }
 
-  @Get(':gameId/results')
+  @Get(':gameId/result')
   async getGameResults(
     @Param('gameId', ParseIntPipe) gameId: number,
   ): Promise<GameResultsResponseDto> {
     return this.gameStatsService.getGameResults(gameId);
   }
   @UseGuards(UmpireAuthGuard)
-  @Post(':gameId/results')
+  @Post(':gameId/result')
   async endGame(
-    @Param('gameId', ParseIntPipe) gameId: number,
-    @Body() scoreDto: SimpleScoreRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
-    return this.gameCoreService.endGame(gameId, scoreDto);
-  }
-  @UseGuards(UmpireAuthGuard)
-  @Post(':gameId/results/finalize')
-  async finalizeGame(
     @Param('gameId', ParseIntPipe) gameId: number,
   ): Promise<{ success: boolean; message: string }> {
     return this.gameCoreService.finalizeGame(gameId);
   }
+
   @UseGuards(UmpireAuthGuard)
-  @Patch(':gameId/results/batters/:batterGameStatsId')
+  @Patch(':gameId/result/batters/:batterGameStatsId')
   async updateBatterStats(
     @Param('gameId', ParseIntPipe) gameId: number,
     @Param('batterGameStatsId', ParseIntPipe) batterGameStatsId: number,
@@ -273,7 +222,7 @@ export class GamesController {
     );
   }
   @UseGuards(UmpireAuthGuard)
-  @Patch(':gameId/results/pitchers/:pitcherGameStatsId')
+  @Patch(':gameId/result/pitchers/:pitcherGameStatsId')
   async updatePitcherStats(
     @Param('gameId', ParseIntPipe) gameId: number,
     @Param('pitcherGameStatsId', ParseIntPipe) pitcherGameStatsId: number,

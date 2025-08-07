@@ -11,11 +11,11 @@ import {
   Column,
 } from 'typeorm';
 import { Game } from './game.entity';
-import { Team } from '@teams/entities/team.entity';
 import { PlayerTournament } from '@/players/entities/player-tournament.entity';
+import { TeamTournament } from '@/teams/entities/team-tournament.entity';
 
 @Entity('game_roasters')
-@Unique(['game', 'team', 'playerTournament'])
+@Unique(['game', 'teamTournament', 'playerTournament'])
 export class GameRoaster {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -28,11 +28,11 @@ export class GameRoaster {
   gameId: number;
 
   @Index()
-  @ManyToOne(() => Team, { nullable: false, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'team_id' })
-  team: Team;
-  @Column({ name: 'team_id' })
-  teamId: number;
+  @ManyToOne(() => TeamTournament, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'team_tournament_id' })
+  teamTournament: TeamTournament;
+  @Column({ name: 'team_tournament_id' })
+  teamTournamentId: number;
 
   @Index()
   @ManyToOne(() => PlayerTournament, { nullable: false, onDelete: 'RESTRICT' })

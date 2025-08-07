@@ -13,25 +13,43 @@ export class BatterRecord {
     description: '선수 이름',
     example: '홍길동',
   })
-  playerName: string;
+  name: string;
   @IsString()
   @ApiProperty({
     description: '팀 이름',
     example: '포톤스',
   })
-  teamName: string;
+  team: string;
   @IsInt()
   @ApiProperty({
     description: '팀 경기 수',
     example: 10,
   })
   teamGameCount: number;
+  @IsString()
+  @ApiProperty({
+    description: '타율',
+    example: '0.333',
+  })
+  AVG: string;
+  @IsInt()
+  @ApiProperty({
+    description: '타석',
+    example: 100,
+  })
+  PA: number;
   @IsInt()
   @ApiProperty({
     description: '타수',
     example: 10,
   })
   AB: number;
+  @IsInt()
+  @ApiProperty({
+    description: '안타',
+    example: 12,
+  })
+  H: number;
   @IsInt()
   @ApiProperty({
     description: '2루타',
@@ -46,16 +64,34 @@ export class BatterRecord {
   '3B': number;
   @IsInt()
   @ApiProperty({
+    description: '홈런',
+    example: 0,
+  })
+  HR: number;
+  @IsInt()
+  @ApiProperty({
+    description: '타점',
+    example: 8,
+  })
+  RBI: number;
+  @IsInt()
+  @ApiProperty({
+    description: '득점',
+    example: 5,
+  })
+  R: number;
+  @IsInt()
+  @ApiProperty({
     description: '볼넷',
     example: 10,
   })
   BB: number;
-  @IsString()
+  @IsInt()
   @ApiProperty({
-    description: '타율',
-    example: '0.333',
+    description: '삼진',
+    example: 3,
   })
-  AVG: string;
+  SO: number;
   @IsString()
   @ApiProperty({
     description: '출루율',
@@ -99,19 +135,49 @@ export class PitcherRecord {
     description: '선수 이름',
     example: '홍길동',
   })
-  playerName: string;
+  name: string;
   @IsString()
   @ApiProperty({
     description: '팀 이름',
     example: '포톤스',
   })
-  teamName: string;
+  team: string;
+  @IsString()
+  @ApiProperty({
+    description: '평균자책점',
+    example: '2.50',
+  })
+  ERA: string;
+  @IsInt()
+  @ApiProperty({
+    description: '이닝',
+    example: 15,
+  })
+  IP: number;
+  @IsInt()
+  @ApiProperty({
+    description: '실점',
+    example: 8,
+  })
+  R: number;
+  @IsInt()
+  @ApiProperty({
+    description: '자책점',
+    example: 6,
+  })
+  ER: number;
   @IsInt()
   @ApiProperty({
     description: '삼진',
     example: 10,
   })
   K: number;
+  @IsInt()
+  @ApiProperty({
+    description: '사사구',
+    example: 5,
+  })
+  BB: number;
 }
 
 export class PitcherRecordsResponse {

@@ -12,6 +12,8 @@ import {
 import { TeamTournament } from '@teams/entities/team-tournament.entity';
 import { UmpireTournament } from '@umpires/entities/umpire-tournament.entity';
 import { PhaseType } from '@common/enums/phase-type.enum';
+import { TournamentType } from '@common/enums/tournament-type.enum';
+
 @Entity('tournaments')
 @Unique(['year', 'name'])
 export class Tournament {
@@ -19,8 +21,11 @@ export class Tournament {
   id: number;
 
   @Index()
-  @Column({ length: 100 })
-  name: string;
+  @Column({
+    type: 'enum',
+    enum: TournamentType,
+  })
+  name: TournamentType;
 
   @Index()
   @Column()

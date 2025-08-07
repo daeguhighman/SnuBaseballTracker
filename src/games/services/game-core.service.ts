@@ -57,7 +57,9 @@ export class GameCoreService {
     const games = await this.gameRepository
       .createQueryBuilder('g')
       .leftJoinAndSelect('g.homeTeam', 'homeTeam')
+      .leftJoinAndSelect('homeTeam.team', 'homeTeamTeam')
       .leftJoinAndSelect('g.awayTeam', 'awayTeam')
+      .leftJoinAndSelect('awayTeam.team', 'awayTeamTeam')
       .leftJoinAndSelect('g.gameStat', 'stat')
       .where('g.start_time BETWEEN :s AND :e', { s: start, e: end })
       .orderBy('g.start_time', 'ASC')
@@ -133,7 +135,7 @@ export class GameCoreService {
         score: game.gameStat?.awayScore ?? null,
       },
       isForfeit: game.isForfeit,
-      canRecord,
+      canRecord: true, // TODO: 심판 권한 확인 후 수정
       canSubmitLineup,
     };
   }
@@ -160,8 +162,6 @@ export class GameCoreService {
         'gameStat',
       ],
     });
-
-    console.log(games);
     const tournamentGames: TournamentGameDto[] = games.map((game) =>
       this.mapGameToTournamentGameDto(game),
     );
@@ -199,12 +199,12 @@ export class GameCoreService {
 
       // 1) 선발 batter/pitcher 조회 & 검증
       const [homeBat, awayBat] = await Promise.all([
-        this.getStartingBatter(gameId, game.homeTeam.team.id, m),
-        this.getStartingBatter(gameId, game.awayTeam.team.id, m),
+        this.getStartingBatter(gameId, game.homeTeam.id, m),
+        this.getStartingBatter(gameId, game.awayTeam.id, m),
       ]);
       const [homePit, awayPit] = await Promise.all([
-        this.getStartingPitcher(gameId, game.homeTeam.team.id, m),
-        this.getStartingPitcher(gameId, game.awayTeam.team.id, m),
+        this.getStartingPitcher(gameId, game.homeTeam.id, m),
+        this.getStartingPitcher(gameId, game.awayTeam.id, m),
       ]);
 
       if (!homeBat || !awayBat || !homePit || !awayPit) {
@@ -233,6 +233,7 @@ export class GameCoreService {
           gameId,
           inning: 1,
           inningHalf: InningHalf.TOP,
+          startSeq: 1,
         }),
       );
 
@@ -251,38 +252,11 @@ export class GameCoreService {
       // 3) 부모(Game) 상태만 UPDATE (stat FK 건드릴 필요 없음)
       await m.update(Game, gameId, { status: GameStatus.IN_PROGRESS });
 
-      // 4) 최초 스냅샷 생성 (GameStatsService.makePlaySnapshotUmpire 활용)
-      // 트랜잭션 내에서 Game을 다시 조회하여 GameStat relation을 포함
-      const gameWithStat = await m.findOne(Game, {
-        where: { id: gameId },
-        relations: [
-          'homeTeam.team',
-          'awayTeam.team',
-          'gameStat',
-          'inningStats',
-          'batterGameParticipations',
-          'batterGameParticipations.playerTournament',
-          'batterGameParticipations.playerTournament.player',
-          'batterGameParticipations.batterGameStat',
-          'pitcherGameParticipations',
-          'pitcherGameParticipations.playerTournament',
-          'pitcherGameParticipations.playerTournament.player',
-          'pitcherGameParticipations.pitcherGameStat',
-        ],
-      });
-
-      if (!gameWithStat || !gameWithStat.gameStat) {
-        throw new BaseException(
-          'GameStat을 찾을 수 없습니다.',
-          ErrorCodes.GAME_STAT_NOT_FOUND,
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
       // Game 객체를 직접 전달하여 스냅샷 생성
       const snapshot = await this.gameStatsService.makePlaySnapshotUmpire(
-        gameWithStat,
+        gameId,
         firstPlay.id,
+        m,
       );
 
       return {
@@ -313,13 +287,13 @@ export class GameCoreService {
 
   private async getStartingBatter(
     gameId: number,
-    teamId: number,
+    teamTournamentId: number,
     manager: EntityManager,
   ): Promise<BatterGameParticipation | null> {
     return manager.findOne(BatterGameParticipation, {
       where: {
         game: { id: gameId },
-        team: { id: teamId },
+        teamTournament: { id: teamTournamentId },
         battingOrder: 1,
         substitutionOrder: 0,
       },
@@ -328,75 +302,16 @@ export class GameCoreService {
 
   private async getStartingPitcher(
     gameId: number,
-    teamId: number,
+    teamTournamentId: number,
     manager: EntityManager,
   ): Promise<PitcherGameParticipation | null> {
     return manager.findOne(PitcherGameParticipation, {
       where: {
         game: { id: gameId },
-        team: { id: teamId },
+        teamTournament: { id: teamTournamentId },
         substitutionOrder: 0,
       },
     });
-  }
-
-  async endGame(
-    gameId: number,
-    scoreDto: SimpleScoreRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
-    await this.dataSource.transaction(async (manager) => {
-      const game = await manager.findOne(Game, {
-        where: { id: gameId },
-        relations: ['gameStat'],
-      });
-
-      if (!game) {
-        throw new BaseException(
-          `게임 ID ${gameId}를 찾을 수 없습니다.`,
-          ErrorCodes.GAME_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      if (game.status !== GameStatus.IN_PROGRESS) {
-        throw new BaseException(
-          '게임이 진행 중이지 않습니다.',
-          ErrorCodes.GAME_NOT_IN_PROGRESS,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const inning = game.gameStat.inning;
-      const inningHalf = game.gameStat.inningHalf;
-
-      const existing = await manager.findOne(GameInningStat, {
-        where: { game: { id: gameId }, inning, inningHalf },
-      });
-      if (existing)
-        throw new BaseException(
-          '이미 해당 이닝 점수가 존재합니다.',
-          ErrorCodes.GAME_INNING_STAT_ALREADY_EXISTS,
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const newInningStat = manager.create(GameInningStat, {
-        game,
-        inning,
-        inningHalf,
-        runs: scoreDto.runs,
-      });
-
-      await manager.save(newInningStat);
-
-      if (inningHalf === InningHalf.TOP) {
-        game.gameStat.awayScore += scoreDto.runs;
-      } else {
-        game.gameStat.homeScore += scoreDto.runs;
-      }
-      await manager.save(game.gameStat);
-
-      await manager.update(Game, gameId, { status: GameStatus.EDITING });
-    });
-    return { success: true, message: '게임 점수가 저장되었습니다.' };
   }
 
   /**
@@ -406,8 +321,6 @@ export class GameCoreService {
   async finalizeGame(
     gameId: number,
   ): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`Finalizing game with ID: ${gameId}`);
-
     await this.dataSource.transaction(async (manager) => {
       // 1. 게임 정보 로드 (필요한 관계 모두 포함)
       const game = await manager.findOne(Game, {
@@ -424,10 +337,10 @@ export class GameCoreService {
       }
 
       // 2. 게임 상태 검증
-      if (game.status !== GameStatus.EDITING) {
+      if (game.status !== GameStatus.IN_PROGRESS) {
         throw new BaseException(
-          `게임이 수정 가능한 상태가 아닙니다. 현재 상태: ${game.status}`,
-          ErrorCodes.GAME_NOT_EDITABLE,
+          `게임이 진행 중이지 않습니다. 현재 상태: ${game.status}`,
+          ErrorCodes.GAME_NOT_IN_PROGRESS,
           HttpStatus.BAD_REQUEST,
         );
       }

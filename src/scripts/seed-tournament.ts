@@ -1,9 +1,9 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app.module';
+import { AppDataSource } from '../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 import { Tournament } from '../tournaments/entities/tournament.entity';
 import { PhaseType } from '../common/enums/phase-type.enum';
+import { TournamentType } from '@common/enums/tournament-type.enum';
 
 interface TournamentData {
   name: string;
@@ -24,7 +24,7 @@ export class TournamentSeeder {
 
     // 새 대회 생성
     const tournament = this.tournamentRepo.create({
-      name: '스누나래',
+      name: TournamentType.SNU_NARAE,
       year: 2025,
     });
 
@@ -36,17 +36,21 @@ export class TournamentSeeder {
 }
 
 async function main() {
-  const app = await NestFactory.createApplicationContext(AppModule);
-  const dataSource = app.get(DataSource);
-
   try {
-    const seeder = new TournamentSeeder(dataSource);
+    await AppDataSource.initialize();
+    const seeder = new TournamentSeeder(AppDataSource);
     await seeder.seedTournament();
   } catch (error) {
     console.error('시드 데이터 생성 중 오류 발생:', error);
+    process.exit(1);
   } finally {
-    await app.close();
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
   }
 }
 
-main();
+// 직접 실행될 때만 main() 호출
+if (require.main === module) {
+  main();
+}

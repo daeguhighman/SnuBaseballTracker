@@ -91,7 +91,6 @@ export class BatterStatsValidator {
   /**
    * 타자 스탯을 조정하여 일관성을 유지합니다.
    * 1. 총 안타(H) = 1루타 + 2루타 + 3루타 + 홈런을 유지합니다.
-   * 2. ETC = 타석(PA) - (타수(AB) + 볼넷(BB) + 희생타(SAC))로 자동 계산합니다.
    *
    * @returns 타자 스탯 조정 결과
    */
@@ -103,9 +102,12 @@ export class BatterStatsValidator {
       doubles: number; // 2루타
       triples: number; // 3루타
       homeRuns: number; // 홈런
+      runs: number; // 득점
+      runsBattedIn: number; // 타점
       walks: number; // 볼넷
+      strikeouts: number; // 삼진
       sacrificeFlies: number; // 희생타
-      etcs: number; // 기타 결과
+      sacrificeBunts: number; // 희생번트
     },
     updateDto: {
       PA?: number; // 타석
@@ -114,8 +116,12 @@ export class BatterStatsValidator {
       '2B'?: number; // 2루타
       '3B'?: number; // 3루타
       HR?: number; // 홈런
+      R?: number; // 득점
+      RBI?: number; // 타점
       BB?: number; // 볼넷
+      SO?: number; // 삼진
       SAC?: number; // 희생타
+      SF?: number; // 희생플라이
     },
   ): {
     plateAppearances: number;
@@ -124,9 +130,12 @@ export class BatterStatsValidator {
     doubles: number;
     triples: number;
     homeRuns: number;
+    runs: number;
+    runsBattedIn: number;
     walks: number;
+    strikeouts: number;
     sacrificeFlies: number;
-    etcs: number;
+    sacrificeBunts: number;
   } {
     // 먼저 검증 수행
     this.validateUpdateRequest(currentStats, updateDto);
@@ -151,10 +160,6 @@ export class BatterStatsValidator {
         updateDto.H - result.doubles - result.triples - result.homeRuns,
       );
     }
-
-    // 2. etc 계산 (PA에서 AB, BB, SAC을 뺀 나머지)
-    const accountedPA = result.atBats + result.walks + result.sacrificeFlies;
-    result.etcs = result.plateAppearances - accountedPA;
 
     return result;
   }

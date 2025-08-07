@@ -16,6 +16,7 @@ import { Team } from '@teams/entities/team.entity';
 import { BatterGameStat } from './batter-game-stat.entity';
 import { Position } from '@common/enums/position.enum';
 import { PlayerTournament } from '@/players/entities/player-tournament.entity';
+import { TeamTournament } from '@/teams/entities/team-tournament.entity';
 
 @Entity('batter_game_participations')
 @Unique(['game', 'playerTournament'])
@@ -33,11 +34,11 @@ export class BatterGameParticipation {
   gameId: number;
 
   @Index()
-  @ManyToOne(() => Team, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'team_id' })
-  team: Team;
-  @Column({ name: 'team_id' })
-  teamId: number;
+  @ManyToOne(() => TeamTournament, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'team_tournament_id' })
+  teamTournament: TeamTournament;
+  @Column({ name: 'team_tournament_id' })
+  teamTournamentId: number;
 
   @Index()
   @ManyToOne(() => PlayerTournament, (pt) => pt.batterGameParticipations, {

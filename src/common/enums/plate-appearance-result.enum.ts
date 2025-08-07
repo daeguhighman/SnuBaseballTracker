@@ -5,7 +5,7 @@ export enum PlateAppearanceResult {
   HOMERUN = 'HR',
   WALK = 'BB',
   SACRIFICE_FLY = 'SF', // 희생플라이
-  SACRIFICE_BUNT = 'SB', // 희생번트
+  SACRIFICE_BUNT = 'SAC ', // 희생번트
   STRIKEOUT = 'SO', // 삼진
   OUT = 'O', // 아웃
   STRIKEOUT_DROP = 'SO_DROP', // 낫아웃

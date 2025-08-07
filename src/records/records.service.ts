@@ -24,7 +24,7 @@ export class RecordsService {
   ) {}
 
   /** 안타가 1개 이상인 모든 타자 기록을 조회 */
-  async getBatterRecords(): Promise<BatterRecordsResponse> {
+  async getBatterRecords(tournamentId: number): Promise<BatterRecordsResponse> {
     const raw = await this.batterStatsRepository
       .createQueryBuilder('stat')
       .innerJoin('stat.playerTournament', 'pt')
@@ -32,6 +32,7 @@ export class RecordsService {
       .innerJoin('player.team', 'team')
       .innerJoin('team.teamTournaments', 'tt')
       .where('stat.hits > 0')
+      .andWhere('tt.tournamentId = :tournamentId', { tournamentId })
       .orderBy('stat.hits', 'DESC')
       .select(['player.name AS "playerName"', 'team.name   AS "teamName"'])
       // subquery 로 isForfeit = false 인 게임만 COUNT
@@ -45,14 +46,17 @@ export class RecordsService {
           .andWhere('g.isForfeit = false');
       }, 'teamGameCount')
       .addSelect([
+        'stat.battingAverage   AS "AVG"',
         'stat.plateAppearances AS "PA"',
         'stat.atBats           AS "AB"',
         'stat.hits             AS "H"',
         'stat.doubles          AS "2B"',
         'stat.triples          AS "3B"',
         'stat.homeRuns         AS "HR"',
+        'stat.runsBattedIn    AS "RBI"',
+        'stat.runs             AS "R"',
         'stat.walks            AS "BB"',
-        'stat.battingAverage   AS "AVG"',
+        'stat.strikeouts       AS "SO"',
         'stat.onBasePercentage AS "OBP"',
         'stat.sluggingPercentage AS "SLG"',
         'stat.ops              AS "OPS"',
@@ -67,6 +71,7 @@ export class RecordsService {
 
   /** 상위 N명의 투수 기록을 조회 */
   async getPitcherRecords(
+    tournamentId: number,
     limit = DEFAULT_PITCHER_LIMIT,
   ): Promise<PitcherRecordsResponse> {
     const raw = await this.pitcherStatsRepository
@@ -74,13 +79,20 @@ export class RecordsService {
       .innerJoin('stat.playerTournament', 'pt')
       .innerJoin('pt.player', 'player')
       .innerJoin('player.team', 'team')
+      .innerJoin('team.teamTournaments', 'tt')
       .where('stat.strikeouts > 0')
+      .andWhere('tt.tournamentId = :tournamentId', { tournamentId })
       .orderBy('stat.strikeouts', 'DESC')
       .limit(limit)
       .select([
-        'player.name AS "playerName"',
-        'team.name   AS "teamName"',
-        'stat.strikeouts AS "K"',
+        'player.name AS "name"',
+        'team.name   AS "team"',
+        'stat.era             AS "ERA"',
+        'stat.inningsPitched  AS "IP"',
+        'stat.runs            AS "R"',
+        'stat.earnedRuns      AS "ER"',
+        'stat.strikeouts      AS "K"',
+        'stat.walks           AS "BB"',
       ])
       .getRawMany();
 

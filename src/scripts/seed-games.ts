@@ -1,5 +1,4 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app.module';
+import { AppDataSource } from '../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 import { Game } from '../games/entities/game.entity';
@@ -8,11 +7,9 @@ import { Tournament } from '../tournaments/entities/tournament.entity';
 import { GameStatus } from '../common/enums/game-status.enum';
 
 interface GameData {
-  homeTeamName: string;
   awayTeamName: string;
+  homeTeamName: string;
   scheduledAt: string;
-  venue: string;
-  description?: string;
 }
 
 export class GameSeeder {
@@ -42,11 +39,29 @@ export class GameSeeder {
 
     const games: GameData[] = [
       {
-        homeTeamName: '롯데 자이언츠',
-        awayTeamName: '키움 히어로즈',
-        scheduledAt: '2024-03-15 14:00:00',
-        venue: '사직야구장',
-        description: '롯데 vs 키움 정규시즌',
+        awayTeamName: '두산 베어스',
+        homeTeamName: '한화 이글스',
+        scheduledAt: '2025-08-22 08:00:00',
+      },
+      {
+        awayTeamName: 'NC 다이노스',
+        homeTeamName: 'KT 위즈',
+        scheduledAt: '2025-08-22 10:00:00',
+      },
+      {
+        awayTeamName: 'LG 트윈스',
+        homeTeamName: '기아 타이거즈',
+        scheduledAt: '2025-08-22 12:00:00',
+      },
+      {
+        awayTeamName: '롯데 자이언츠',
+        homeTeamName: '키움 히어로즈',
+        scheduledAt: '2025-08-22 14:00:00',
+      },
+      {
+        awayTeamName: 'SSG 랜더스',
+        homeTeamName: '삼성 라이온즈',
+        scheduledAt: '2025-08-22 16:00:00',
       },
     ];
 
@@ -125,18 +140,22 @@ export class GameSeeder {
 }
 
 async function main() {
-  const app = await NestFactory.createApplicationContext(AppModule);
-  const dataSource = app.get(DataSource);
-
   try {
-    const seeder = new GameSeeder(dataSource);
+    await AppDataSource.initialize();
+    const seeder = new GameSeeder(AppDataSource);
     const tournamentId = 1; // 실제 대회 ID로 변경
     await seeder.seedGames(tournamentId);
   } catch (error) {
     console.error('시드 데이터 생성 중 오류 발생:', error);
+    process.exit(1);
   } finally {
-    await app.close();
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
   }
 }
 
-main();
+// 직접 실행될 때만 main() 호출
+if (require.main === module) {
+  main();
+}

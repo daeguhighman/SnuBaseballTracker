@@ -1,5 +1,4 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app.module';
+import { AppDataSource } from '../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 import { Team } from '../teams/entities/team.entity';
@@ -77,7 +76,7 @@ export class TeamSeeder {
         groupName: 'E조',
       },
       {
-        name: 'KIA 타이거즈',
+        name: '기아 타이거즈',
         groupName: 'E조',
       },
     ];
@@ -102,7 +101,7 @@ export class TeamSeeder {
           console.log(`  - 기존 팀 사용: ${teamData.name}`);
         }
 
-        // 3. 팀-대회 정보 생성 또는 조회
+        // 3. 팀-대회 관계 생성 또는 조회
         const existingTeamTournament = await this.teamTournamentRepo.findOne({
           where: {
             teamId: team.id,
@@ -110,23 +109,24 @@ export class TeamSeeder {
           },
         });
 
-        if (!existingTeamTournament) {
-          const teamTournament = this.teamTournamentRepo.create({
-            teamId: team.id,
-            tournamentId: tournamentId,
-            groupName: teamData.groupName,
-          });
-          await this.teamTournamentRepo.save(teamTournament);
-          console.log(
-            `  - 팀-대회 연결 생성: ${teamData.name} -> ${tournament.name}`,
-          );
-          createdCount++;
-        } else {
-          console.log(
-            `  - 팀-대회 연결 이미 존재: ${teamData.name} -> ${tournament.name}`,
-          );
+        if (existingTeamTournament) {
+          console.log(`⏭️  팀-대회 관계 "${teamData.name}" 이미 존재함`);
           skippedCount++;
+          continue;
         }
+
+        // 새 팀-대회 관계 생성
+        const teamTournament = this.teamTournamentRepo.create({
+          teamId: team.id,
+          tournamentId: tournamentId,
+          groupName: teamData.groupName,
+        });
+
+        await this.teamTournamentRepo.save(teamTournament);
+        console.log(
+          `✅ 팀-대회 관계 "${teamData.name}" 생성 완료 (ID: ${teamTournament.id})`,
+        );
+        createdCount++;
       } catch (error) {
         console.error(`❌ 팀 "${teamData.name}" 처리 실패:`, error.message);
       }
@@ -139,19 +139,22 @@ export class TeamSeeder {
 }
 
 async function main() {
-  const app = await NestFactory.createApplicationContext(AppModule);
-  const dataSource = app.get(DataSource);
-
   try {
-    const seeder = new TeamSeeder(dataSource);
-    // 대회 ID를 인자로 받거나 하드코딩
+    await AppDataSource.initialize();
+    const seeder = new TeamSeeder(AppDataSource);
     const tournamentId = 1; // 실제 대회 ID로 변경
     await seeder.seedTeams(tournamentId);
   } catch (error) {
     console.error('시드 데이터 생성 중 오류 발생:', error);
+    process.exit(1);
   } finally {
-    await app.close();
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
   }
 }
 
-main();
+// 직접 실행될 때만 main() 호출
+if (require.main === module) {
+  main();
+}

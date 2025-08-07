@@ -129,17 +129,7 @@ export class GameScoreboardService {
       );
     }
 
-    console.log('Debug - changeInning called with gameId:', gameId);
     this.advanceInning(gameStat);
-    console.log('Debug - advanceInning completed:', {
-      gameStat: {
-        inning: gameStat.inning,
-        inningHalf: gameStat.inningHalf,
-        onFirstGpId: gameStat.onFirstGpId,
-        onSecondGpId: gameStat.onSecondGpId,
-        onThirdGpId: gameStat.onThirdGpId,
-      },
-    });
     await em.save(gameStat);
 
     // 새로운 이닝의 GameInningStat 생성
@@ -153,12 +143,6 @@ export class GameScoreboardService {
       errorFlag: false,
     });
     await em.save(newInningStat);
-    console.log('Debug - new GameInningStat created:', {
-      inning: newInningStat.inning,
-      inningHalf: newInningStat.inningHalf,
-    });
-
-    console.log('Debug - advanceInning saved successfully');
   }
 
   async getScoreboard(gameId: number): Promise<ScoreboardResponseDto> {

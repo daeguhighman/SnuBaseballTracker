@@ -24,10 +24,10 @@ export class PlaysController {
   }
 
   @Post(':playId/runner-events')
-  async addRunnerEvents(
+  addRunnerEvents(
     @Param('playId', ParseIntPipe) playId: number,
-    @Body() body: AddRunnerEventsDto,
+    @Body() dto: AddRunnerEventsDto,
   ) {
-    return this.playService.addRunnerEvents(playId, body);
+    return this.playService.addRunnerEvents(playId, dto);
   }
 }

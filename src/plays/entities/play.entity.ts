@@ -44,7 +44,7 @@ export class Play {
 
   @ManyToOne(() => GameInningStat, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'game_inning_stat_id' })
-  gameInningStat: GameInningStat;
+  gameInningStat?: GameInningStat;
 
   /* 타자 */
   @Column({ name: 'batter_gp_id' })

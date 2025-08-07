@@ -10,14 +10,14 @@ import { BatterGameParticipation } from '@/games/entities/batter-game-participat
 import { GameInningStat } from '@/games/entities/game-inning-stat.entity';
 import { PitcherGameParticipation } from '@/games/entities/pitcher-game-participation.entity';
 
-// Runner.ts ― 주자 생명주기를 대표
-@Entity()
-export class Runner {
+// VirtualRunner.ts ― 가상 주자 생명주기를 대표
+@Entity('virtual_runners')
+export class VirtualRunner {
   @PrimaryGeneratedColumn()
   id: number;
 
   /* ------ 주자 자체 ------ */
-  @ManyToOne(() => BatterGameParticipation) // 주자의 GP(선수·대주자 바뀌면 새 Runner)
+  @ManyToOne(() => BatterGameParticipation) // 주자의 GP(선수·대주자 바뀌면 새 VirtualRunner)
   @JoinColumn({ name: 'runner_gp_id' })
   runnerGp: BatterGameParticipation;
 
@@ -25,7 +25,7 @@ export class Runner {
   runnerGpId: number;
 
   /* ------ 책임 정보 ------ */
-  @ManyToOne(() => PitcherGameParticipation) // 이 Runner를 ‘출루시킨’ 투수
+  @ManyToOne(() => PitcherGameParticipation) // 이 VirtualRunner를 '출루시킨' 투수
   @JoinColumn({ name: 'responsible_pitcher_gp_id' })
   responsiblePitcherGp: PitcherGameParticipation;
 

@@ -6,7 +6,7 @@ import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 
 interface LineupValidationContext {
   submitLineupDto: SubmitLineupRequestDto;
-  teamId: number;
+  teamTournamentId: number;
 }
 
 interface ValidationResult {

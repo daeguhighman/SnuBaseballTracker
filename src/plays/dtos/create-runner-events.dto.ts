@@ -22,19 +22,25 @@ export class RunnerEventInput {
 
   @IsOptional()
   isActual = true;
+
+  // startBase와 endBase가 같은지 검사하는 메서드
+  validateStartEndBase(): boolean {
+    return this.startBase !== this.endBase;
+  }
 }
 
-// 타석 중(전) 이벤트와 타석 결과 이벤트를 명확히 분리
 export class AddRunnerEventsDto {
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => RunnerEventInput)
-  prevBatEvents?: RunnerEventInput[]; // 도루, 폭투 등 타석 중 발생
+  @IsEnum(['PREV', 'AFTER'])
+  phase: 'PREV' | 'AFTER';
 
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RunnerEventInput)
-  afterBatEvents?: RunnerEventInput[]; // 안타, 볼넷 등 타석 결과로 발생
+  actual: RunnerEventInput[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RunnerEventInput)
+  @IsOptional()
+  virtual?: RunnerEventInput[];
 }
