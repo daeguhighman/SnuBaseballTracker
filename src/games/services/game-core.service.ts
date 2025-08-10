@@ -111,10 +111,10 @@ export class GameCoreService {
 
     // 유저 권한 확인
     const canRecord = await this.checkUserCanRecord(game.id, userId);
-    const canSubmitLineup = await this.checkUserCanSubmitLineup(
-      game.id,
-      userId,
-    );
+    // const canSubmitLineup = await this.checkUserCanSubmitLineup(
+    //   game.id,
+    //   userId,
+    // );
 
     return {
       id: game.id,
@@ -136,7 +136,7 @@ export class GameCoreService {
       },
       isForfeit: game.isForfeit,
       canRecord: true, // TODO: 심판 권한 확인 후 수정
-      canSubmitLineup,
+      // canSubmitLineup,
     };
   }
 
@@ -325,7 +325,14 @@ export class GameCoreService {
       // 1. 게임 정보 로드 (필요한 관계 모두 포함)
       const game = await manager.findOne(Game, {
         where: { id: gameId },
-        relations: ['tournament', 'homeTeam', 'awayTeam', 'gameStat'],
+        relations: [
+          'tournament',
+          'homeTeam',
+          'homeTeam.team',
+          'awayTeam',
+          'awayTeam.team',
+          'gameStat',
+        ],
       });
 
       if (!game) {
@@ -445,13 +452,14 @@ export class GameCoreService {
       // 무승부
       homeTeamTournament.draws += 1;
       awayTeamTournament.draws += 1;
+      winnerTeamId = null;
       this.logger.debug(
         `Draw: ${game.homeTeam.team.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.team.name} (${game.gameStat.awayScore})`,
       );
     }
 
     await manager.update(Game, game.id, {
-      winnerTeam: { team: { id: winnerTeamId } },
+      winnerTeamTournamentId: winnerTeamId,
     });
 
     // 5. 팀 토너먼트 통계 저장
@@ -736,14 +744,18 @@ export class GameCoreService {
 
   // 관중용 스냅샷을 push하는 메서드
   async pushSnapshotAudience(gameId: number, playId: number) {
-    const snapshot = await this.gameStatsService.makePlaySnapshotAudience(
-      gameId,
-      playId,
-    );
-    if (!this.snapshotStreams.has(gameId)) {
-      this.snapshotStreams.set(gameId, new ReplaySubject<MessageEvent>(1));
-    }
-    this.snapshotStreams.get(gameId).next({ data: snapshot });
+    // 트랜잭션 외부에서 스냅샷 생성
+    await this.dataSource.transaction(async (manager) => {
+      const snapshot = await this.gameStatsService.makePlaySnapshotAudience(
+        gameId,
+        playId,
+        manager,
+      );
+      if (!this.snapshotStreams.has(gameId)) {
+        this.snapshotStreams.set(gameId, new ReplaySubject<MessageEvent>(1));
+      }
+      this.snapshotStreams.get(gameId).next({ data: snapshot });
+    });
   }
 
   getSnapshotStream(gameId: number): Observable<MessageEvent> {

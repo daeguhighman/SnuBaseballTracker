@@ -29,8 +29,8 @@ export class RecordsService {
       .createQueryBuilder('stat')
       .innerJoin('stat.playerTournament', 'pt')
       .innerJoin('pt.player', 'player')
-      .innerJoin('player.team', 'team')
-      .innerJoin('team.teamTournaments', 'tt')
+      .innerJoin('pt.teamTournament', 'tt')
+      .innerJoin('tt.team', 'team')
       .where('stat.hits > 0')
       .andWhere('tt.tournamentId = :tournamentId', { tournamentId })
       .orderBy('stat.hits', 'DESC')
@@ -41,7 +41,9 @@ export class RecordsService {
           .select('COUNT(*)')
           .from(Game, 'g')
           .where('g.tournamentId = tt.tournamentId')
-          .andWhere('(g.homeTeamId = team.id OR g.awayTeamId = team.id)')
+          .andWhere(
+            '(g.homeTeamTournamentId = tt.id OR g.awayTeamTournamentId = tt.id)',
+          )
           .andWhere('g.status = :status', { status: GameStatus.FINALIZED })
           .andWhere('g.isForfeit = false');
       }, 'teamGameCount')
@@ -78,8 +80,8 @@ export class RecordsService {
       .createQueryBuilder('stat')
       .innerJoin('stat.playerTournament', 'pt')
       .innerJoin('pt.player', 'player')
-      .innerJoin('player.team', 'team')
-      .innerJoin('team.teamTournaments', 'tt')
+      .innerJoin('pt.teamTournament', 'tt')
+      .innerJoin('tt.team', 'team')
       .where('stat.strikeouts > 0')
       .andWhere('tt.tournamentId = :tournamentId', { tournamentId })
       .orderBy('stat.strikeouts', 'DESC')

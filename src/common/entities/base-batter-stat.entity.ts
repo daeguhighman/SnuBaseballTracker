@@ -39,7 +39,4 @@ export abstract class BaseBatterStat {
 
   @Column({ name: 'runs', default: 0 })
   runs: number;
-
-  @Column({ default: 0 })
-  etcs: number;
 }

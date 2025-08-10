@@ -10,10 +10,10 @@ import {
 import { Type } from 'class-transformer';
 export class BatterDailyStats {
   @IsInt()
-  batterGameStatsId: number;
+  id: number;
 
   @IsString()
-  playerName: string;
+  name: string;
 
   @IsInt()
   battingOrder: number;
@@ -49,7 +49,7 @@ export class BatterDailyStats {
   SF: number;
 
   @IsInt()
-  SAC: number;
+  SH: number;
 
   @IsInt()
   BB: number;
@@ -60,10 +60,10 @@ export class BatterDailyStats {
 
 export class PitcherDailyStats {
   @IsInt()
-  pitcherGameStatsId: number;
+  id: number;
 
   @IsString()
-  playerName: string;
+  name: string;
 
   @IsInt()
   IP: number;
@@ -148,7 +148,7 @@ export class UpdateBatterStatsDto {
   @IsInt()
   @IsOptional()
   @Min(0)
-  SAC: number;
+  SH: number;
 
   @IsInt()
   @IsOptional()

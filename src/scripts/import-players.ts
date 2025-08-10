@@ -172,7 +172,6 @@ export class PlayerImporter {
       const playerTournament = this.playerTournamentRepo.create({
         player: player,
         playerId: player.id,
-        name: playerData.name,
         backNumber: playerData.backNumber,
         teamTournament: { id: teamTournamentId },
         teamTournamentId: teamTournamentId,

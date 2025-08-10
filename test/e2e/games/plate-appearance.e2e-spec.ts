@@ -116,7 +116,7 @@ describe('POST /games/{gameId}/plate-appearance', () => {
           '2B': 0,
           '3B': 0,
           HR: 0,
-          SAC: 0,
+          SH: 0,
         });
       console.log(response.body);
     });

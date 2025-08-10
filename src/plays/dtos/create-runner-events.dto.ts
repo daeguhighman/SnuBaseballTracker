@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsPositive,
@@ -14,23 +14,23 @@ export class RunnerEventInput {
   @IsPositive()
   runnerId!: number;
 
-  @IsEnum(['B', '1', '2', '3'] as const)
+  @IsIn(['B', '1', '2', '3'])
   startBase!: BasePos;
 
-  @IsEnum(['1', '2', '3', 'H', 'O'] as const)
+  @IsIn(['1', '2', '3', 'H', 'O'])
   endBase!: BasePos;
 
   @IsOptional()
   isActual = true;
 
-  // startBase와 endBase가 같은지 검사하는 메서드
+  // startBase와 endBase가 둘 다 'B'인 경우만 막는 메서드
   validateStartEndBase(): boolean {
-    return this.startBase !== this.endBase;
+    return !(this.startBase === 'B' && this.endBase === 'B');
   }
 }
 
 export class AddRunnerEventsDto {
-  @IsEnum(['PREV', 'AFTER'])
+  @IsIn(['PREV', 'AFTER'])
   phase: 'PREV' | 'AFTER';
 
   @IsArray()

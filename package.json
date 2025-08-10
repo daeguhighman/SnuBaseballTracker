@@ -38,6 +38,7 @@
     "seed:players": "ts-node -r tsconfig-paths/register src/scripts/seed-players.ts",
     "seed:games": "ts-node -r tsconfig-paths/register src/scripts/seed-games.ts",
     "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed-all.ts",
+    "seed:stats": "ts-node -r tsconfig-paths/register src/scripts/seed-real-stats-complete.ts",
     "truncate:all": "ts-node -r tsconfig-paths/register src/scripts/truncate-all.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist",
     "gen:swagger": "ts-node --project tsconfig.json scripts/swagger.ts"

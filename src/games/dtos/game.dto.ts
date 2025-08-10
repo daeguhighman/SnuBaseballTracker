@@ -104,14 +104,14 @@ export class GameDto {
   @IsBoolean()
   canRecord: boolean;
 
-  @ApiProperty({
-    description: '라인업 제출 가능 여부',
-    example: { home: false, away: true },
-  })
-  canSubmitLineup: {
-    home: boolean;
-    away: boolean;
-  };
+  // @ApiProperty({
+  //   description: '라인업 제출 가능 여부',
+  //   example: { home: false, away: true },
+  // })
+  // canSubmitLineup: {
+  //   home: boolean;
+  //   away: boolean;
+  // };
 
   @ApiProperty({
     description: '승자 팀 ID',

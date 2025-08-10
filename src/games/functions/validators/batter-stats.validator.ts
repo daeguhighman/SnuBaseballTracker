@@ -29,7 +29,7 @@ export class BatterStatsValidator {
       '3B'?: number; // 3루타
       HR?: number; // 홈런
       BB?: number; // 볼넷
-      SAC?: number; // 희생타
+      SH?: number; // 희생번트
     },
   ): void {
     // 변경될 값 계산
@@ -46,7 +46,7 @@ export class BatterStatsValidator {
     const newWalks =
       updateDto.BB !== undefined ? updateDto.BB : currentStats.walks;
     const newSacrificeFlies =
-      updateDto.SAC !== undefined ? updateDto.SAC : currentStats.sacrificeFlies;
+      updateDto.SH !== undefined ? updateDto.SH : currentStats.sacrificeFlies;
 
     // 특수 타입 안타(2B+3B+HR) 합계
     const specialHits = newDoubles + newTriples + newHomeRuns;
@@ -120,7 +120,7 @@ export class BatterStatsValidator {
       RBI?: number; // 타점
       BB?: number; // 볼넷
       SO?: number; // 삼진
-      SAC?: number; // 희생타
+      SH?: number; // 희생타
       SF?: number; // 희생플라이
     },
   ): {
@@ -150,7 +150,7 @@ export class BatterStatsValidator {
     if (updateDto['3B'] !== undefined) result.triples = updateDto['3B'];
     if (updateDto.HR !== undefined) result.homeRuns = updateDto.HR;
     if (updateDto.BB !== undefined) result.walks = updateDto.BB;
-    if (updateDto.SAC !== undefined) result.sacrificeFlies = updateDto.SAC;
+    if (updateDto.SH !== undefined) result.sacrificeFlies = updateDto.SH;
 
     // 1. 총 안타(H)에 따른 1루타 조정
     if (updateDto.H !== undefined) {

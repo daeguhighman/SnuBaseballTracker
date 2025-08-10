@@ -70,13 +70,6 @@ export class RunnerEvent {
   @Column({ name: 'is_actual', type: 'bool', default: true })
   isActual: boolean;
 
-  @Column({
-    name: 'virtual_tag',
-    type: 'enum',
-    enum: ['ERR_FIX', 'AFTER_ERR', 'SIM'],
-  })
-  virtualTag: 'ERR_FIX' | 'AFTER_ERR' | 'SIM';
-
   @CreateDateColumn()
   createdAt: Date;
 

@@ -6,13 +6,13 @@ export class CurrentBatterResponseDto {
     description: '선수 ID',
     example: 1,
   })
-  playerId: number;
+  id: number;
   @IsString()
   @ApiProperty({
     description: '선수 이름',
     example: '홍길동',
   })
-  playerName: string;
+  name: string;
   @IsString()
   @ApiProperty({
     description: '포지션',
@@ -47,13 +47,13 @@ export class CurrentPitcherResponseDto {
     description: '선수 ID',
     example: 1,
   })
-  playerId: number;
+  id: number;
   @IsString()
   @ApiProperty({
     description: '선수 이름',
     example: '홍길동',
   })
-  playerName: string;
+  name: string;
   @IsString()
   @ApiProperty({
     description: '포지션',

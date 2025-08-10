@@ -37,6 +37,8 @@ import { GameInningStat } from '../entities/game-inning-stat.entity';
 import { VirtualInningStat } from '../entities/virtual-inning-stat.entity';
 import { Play } from '@/plays/entities/play.entity';
 import { PlayStatus } from '@/plays/entities/play.entity';
+import { GameCoreService } from './game-core.service';
+import { GameStatsService } from './game-stats.service';
 @Injectable()
 export class GameLineupService {
   constructor(
@@ -59,6 +61,8 @@ export class GameLineupService {
     private readonly teamTournamentRepository: Repository<TeamTournament>,
     @InjectRepository(PlayerTournament)
     private readonly playerTournamentRepository: Repository<PlayerTournament>,
+    private readonly gameCoreService: GameCoreService,
+    private readonly gameStatsService: GameStatsService,
   ) {}
 
   async getPlayers(
@@ -93,7 +97,7 @@ export class GameLineupService {
     const playerTournaments = await this.playerTournamentRepository.find({
       where: { teamTournament: { id: teamTournamentId } },
       relations: ['player', 'player.department'],
-      order: { name: 'ASC' },
+      order: { player: { name: 'ASC' } },
     });
     return {
       id: teamTournament.id, // teamTournamentId 사용
@@ -509,7 +513,7 @@ export class GameLineupService {
     const playerTournaments = await this.playerTournamentRepository.find({
       where: { teamTournament: { id: teamTournamentId } },
       relations: ['player', 'player.department'],
-      order: { name: 'ASC' },
+      order: { player: { name: 'ASC' } },
     });
 
     // 2. 현재 라인업에 있는 선수들 조회
@@ -572,7 +576,10 @@ export class GameLineupService {
     gameId: number,
     teamTournamentId: number,
     submitLineupDto: SubmitLineupRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; snapshot: any }> {
+    let snapshot: any = null;
+    let currentPlayId: number | null = null;
+
     await this.dataSource.transaction(async (manager) => {
       const game = await manager.findOne(Game, {
         where: { id: gameId },
@@ -703,11 +710,32 @@ export class GameLineupService {
         if (needsUpdate) {
           await manager.save(currentPlay);
         }
+
+        currentPlayId = currentPlay.id;
+        await this.gameCoreService.pushSnapshotAudience(gameId, currentPlay.id);
+
+        // 6. umpire snapshot 생성 (트랜잭션 내부)
+        snapshot = await this.gameStatsService.makePlaySnapshotUmpire(
+          gameId,
+          currentPlay.id,
+          manager,
+        );
       }
     });
+
+    // 7. currentPlay가 없는 경우 트랜잭션 외부에서 최신 umpire snapshot 조회
+    if (!snapshot) {
+      throw new BaseException(
+        `현재 진행 중인 플레이를 찾을 수 없습니다.`,
+        ErrorCodes.NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     return {
       success: true,
       message: '라인업이 업데이트되었습니다.',
+      snapshot,
     };
   }
 
@@ -893,7 +921,7 @@ export class GameLineupService {
     const playerTournaments = await this.playerTournamentRepository.find({
       where: { teamTournament: { id: teamTournamentId } },
       relations: ['player', 'player.department'],
-      order: { name: 'ASC' },
+      order: { player: { name: 'ASC' } },
     });
 
     const playerDtos = playerTournaments.map((playerTournament) => ({

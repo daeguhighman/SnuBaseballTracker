@@ -41,9 +41,6 @@ export class PlayerTournament {
   @Column({ name: 'player_id' })
   playerId: number;
 
-  @Column({ length: 150 })
-  name: string;
-
   @Column()
   backNumber: string;
 

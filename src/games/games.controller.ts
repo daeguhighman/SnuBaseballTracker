@@ -150,7 +150,7 @@ export class GamesController {
     @Param('gameId', ParseIntPipe) gameId: number,
     @Param('teamTournamentId', ParseIntPipe) teamTournamentId: number,
     @Body() body: SubmitLineupRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; snapshot: any }> {
     return this.gameLineupService.updateLineup(gameId, teamTournamentId, body);
   }
 
@@ -200,7 +200,7 @@ export class GamesController {
   ): Promise<GameResultsResponseDto> {
     return this.gameStatsService.getGameResults(gameId);
   }
-  @UseGuards(UmpireAuthGuard)
+  // @UseGuards(UmpireAuthGuard)
   @Post(':gameId/result')
   async endGame(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -242,5 +242,12 @@ export class GamesController {
     // 서비스 메서드에서 Observable<MessageEvent> 반환하도록 구현 예정
     // getSnapshotStream 내부에서 makePlaySnapshotAudience를 사용해 관중화면용 스냅샷을 push해야 함
     return this.gameCoreService.getSnapshotStream(gameId);
+  }
+
+  @Get(':gameId/snapshot/umpire')
+  async getLatestUmpireSnapshot(
+    @Param('gameId', ParseIntPipe) gameId: number,
+  ): Promise<any> {
+    return this.gameStatsService.getLatestUmpireSnapshot(gameId);
   }
 }

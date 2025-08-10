@@ -672,9 +672,7 @@ export class PlayerSeeder {
           playerId: player.id,
           tournamentId: tournamentId,
           teamTournamentId: teamTournament.id,
-          name: playerData.name,
           backNumber: playerData.backNumber.toString(),
-          isElite: playerData.isElite,
         });
 
         await this.playerTournamentRepo.save(playerTournament);

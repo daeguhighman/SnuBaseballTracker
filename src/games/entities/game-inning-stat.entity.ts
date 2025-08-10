@@ -42,11 +42,11 @@ export class GameInningStat {
   @Column({ type: 'boolean', default: false, name: 'error_flag' })
   errorFlag: boolean;
 
-  @Column({ type: 'int', default: 0, name: 'start_seq' })
-  startSeq: number;
+  @Column({ type: 'int', nullable: true, name: 'start_seq' })
+  startSeq: number | null;
 
-  @Column({ type: 'int', default: 0, name: 'end_seq' })
-  endSeq?: number;
+  @Column({ type: 'int', nullable: true, name: 'end_seq' })
+  endSeq: number | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

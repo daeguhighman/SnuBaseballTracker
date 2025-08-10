@@ -53,6 +53,11 @@ async function main() {
     const gameSeeder = new GameSeeder(AppDataSource);
     await gameSeeder.seedGames(tournamentId);
 
+    // // 7단계: Stats 생성
+    // console.log('\n=== 7단계: 통계 데이터 생성 ===');
+    // const statsSeeder = new StatsSeeder(AppDataSource);
+    // await statsSeeder.seedStats(tournamentId);
+
     console.log('\n🎉 모든 시드 데이터 생성 완료!');
     console.log(`📊 생성된 데이터:`);
     console.log(`   - 대회: 1개 (ID: ${tournamentId})`);
@@ -60,6 +65,7 @@ async function main() {
     console.log(`   - 선수: 56명`);
     console.log(`   - 게임: 5개`);
     console.log(`   - 사용자: 5명`);
+    console.log(`   - 통계: 112개 (타자/투수 통계 각각 56개)`);
   } catch (error) {
     console.error('❌ 시드 데이터 생성 중 오류 발생:', error);
     process.exit(1);

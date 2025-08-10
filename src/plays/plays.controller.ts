@@ -24,7 +24,7 @@ export class PlaysController {
   }
 
   @Post(':playId/runner-events')
-  addRunnerEvents(
+  async addRunnerEvents(
     @Param('playId', ParseIntPipe) playId: number,
     @Body() dto: AddRunnerEventsDto,
   ) {
