@@ -10,6 +10,7 @@ import { PitcherGameParticipation } from '../entities/pitcher-game-participation
 import { GameStat } from '../entities/game-stat.entity';
 import { TeamTournament } from '@/teams/entities/team-tournament.entity';
 import { GameStatsService } from './game-stats.service';
+import { GameAuthService } from './game-auth.service';
 import { Umpire } from '@/umpires/entities/umpire.entity';
 import { SimpleScoreRequestDto } from '../dtos/score.dto';
 import { GameInningStat } from '../entities/game-inning-stat.entity';
@@ -38,6 +39,7 @@ export class GameCoreService {
     private readonly gameRepository: Repository<Game>,
     private readonly dataSource: DataSource,
     private readonly gameStatsService: GameStatsService,
+    private readonly gameAuthService: GameAuthService,
     @InjectRepository(Umpire)
     private readonly umpireRepository: Repository<Umpire>,
     @InjectRepository(Tournament)
@@ -110,7 +112,10 @@ export class GameCoreService {
     }); // e.g. '14:30'
 
     // 유저 권한 확인
-    const canRecord = await this.checkUserCanRecord(game.id, userId);
+    const canRecord = await this.gameAuthService.checkUserCanRecord(
+      game.id,
+      userId,
+    );
     // const canSubmitLineup = await this.checkUserCanSubmitLineup(
     //   game.id,
     //   userId,
@@ -376,10 +381,28 @@ export class GameCoreService {
         await this.updateBracketStats(game, manager);
       }
 
-      // 5. 개별 선수 통계 업데이트
+      // 5. 가장 마지막 이닝스탯의 endSeq를 현재 플레이로 설정
+      const lastPlay = await manager.findOne(Play, {
+        where: { gameId },
+        order: { seq: 'DESC' },
+      });
+
+      if (lastPlay) {
+        const lastInningStat = await manager.findOne(GameInningStat, {
+          where: { gameId },
+          order: { inning: 'DESC', inningHalf: 'DESC' },
+        });
+
+        if (lastInningStat && !lastInningStat.endSeq) {
+          lastInningStat.endSeq = lastPlay.seq;
+          await manager.save(lastInningStat);
+        }
+      }
+
+      // 6. 개별 선수 통계 업데이트
       await this.gameStatsService.updatePlayerStats(gameId);
 
-      // 6. 게임 상태 업데이트
+      // 7. 게임 상태 업데이트
       await manager.update(Game, gameId, { status: GameStatus.FINALIZED });
     });
     return { success: true, message: '게임 확정 완료.' };
@@ -776,89 +799,6 @@ export class GameCoreService {
     });
     if (latestPlay) {
       await this.pushSnapshotAudience(gameId, latestPlay.id);
-    }
-  }
-
-  private async checkUserCanRecord(
-    gameId: number,
-    userId?: string,
-  ): Promise<boolean> {
-    if (!userId) return false;
-
-    try {
-      // 해당 경기의 심판인지 확인
-      const umpire = await this.umpireRepository.findOne({
-        where: { userId: parseInt(userId) },
-        relations: ['umpireTournaments'],
-      });
-
-      if (!umpire) return false;
-
-      // 해당 경기가 속한 대회의 심판인지 확인
-      const game = await this.gameRepository.findOne({
-        where: { id: gameId },
-        relations: ['tournament'],
-      });
-
-      if (!game) return false;
-
-      const isUmpireForGame = umpire.umpireTournaments.some(
-        (ut) => ut.tournamentId === game.tournamentId,
-      );
-
-      return isUmpireForGame;
-    } catch (error) {
-      this.logger.error(`Error checking user can record: ${error.message}`);
-      return false;
-    }
-  }
-
-  private async checkUserCanSubmitLineup(
-    gameId: number,
-    userId?: string,
-  ): Promise<{ home: boolean; away: boolean }> {
-    if (!userId) return { home: false, away: false };
-
-    try {
-      // 해당 경기의 팀 대표자인지 확인
-      const game = await this.gameRepository.findOne({
-        where: { id: gameId },
-        relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],
-      });
-
-      if (!game) return { home: false, away: false };
-
-      // 홈팀과 원정팀의 대표자 확인
-      const homeTeamTournament = await this.dataSource
-        .getRepository('TeamTournament')
-        .findOne({
-          where: {
-            teamId: game.homeTeam.team.id,
-            tournamentId: game.tournamentId,
-          },
-        });
-
-      const awayTeamTournament = await this.dataSource
-        .getRepository('TeamTournament')
-        .findOne({
-          where: {
-            teamId: game.awayTeam.team.id,
-            tournamentId: game.tournamentId,
-          },
-        });
-
-      const isHomeTeamRep = homeTeamTournament?.representativeUserId === userId;
-      const isAwayTeamRep = awayTeamTournament?.representativeUserId === userId;
-
-      return {
-        home: isHomeTeamRep,
-        away: isAwayTeamRep,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error checking user can submit lineup: ${error.message}`,
-      );
-      return { home: false, away: false };
     }
   }
 }

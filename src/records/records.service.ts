@@ -34,7 +34,7 @@ export class RecordsService {
       .where('stat.hits > 0')
       .andWhere('tt.tournamentId = :tournamentId', { tournamentId })
       .orderBy('stat.hits', 'DESC')
-      .select(['player.name AS "playerName"', 'team.name   AS "teamName"'])
+      .select(['player.name AS "name"', 'team.name   AS "team"'])
       // subquery 로 isForfeit = false 인 게임만 COUNT
       .addSelect((subQuery) => {
         return subQuery
@@ -90,8 +90,8 @@ export class RecordsService {
         'player.name AS "name"',
         'team.name   AS "team"',
         'stat.era             AS "ERA"',
-        'stat.inningsPitched  AS "IP"',
-        'stat.runs            AS "R"',
+        'stat.inningPitchedOuts  AS "IP"',
+        'stat.allowedRuns     AS "R"',
         'stat.earnedRuns      AS "ER"',
         'stat.strikeouts      AS "K"',
         'stat.walks           AS "BB"',

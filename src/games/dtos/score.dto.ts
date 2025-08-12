@@ -5,6 +5,7 @@ import {
   IsInt,
   IsString,
   ValidateNested,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -18,7 +19,35 @@ export class SimpleScoreRequestDto {
   runs: number;
 }
 
-// GET & POST /games/{gameId}/scores response
+// 새로운 이닝별 점수 DTO (홈팀/원정팀 점수 포함)
+export class InningScoreDto {
+  @IsInt()
+  @ApiProperty({
+    description: '이닝',
+    example: 1,
+  })
+  inning: number;
+
+  @IsOptional()
+  @IsInt()
+  @ApiProperty({
+    description: '원정팀 점수',
+    example: 2,
+    nullable: true,
+  })
+  away: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @ApiProperty({
+    description: '홈팀 점수',
+    example: 1,
+    nullable: true,
+  })
+  home: number | null;
+}
+
+// 기존 InningHalfScoreDto (하위 호환성을 위해 유지)
 export class InningHalfScoreDto {
   @IsInt()
   @ApiProperty({
@@ -84,15 +113,22 @@ export class TeamSummaryWithStatsDto {
   away: TeamScoreSummaryDto;
 }
 export class ScoreboardResponseDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => InningHalfScoreDto)
+  @ValidateNested()
   @ApiProperty({
-    description: '이닝 점수',
-    type: InningHalfScoreDto,
-    isArray: true,
+    description: '스코어보드 정보',
+    type: () => Object,
+    properties: {
+      innings: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/InningScoreDto' },
+        description: '이닝별 점수 (홈팀/원정팀)',
+      },
+    },
   })
-  scoreboard: InningHalfScoreDto[];
+  scoreboard: {
+    innings: InningScoreDto[];
+  };
+
   @ValidateNested()
   @Type(() => TeamSummaryWithStatsDto)
   @ApiProperty({

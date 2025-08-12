@@ -8,7 +8,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppLogger } from './common/logger/logger.service';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import './instrument';
@@ -24,18 +24,12 @@ async function bootstrap() {
     bufferLogs: true,
   });
   app.useLogger(app.get(AppLogger));
-  const config = new DocumentBuilder()
-    .setTitle('API 문서')
-    .setDescription('API 설명')
-    .setVersion('1.0')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
   const whitelist = [
+    'http://localhost:3000',
     'http://localhost:3001',
     'https://snubaseball.site',
     'https://www.snubaseball.site',
   ];
-  SwaggerModule.setup('api', app, document);
   app.enableCors({
     ...corsOptions,
     // origin: isProduction ? 'https://snubaseball.site' : true,

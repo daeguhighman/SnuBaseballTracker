@@ -451,13 +451,13 @@ export class PlayService {
           gameStat.homeBatterParticipationId = nextBatter.id;
         }
       }
+      play.status = PlayStatus.COMPLETE;
     } else {
       play.status = PlayStatus.ABANDONED;
-      await em.save(play);
     }
 
     // 3. 새 플레이 생성 (같은 트랜잭션 내에서)
-    play.status = PlayStatus.COMPLETE;
+
     await em.save(play);
 
     let newInning = gameStat.inning;
@@ -485,8 +485,6 @@ export class PlayService {
     gameStat.onThirdGpId = null;
     await em.save(gameStat);
     await em.save(newInningStat);
-    play.gameInningStat = newInningStat;
-    await em.save(play);
 
     // 새로운 Play 생성
     const { max } = await em
@@ -504,8 +502,8 @@ export class PlayService {
         ? gameStat.awayBatterParticipationId
         : gameStat.homeBatterParticipationId,
       pitcherGpId: isTop
-        ? gameStat.awayPitcherParticipationId
-        : gameStat.homePitcherParticipationId,
+        ? gameStat.homePitcherParticipationId
+        : gameStat.awayPitcherParticipationId,
       status: PlayStatus.LIVE,
       gameInningStat: newInningStat,
     });

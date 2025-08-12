@@ -16,6 +16,7 @@ import { GameLineupService } from '@games/services/game-lineup.service';
 import { GameScoreboardService } from '@games/services/game-scoreboard.service';
 import { GameCoreService } from '@games/services/game-core.service';
 import { GameStatsService } from '@games/services/game-stats.service';
+import { GameAuthService } from '@games/services/game-auth.service';
 import { GameRoaster } from '@games/entities/game-roaster.entity';
 import { UmpiresModule } from '@umpires/umpires.module';
 import { TournamentsModule } from '@tournaments/tournaments.module';
@@ -45,12 +46,15 @@ import { PlaysModule } from '@/plays/plays.module';
     GameStatsService,
     GameLineupService,
     GameScoreboardService,
+    GameAuthService,
   ],
   exports: [
     TypeOrmModule,
     GameCoreService,
     GameScoreboardService,
     GameStatsService,
+    GameCoreService,
+    GameAuthService,
   ],
 })
 export class GamesModule {}

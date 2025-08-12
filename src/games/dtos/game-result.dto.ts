@@ -1,6 +1,7 @@
 import { ScoreboardResponseDto } from './score.dto';
 import {
   IsArray,
+  IsBoolean,
   IsInt,
   IsOptional,
   IsString,
@@ -105,7 +106,10 @@ class TeamPitcherStats {
   away: PitcherDailyStats[];
 }
 
-export class GameResultsResponseDto extends ScoreboardResponseDto {
+export class GameResultResponseDto extends ScoreboardResponseDto {
+  @IsBoolean()
+  canRecord: boolean;
+
   @ValidateNested()
   @Type(() => TeamBatterStats)
   batterStats: TeamBatterStats;

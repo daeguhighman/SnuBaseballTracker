@@ -2250,6 +2250,10 @@ components:
     GameResultsResponse:
       type: object
       properties:
+        canRecord:
+          type: boolean
+          description: "기록 가능 여부 (심판인 경우 true)"
+          example: true
         scoreboard:
           type: object
           properties:

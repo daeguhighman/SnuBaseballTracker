@@ -34,7 +34,7 @@ import {
 } from '@games/dtos/score.dto';
 import {
   BatterDailyStats,
-  GameResultsResponseDto,
+  GameResultResponseDto,
   PitcherDailyStats,
   UpdateBatterStatsDto,
   UpdatePitcherStatsDto,
@@ -115,7 +115,7 @@ export class GamesController {
       GameRole.BATTER,
     );
   }
-  @UseGuards(UmpireAuthGuard)
+  // @UseGuards(UmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/substitutable-pitchers')
   async getSubstitutablePitchers(
     @Param('gameId') gameId: number,
@@ -195,10 +195,11 @@ export class GamesController {
   }
 
   @Get(':gameId/result')
-  async getGameResults(
+  async getGameResult(
     @Param('gameId', ParseIntPipe) gameId: number,
-  ): Promise<GameResultsResponseDto> {
-    return this.gameStatsService.getGameResults(gameId);
+    @Request() req: any,
+  ): Promise<GameResultResponseDto> {
+    return this.gameStatsService.getGameResult(gameId, req.user);
   }
   // @UseGuards(UmpireAuthGuard)
   @Post(':gameId/result')

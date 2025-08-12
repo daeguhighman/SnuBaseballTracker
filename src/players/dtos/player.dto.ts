@@ -7,8 +7,6 @@ export class BasePlayerDto {
   name: string;
   @IsString()
   department: string;
-  @IsBoolean()
-  isWc: boolean;
 
   @IsBoolean()
   isElite: boolean;

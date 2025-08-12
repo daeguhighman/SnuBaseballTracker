@@ -28,8 +28,8 @@ export class PitcherStat extends BasePitcherStat {
   @Column({
     name: 'era',
     type: 'decimal',
-    precision: 4,
-    scale: 3,
+    precision: 5, // 4에서 5로 증가 (99.99를 저장할 수 있도록)
+    scale: 2, // 3에서 2로 변경 (소수점 2자리)
     default: 0,
   })
   era: number;

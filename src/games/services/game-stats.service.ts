@@ -22,7 +22,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Logger } from '@nestjs/common';
 import {
   BatterDailyStats,
-  GameResultsResponseDto,
+  GameResultResponseDto,
   PitcherDailyStats,
   UpdatePitcherStatsDto,
 } from '../dtos/game-result.dto';
@@ -39,6 +39,8 @@ import { BaseException } from '@/common/exceptions/base.exception';
 import { Runner } from '@/plays/entities/runner.entity';
 import { VirtualInningStat } from '../entities/virtual-inning-stat.entity';
 import { Play } from '@/plays/entities/play.entity';
+import { GameAuthService } from './game-auth.service';
+
 @Injectable()
 export class GameStatsService {
   constructor(
@@ -61,6 +63,7 @@ export class GameStatsService {
     private readonly runnerRepository: Repository<Runner>,
     @InjectRepository(Play)
     private readonly playRepository: Repository<Play>,
+    private readonly gameAuthService: GameAuthService,
   ) {}
   private readonly logger = new Logger(GameStatsService.name);
 
@@ -985,7 +988,10 @@ export class GameStatsService {
       .toNumber();
   }
 
-  async getGameResults(gameId: number): Promise<GameResultsResponseDto> {
+  async getGameResult(
+    gameId: number,
+    userId?: string,
+  ): Promise<GameResultResponseDto> {
     const game = await this.gameRepository.findOne({
       where: { id: gameId },
       relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],
@@ -1086,13 +1092,60 @@ export class GameStatsService {
       });
 
     // 5. Map to DTO
-    const response = new GameResultsResponseDto();
+    const response = new GameResultResponseDto();
 
-    response.scoreboard = inningStats.map((stat) => ({
-      inning: stat.inning,
-      inningHalf: stat.inningHalf, // Assuming type is 'TOP' | 'BOT'
-      runs: stat.runs ?? 0, // Handle potential null runs
-    }));
+    // canRecord 설정 - 사용자가 심판인지 확인
+    response.canRecord = await this.gameAuthService.checkUserCanRecord(
+      gameId,
+      userId,
+    );
+
+    // 이닝별 점수를 홈팀/원정팀 형태로 변환
+    const inningsMap = new Map<
+      number,
+      { away: number | null; home: number | null }
+    >();
+
+    // 초기화: 모든 이닝에 대해 null 값 설정
+    for (
+      let i = 1;
+      i <= Math.max(...inningStats.map((stat) => stat.inning));
+      i++
+    ) {
+      inningsMap.set(i, { away: null, home: null });
+    }
+
+    // 각 이닝 통계를 순회하며 점수 설정
+    inningStats.forEach((inningStat) => {
+      // startSeq와 endSeq가 같으면 해당 이닝은 실제로 진행되지 않은 이닝이므로 제외
+      if (inningStat.startSeq === inningStat.endSeq) {
+        return;
+      }
+
+      const inning = inningsMap.get(inningStat.inning) || {
+        away: null,
+        home: null,
+      };
+
+      if (inningStat.inningHalf === 'TOP') {
+        inning.away = inningStat.runs ?? 0;
+      } else {
+        inning.home = inningStat.runs ?? 0;
+      }
+
+      inningsMap.set(inningStat.inning, inning);
+    });
+
+    // Map을 배열로 변환
+    const innings = Array.from(inningsMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([inning, scores]) => ({
+        inning,
+        away: scores.away,
+        home: scores.home,
+      }));
+
+    response.scoreboard = { innings };
 
     response.teamSummary = {
       home: {

@@ -166,11 +166,50 @@ export class GameScoreboardService {
       );
     }
 
-    const scoreboard = game.inningStats.map((inningStat) => ({
-      inning: inningStat.inning,
-      inningHalf: inningStat.inningHalf,
-      runs: inningStat.runs,
-    }));
+    // 이닝별 점수를 홈팀/원정팀 형태로 변환
+    const inningsMap = new Map<
+      number,
+      { away: number | null; home: number | null }
+    >();
+
+    // 초기화: 모든 이닝에 대해 null 값 설정
+    for (
+      let i = 1;
+      i <= Math.max(...game.inningStats.map((stat) => stat.inning));
+      i++
+    ) {
+      inningsMap.set(i, { away: null, home: null });
+    }
+
+    // 각 이닝 통계를 순회하며 점수 설정
+    game.inningStats.forEach((inningStat) => {
+      // startSeq와 endSeq가 같으면 해당 이닝은 실제로 진행되지 않은 이닝이므로 제외
+      if (inningStat.startSeq === inningStat.endSeq) {
+        return;
+      }
+
+      const inning = inningsMap.get(inningStat.inning) || {
+        away: null,
+        home: null,
+      };
+
+      if (inningStat.inningHalf === InningHalf.TOP) {
+        inning.away = inningStat.runs;
+      } else {
+        inning.home = inningStat.runs;
+      }
+
+      inningsMap.set(inningStat.inning, inning);
+    });
+
+    // Map을 배열로 변환
+    const innings = Array.from(inningsMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([inning, scores]) => ({
+        inning,
+        away: scores.away,
+        home: scores.home,
+      }));
 
     const teamSummary = {
       home: {
@@ -187,7 +226,10 @@ export class GameScoreboardService {
       },
     };
 
-    return { scoreboard, teamSummary };
+    return {
+      scoreboard: { innings },
+      teamSummary,
+    };
   }
   async updateInningStat(
     gameId: number,

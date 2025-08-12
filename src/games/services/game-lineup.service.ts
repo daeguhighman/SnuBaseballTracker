@@ -630,6 +630,13 @@ export class GameLineupService {
           relations: ['playerTournament'],
         }),
       ]);
+      const isHome = game.homeTeam.id === teamTournament.id;
+      const currentBatterParticipationId = isHome
+        ? game.gameStat.homeBatterParticipationId
+        : game.gameStat.awayBatterParticipationId;
+      const currentPitcherParticipationId = isHome
+        ? game.gameStat.homePitcherParticipationId
+        : game.gameStat.awayPitcherParticipationId;
 
       // 2. 타자 교체 비교
       const updatedBatterId = await this.updateBatters(
@@ -638,6 +645,7 @@ export class GameLineupService {
         teamTournament.id,
         submitLineupDto.batters,
         existingBatters,
+        currentBatterParticipationId,
       );
 
       // 3. 투수 교체 비교
@@ -647,6 +655,7 @@ export class GameLineupService {
         teamTournament.id,
         submitLineupDto.pitcher,
         existingPitcher,
+        currentPitcherParticipationId,
       );
 
       // 4. GameStat 업데이트
@@ -713,6 +722,7 @@ export class GameLineupService {
 
         currentPlayId = currentPlay.id;
         await this.gameCoreService.pushSnapshotAudience(gameId, currentPlay.id);
+        console.log('currentPlayId', currentPlayId);
 
         // 6. umpire snapshot 생성 (트랜잭션 내부)
         snapshot = await this.gameStatsService.makePlaySnapshotUmpire(
@@ -745,6 +755,7 @@ export class GameLineupService {
     teamTournamentId: number,
     newBatters: SubmitLineupRequestDto['batters'],
     existing: BatterGameParticipation[],
+    currentBatterId: number,
   ): Promise<number | null> {
     let updatedBatterId: number | null = null;
 
@@ -759,7 +770,7 @@ export class GameLineupService {
         prev.isActive = false;
         await manager.save(prev);
 
-        const newEntity = manager.create(BatterGameParticipation, {
+        const newBatterParticipation = manager.create(BatterGameParticipation, {
           gameId,
           teamTournament: { id: teamTournamentId },
           playerTournament: { id: newBatter.id },
@@ -768,14 +779,18 @@ export class GameLineupService {
           substitutionOrder: prev.substitutionOrder + 1,
           isActive: true,
         });
-        const saved = await manager.save(newEntity);
+        const savedBatterParticipation = await manager.save(
+          newBatterParticipation,
+        );
 
         const batterGameStat = manager.create(BatterGameStat, {
-          batterGameParticipation: saved,
+          batterGameParticipation: savedBatterParticipation,
         });
         await manager.save(batterGameStat);
 
-        updatedBatterId = saved.id;
+        if (prev.id === currentBatterId) {
+          updatedBatterId = savedBatterParticipation.id;
+        }
       }
 
       // position만 변경된 경우
@@ -794,6 +809,7 @@ export class GameLineupService {
     teamTournamentId: number,
     newPitcher: SubmitLineupRequestDto['pitcher'],
     existing: PitcherGameParticipation,
+    currentPitcherParticipationId?: number, // optional로 변경
   ): Promise<number | null> {
     if (!existing) return null;
 
@@ -851,7 +867,7 @@ export class GameLineupService {
         }
       }
 
-      const newEntity = manager.create(PitcherGameParticipation, {
+      const newPitcherParticipation = manager.create(PitcherGameParticipation, {
         gameId,
         teamTournament: { id: teamTournamentId },
         playerTournament: { id: newPitcher.id },
@@ -862,17 +878,25 @@ export class GameLineupService {
         entryOuts,
         targetVirtualOuts,
       });
-      const saved = await manager.save(newEntity);
+      const savedPitcherParticipation = await manager.save(
+        newPitcherParticipation,
+      );
 
       const pitcherGameStat = manager.create(PitcherGameStat, {
-        pitcherGameParticipation: saved,
+        pitcherGameParticipation: savedPitcherParticipation,
       });
       await manager.save(pitcherGameStat);
 
-      return saved.id;
+      // 현재 투수가 교체되었는지 확인
+      if (
+        currentPitcherParticipationId &&
+        existing.id === currentPitcherParticipationId
+      ) {
+        return savedPitcherParticipation.id;
+      }
     }
 
-    return existing.id;
+    return null;
   }
 
   async getTeamRoasterWithSubstitutableStatus(
@@ -911,27 +935,79 @@ export class GameLineupService {
         game: { id: gameId },
         teamTournament: { id: teamTournament.id },
       },
-      relations: ['playerTournament', 'playerTournament.player'],
+      relations: [
+        'playerTournament',
+        'playerTournament.player',
+        'playerTournament.player.department',
+      ], // department 관계 추가
     });
 
-    const roasterMap = new Map(
-      roasters.map((roaster) => [roaster.playerTournament.id, roaster]),
-    );
+    if (roasters.length === 0) {
+      throw new BaseException(
+        `등록된 로스터가 없습니다.`,
+        ErrorCodes.ROSTER_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
-    const playerTournaments = await this.playerTournamentRepository.find({
-      where: { teamTournament: { id: teamTournamentId } },
-      relations: ['player', 'player.department'],
-      order: { player: { name: 'ASC' } },
+    const [batterParticipations, pitcherParticipations] = await Promise.all([
+      this.batterGameParticipationRepository.find({
+        where: {
+          game: { id: gameId },
+          teamTournament: { id: teamTournamentId },
+        },
+        relations: ['playerTournament.player'], // player → playerTournament.player로 수정
+      }),
+      this.pitcherGameParticipationRepository.find({
+        where: {
+          game: { id: gameId },
+          teamTournament: { id: teamTournamentId },
+        },
+        relations: ['playerTournament.player'], // player → playerTournament.player로 수정
+      }),
+    ]);
+
+    const isBatterActiveMap = this.getActiveMap(batterParticipations);
+    const isPitcherActiveMap = this.getActiveMap(pitcherParticipations);
+
+    const playerDtos = roasters.map((roaster) => {
+      const batterActive = isBatterActiveMap.get(roaster.playerTournament.id);
+      const pitcherActive = isPitcherActiveMap.get(roaster.playerTournament.id);
+
+      let isSubstitutable = true;
+      if (role === GameRole.BATTER) {
+        if (batterActive === true) {
+          // 이미 라인업에 있음
+          isSubstitutable = false;
+        } else if (
+          (batterActive === false && pitcherActive === undefined) ||
+          (pitcherActive === false && batterActive === undefined) ||
+          (pitcherActive === false && batterActive === false)
+        ) {
+          // 경기에서 빠짐
+          isSubstitutable = false;
+        }
+        // undefined(참여한 적 없음)은 교체 가능
+      } else if (role === GameRole.PITCHER) {
+        if (
+          (batterActive === false && pitcherActive === undefined) ||
+          (pitcherActive === false && batterActive === undefined) ||
+          (pitcherActive === false && batterActive === false)
+        ) {
+          // 경기에서 빠짐
+          isSubstitutable = false;
+        }
+        // undefined(참여한 적 없음)은 교체 가능
+      }
+
+      return {
+        id: roaster.playerTournament.id,
+        name: roaster.playerTournament.player.name,
+        department: roaster.playerTournament.player.department.name,
+        isElite: roaster.playerTournament.isElite,
+        isSubstitutable,
+      };
     });
-
-    const playerDtos = playerTournaments.map((playerTournament) => ({
-      id: playerTournament.id, // playerTournamentId 사용
-      name: playerTournament.player.name,
-      department: playerTournament.player.department.name,
-      isElite: playerTournament.isElite,
-      isWc: playerTournament.isWildcard,
-      isSubstitutable: !roasterMap.has(playerTournament.id),
-    }));
 
     return {
       id: teamTournament.id, // teamTournamentId 사용
