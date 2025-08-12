@@ -37,8 +37,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # (설정 파일이 dist 밖에 있으면 추가 COPY)
 
 EXPOSE 3000
-# 2‑2. 헬스체크 (포트 3000 기준)
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD \
-  wget -qO- http://localhost:3000/health || exit 1
+# # 2‑2. 헬스체크 (포트 3000 기준)
+# HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD \
+#   wget -qO- http://localhost:3000/health || exit 1
 
 CMD ["node", "dist/src/main.js"]

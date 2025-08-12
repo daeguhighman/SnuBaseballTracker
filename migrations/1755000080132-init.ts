@@ -1,26 +1,27 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInterface {
-    name = 'ChangeTeamIdToTeamTournamentId1754002875683'
+export class Init1755000080132 implements MigrationInterface {
+    name = 'Init1755000080132'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE \`user_profiles\` DROP FOREIGN KEY \`FK_8481388d6325e752cd4d7e26c6d\``);
         await queryRunner.query(`ALTER TABLE \`game_inning_stats\` DROP FOREIGN KEY \`FK_f6c3223e06f14dd26279cf9824c\``);
         await queryRunner.query(`ALTER TABLE \`virtual_inning_stats\` DROP FOREIGN KEY \`FK_bcb6efe098d74ce92775eb8c9f0\``);
         await queryRunner.query(`ALTER TABLE \`batter_game_stats\` DROP FOREIGN KEY \`FK_3bd2cb3f2b7140f750a0fdaac8d\``);
-        await queryRunner.query(`ALTER TABLE \`batter_game_participations\` DROP FOREIGN KEY \`FK_a7ccc1dd62d56aac8100c4c6ba6\``);
+        await queryRunner.query(`ALTER TABLE \`batter_game_participations\` DROP FOREIGN KEY \`FK_16148e5132d3068b00ade5c7827\``);
         await queryRunner.query(`ALTER TABLE \`batter_game_participations\` DROP FOREIGN KEY \`FK_b29689d47b22e01defb6efd7af3\``);
         await queryRunner.query(`ALTER TABLE \`batter_game_participations\` DROP FOREIGN KEY \`FK_f247f29600c4a080125d454072b\``);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_stats\` DROP FOREIGN KEY \`FK_36c2e15af9df5e963ca0ae2135e\``);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_183a7e71b8769c92691056c67b2\``);
-        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_61a0c2f525649b1e1772df22bb2\``);
+        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_61a70554b6791a1021a1c80594f\``);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_b1dab303eb41058aff75ce26ace\``);
+        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_e2086ff0e69887d1ef083168863\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_13a674c8d1715401b040983dee8\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_207a04127d611441d47686ceeb5\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_73309278f6c6b7b7a273c240567\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_a8e2b0df27f8baa40c5aef8d3e3\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_bd5db571ec09d387d82d84daf3d\``);
-        await queryRunner.query(`ALTER TABLE \`game_roasters\` DROP FOREIGN KEY \`FK_0ab4fa69ea5db41cf49ccbb9d2a\``);
+        await queryRunner.query(`ALTER TABLE \`game_roasters\` DROP FOREIGN KEY \`FK_19742fdd1e5d7b047078be23181\``);
         await queryRunner.query(`ALTER TABLE \`game_roasters\` DROP FOREIGN KEY \`FK_d40a0d4af3721b583167fdeef3c\``);
         await queryRunner.query(`ALTER TABLE \`game_roasters\` DROP FOREIGN KEY \`FK_f55dcf4120348b21aa899a00822\``);
         await queryRunner.query(`ALTER TABLE \`games\` DROP FOREIGN KEY \`FK_231e3bf4d40e033e03864137113\``);
@@ -52,16 +53,14 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`plays\` DROP FOREIGN KEY \`FK_8bedafb77b3b33f233e5cfde092\``);
         await queryRunner.query(`ALTER TABLE \`plays\` DROP FOREIGN KEY \`FK_ee54c0bd8cc99751aa38be798b4\``);
         await queryRunner.query(`ALTER TABLE \`plays\` DROP FOREIGN KEY \`FK_f447505ff7bf84e808b302d1ce7\``);
-        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_137287a68699d56d7c2ab369daa\``);
-        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_58e3b2068aaa4d74ec081daec3e\``);
+        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_2125f636582c7e322e0bdd86ad8\``);
         await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_8b9c7b05d9891ebd54e07703b87\``);
-        await queryRunner.query(`DROP INDEX \`IDX_a7ccc1dd62d56aac8100c4c6ba\` ON \`batter_game_participations\``);
-        await queryRunner.query(`DROP INDEX \`IDX_61a0c2f525649b1e1772df22bb\` ON \`pitcher_game_participations\``);
-        await queryRunner.query(`DROP INDEX \`IDX_0ab4fa69ea5db41cf49ccbb9d2\` ON \`game_roasters\``);
-        await queryRunner.query(`DROP INDEX \`IDX_e087b4110e44a0d42a4c8a3749\` ON \`game_roasters\``);
-        await queryRunner.query(`ALTER TABLE \`batter_game_participations\` CHANGE \`team_id\` \`team_tournament_id\` int NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` CHANGE \`team_id\` \`team_tournament_id\` int NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`game_roasters\` CHANGE \`team_id\` \`team_tournament_id\` int NOT NULL`);
+        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_ba8430e27a68cf3a0a13ba23a2b\``);
+        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_daa4d687d3f9bdb4a7b1c815443\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_1359b1e2b73bfa2d8ce5e93693d\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_3b19b13537e13c951de7831899a\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_44794a7287d8a2be81944b79613\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_eab4d4cf965498bd81aa8e12b9f\``);
         await queryRunner.query(`ALTER TABLE \`player_tournaments\` DROP COLUMN \`backNumber\``);
         await queryRunner.query(`ALTER TABLE \`player_tournaments\` ADD \`backNumber\` varchar(255) NOT NULL`);
         await queryRunner.query(`ALTER TABLE \`email_codes\` DROP COLUMN \`code_hash\``);
@@ -72,10 +71,6 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`runner_events\` ADD \`start_base\` char(1) NOT NULL`);
         await queryRunner.query(`ALTER TABLE \`runner_events\` DROP COLUMN \`end_base\``);
         await queryRunner.query(`ALTER TABLE \`runner_events\` ADD \`end_base\` char(1) NOT NULL`);
-        await queryRunner.query(`CREATE INDEX \`IDX_16148e5132d3068b00ade5c782\` ON \`batter_game_participations\` (\`team_tournament_id\`)`);
-        await queryRunner.query(`CREATE INDEX \`IDX_61a70554b6791a1021a1c80594\` ON \`pitcher_game_participations\` (\`team_tournament_id\`)`);
-        await queryRunner.query(`CREATE INDEX \`IDX_19742fdd1e5d7b047078be2318\` ON \`game_roasters\` (\`team_tournament_id\`)`);
-        await queryRunner.query(`CREATE UNIQUE INDEX \`IDX_f5ab3feef948b23b5ab100becd\` ON \`game_roasters\` (\`game_id\`, \`team_tournament_id\`, \`player_tournament_id\`)`);
         await queryRunner.query(`ALTER TABLE \`user_profiles\` ADD CONSTRAINT \`FK_8481388d6325e752cd4d7e26c6d\` FOREIGN KEY (\`userId\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_inning_stats\` ADD CONSTRAINT \`FK_f6c3223e06f14dd26279cf9824c\` FOREIGN KEY (\`game_id\`) REFERENCES \`games\`(\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE \`virtual_inning_stats\` ADD CONSTRAINT \`FK_bcb6efe098d74ce92775eb8c9f0\` FOREIGN KEY (\`game_id\`) REFERENCES \`games\`(\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`);
@@ -87,6 +82,7 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_183a7e71b8769c92691056c67b2\` FOREIGN KEY (\`game_id\`) REFERENCES \`games\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_61a70554b6791a1021a1c80594f\` FOREIGN KEY (\`team_tournament_id\`) REFERENCES \`team_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_b1dab303eb41058aff75ce26ace\` FOREIGN KEY (\`player_tournament_id\`) REFERENCES \`player_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_e2086ff0e69887d1ef083168863\` FOREIGN KEY (\`entry_game_inning_stat_id\`) REFERENCES \`game_inning_stats\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_a8e2b0df27f8baa40c5aef8d3e3\` FOREIGN KEY (\`game_id\`) REFERENCES \`games\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_bd5db571ec09d387d82d84daf3d\` FOREIGN KEY (\`home_pitcher_participation_id\`) REFERENCES \`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_207a04127d611441d47686ceeb5\` FOREIGN KEY (\`home_batter_participation_id\`) REFERENCES \`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -124,15 +120,25 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`plays\` ADD CONSTRAINT \`FK_ee54c0bd8cc99751aa38be798b4\` FOREIGN KEY (\`game_inning_stat_id\`) REFERENCES \`game_inning_stats\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`plays\` ADD CONSTRAINT \`FK_f447505ff7bf84e808b302d1ce7\` FOREIGN KEY (\`batter_gp_id\`) REFERENCES \`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`plays\` ADD CONSTRAINT \`FK_8bedafb77b3b33f233e5cfde092\` FOREIGN KEY (\`pitcher_gp_id\`) REFERENCES \`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_137287a68699d56d7c2ab369daa\` FOREIGN KEY (\`runnerGpId\`) REFERENCES \`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_58e3b2068aaa4d74ec081daec3e\` FOREIGN KEY (\`responsiblePitcherGpId\`) REFERENCES \`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_daa4d687d3f9bdb4a7b1c815443\` FOREIGN KEY (\`runner_gp_id\`) REFERENCES \`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_2125f636582c7e322e0bdd86ad8\` FOREIGN KEY (\`responsible_pitcher_gp_id\`) REFERENCES \`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_8b9c7b05d9891ebd54e07703b87\` FOREIGN KEY (\`originPlayId\`) REFERENCES \`plays\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_ba8430e27a68cf3a0a13ba23a2b\` FOREIGN KEY (\`game_inning_stat_id\`) REFERENCES \`game_inning_stats\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_44794a7287d8a2be81944b79613\` FOREIGN KEY (\`runner_gp_id\`) REFERENCES \`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_eab4d4cf965498bd81aa8e12b9f\` FOREIGN KEY (\`responsible_pitcher_gp_id\`) REFERENCES \`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_3b19b13537e13c951de7831899a\` FOREIGN KEY (\`originPlayId\`) REFERENCES \`plays\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_1359b1e2b73bfa2d8ce5e93693d\` FOREIGN KEY (\`game_inning_stat_id\`) REFERENCES \`game_inning_stats\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_1359b1e2b73bfa2d8ce5e93693d\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_3b19b13537e13c951de7831899a\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_eab4d4cf965498bd81aa8e12b9f\``);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` DROP FOREIGN KEY \`FK_44794a7287d8a2be81944b79613\``);
+        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_ba8430e27a68cf3a0a13ba23a2b\``);
         await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_8b9c7b05d9891ebd54e07703b87\``);
-        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_58e3b2068aaa4d74ec081daec3e\``);
-        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_137287a68699d56d7c2ab369daa\``);
+        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_2125f636582c7e322e0bdd86ad8\``);
+        await queryRunner.query(`ALTER TABLE \`runner\` DROP FOREIGN KEY \`FK_daa4d687d3f9bdb4a7b1c815443\``);
         await queryRunner.query(`ALTER TABLE \`plays\` DROP FOREIGN KEY \`FK_8bedafb77b3b33f233e5cfde092\``);
         await queryRunner.query(`ALTER TABLE \`plays\` DROP FOREIGN KEY \`FK_f447505ff7bf84e808b302d1ce7\``);
         await queryRunner.query(`ALTER TABLE \`plays\` DROP FOREIGN KEY \`FK_ee54c0bd8cc99751aa38be798b4\``);
@@ -170,6 +176,7 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_207a04127d611441d47686ceeb5\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_bd5db571ec09d387d82d84daf3d\``);
         await queryRunner.query(`ALTER TABLE \`game_stats\` DROP FOREIGN KEY \`FK_a8e2b0df27f8baa40c5aef8d3e3\``);
+        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_e2086ff0e69887d1ef083168863\``);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_b1dab303eb41058aff75ce26ace\``);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_61a70554b6791a1021a1c80594f\``);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` DROP FOREIGN KEY \`FK_183a7e71b8769c92691056c67b2\``);
@@ -181,10 +188,6 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`virtual_inning_stats\` DROP FOREIGN KEY \`FK_bcb6efe098d74ce92775eb8c9f0\``);
         await queryRunner.query(`ALTER TABLE \`game_inning_stats\` DROP FOREIGN KEY \`FK_f6c3223e06f14dd26279cf9824c\``);
         await queryRunner.query(`ALTER TABLE \`user_profiles\` DROP FOREIGN KEY \`FK_8481388d6325e752cd4d7e26c6d\``);
-        await queryRunner.query(`DROP INDEX \`IDX_f5ab3feef948b23b5ab100becd\` ON \`game_roasters\``);
-        await queryRunner.query(`DROP INDEX \`IDX_19742fdd1e5d7b047078be2318\` ON \`game_roasters\``);
-        await queryRunner.query(`DROP INDEX \`IDX_61a70554b6791a1021a1c80594\` ON \`pitcher_game_participations\``);
-        await queryRunner.query(`DROP INDEX \`IDX_16148e5132d3068b00ade5c782\` ON \`batter_game_participations\``);
         await queryRunner.query(`ALTER TABLE \`runner_events\` DROP COLUMN \`end_base\``);
         await queryRunner.query(`ALTER TABLE \`runner_events\` ADD \`end_base\` char NOT NULL`);
         await queryRunner.query(`ALTER TABLE \`runner_events\` DROP COLUMN \`start_base\``);
@@ -195,16 +198,14 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`email_codes\` ADD \`code_hash\` varchar(255) NOT NULL`);
         await queryRunner.query(`ALTER TABLE \`player_tournaments\` DROP COLUMN \`backNumber\``);
         await queryRunner.query(`ALTER TABLE \`player_tournaments\` ADD \`backNumber\` varchar(255) NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`game_roasters\` CHANGE \`team_tournament_id\` \`team_id\` int NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` CHANGE \`team_tournament_id\` \`team_id\` int NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`batter_game_participations\` CHANGE \`team_tournament_id\` \`team_id\` int NOT NULL`);
-        await queryRunner.query(`CREATE UNIQUE INDEX \`IDX_e087b4110e44a0d42a4c8a3749\` ON \`game_roasters\` (\`game_id\`, \`team_id\`, \`player_tournament_id\`)`);
-        await queryRunner.query(`CREATE INDEX \`IDX_0ab4fa69ea5db41cf49ccbb9d2\` ON \`game_roasters\` (\`team_id\`)`);
-        await queryRunner.query(`CREATE INDEX \`IDX_61a0c2f525649b1e1772df22bb\` ON \`pitcher_game_participations\` (\`team_id\`)`);
-        await queryRunner.query(`CREATE INDEX \`IDX_a7ccc1dd62d56aac8100c4c6ba\` ON \`batter_game_participations\` (\`team_id\`)`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_eab4d4cf965498bd81aa8e12b9f\` FOREIGN KEY (\`responsible_pitcher_gp_id\`) REFERENCES \`snubaseballtracker\`.\`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_44794a7287d8a2be81944b79613\` FOREIGN KEY (\`runner_gp_id\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_3b19b13537e13c951de7831899a\` FOREIGN KEY (\`originPlayId\`) REFERENCES \`snubaseballtracker\`.\`plays\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`virtual_runners\` ADD CONSTRAINT \`FK_1359b1e2b73bfa2d8ce5e93693d\` FOREIGN KEY (\`game_inning_stat_id\`) REFERENCES \`snubaseballtracker\`.\`game_inning_stats\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_daa4d687d3f9bdb4a7b1c815443\` FOREIGN KEY (\`runner_gp_id\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_ba8430e27a68cf3a0a13ba23a2b\` FOREIGN KEY (\`game_inning_stat_id\`) REFERENCES \`snubaseballtracker\`.\`game_inning_stats\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_8b9c7b05d9891ebd54e07703b87\` FOREIGN KEY (\`originPlayId\`) REFERENCES \`snubaseballtracker\`.\`plays\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_58e3b2068aaa4d74ec081daec3e\` FOREIGN KEY (\`responsiblePitcherGpId\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_137287a68699d56d7c2ab369daa\` FOREIGN KEY (\`runnerGpId\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`runner\` ADD CONSTRAINT \`FK_2125f636582c7e322e0bdd86ad8\` FOREIGN KEY (\`responsible_pitcher_gp_id\`) REFERENCES \`snubaseballtracker\`.\`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`plays\` ADD CONSTRAINT \`FK_f447505ff7bf84e808b302d1ce7\` FOREIGN KEY (\`batter_gp_id\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`plays\` ADD CONSTRAINT \`FK_ee54c0bd8cc99751aa38be798b4\` FOREIGN KEY (\`game_inning_stat_id\`) REFERENCES \`snubaseballtracker\`.\`game_inning_stats\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`plays\` ADD CONSTRAINT \`FK_8bedafb77b3b33f233e5cfde092\` FOREIGN KEY (\`pitcher_gp_id\`) REFERENCES \`snubaseballtracker\`.\`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -236,19 +237,20 @@ export class ChangeTeamIdToTeamTournamentId1754002875683 implements MigrationInt
         await queryRunner.query(`ALTER TABLE \`games\` ADD CONSTRAINT \`FK_231e3bf4d40e033e03864137113\` FOREIGN KEY (\`tournament_id\`) REFERENCES \`snubaseballtracker\`.\`tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_roasters\` ADD CONSTRAINT \`FK_f55dcf4120348b21aa899a00822\` FOREIGN KEY (\`game_id\`) REFERENCES \`snubaseballtracker\`.\`games\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_roasters\` ADD CONSTRAINT \`FK_d40a0d4af3721b583167fdeef3c\` FOREIGN KEY (\`player_tournament_id\`) REFERENCES \`snubaseballtracker\`.\`player_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`game_roasters\` ADD CONSTRAINT \`FK_0ab4fa69ea5db41cf49ccbb9d2a\` FOREIGN KEY (\`team_id\`) REFERENCES \`snubaseballtracker\`.\`teams\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`game_roasters\` ADD CONSTRAINT \`FK_19742fdd1e5d7b047078be23181\` FOREIGN KEY (\`team_tournament_id\`) REFERENCES \`snubaseballtracker\`.\`team_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_bd5db571ec09d387d82d84daf3d\` FOREIGN KEY (\`home_pitcher_participation_id\`) REFERENCES \`snubaseballtracker\`.\`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_a8e2b0df27f8baa40c5aef8d3e3\` FOREIGN KEY (\`game_id\`) REFERENCES \`snubaseballtracker\`.\`games\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_73309278f6c6b7b7a273c240567\` FOREIGN KEY (\`away_batter_participation_id\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_207a04127d611441d47686ceeb5\` FOREIGN KEY (\`home_batter_participation_id\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`game_stats\` ADD CONSTRAINT \`FK_13a674c8d1715401b040983dee8\` FOREIGN KEY (\`away_pitcher_participation_id\`) REFERENCES \`snubaseballtracker\`.\`pitcher_game_participations\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_e2086ff0e69887d1ef083168863\` FOREIGN KEY (\`entry_game_inning_stat_id\`) REFERENCES \`snubaseballtracker\`.\`game_inning_stats\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_b1dab303eb41058aff75ce26ace\` FOREIGN KEY (\`player_tournament_id\`) REFERENCES \`snubaseballtracker\`.\`player_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_61a0c2f525649b1e1772df22bb2\` FOREIGN KEY (\`team_id\`) REFERENCES \`snubaseballtracker\`.\`teams\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_61a70554b6791a1021a1c80594f\` FOREIGN KEY (\`team_tournament_id\`) REFERENCES \`snubaseballtracker\`.\`team_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_participations\` ADD CONSTRAINT \`FK_183a7e71b8769c92691056c67b2\` FOREIGN KEY (\`game_id\`) REFERENCES \`snubaseballtracker\`.\`games\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`pitcher_game_stats\` ADD CONSTRAINT \`FK_36c2e15af9df5e963ca0ae2135e\` FOREIGN KEY (\`pitcher_game_participation_id\`) REFERENCES \`snubaseballtracker\`.\`pitcher_game_participations\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`batter_game_participations\` ADD CONSTRAINT \`FK_f247f29600c4a080125d454072b\` FOREIGN KEY (\`player_tournament_id\`) REFERENCES \`snubaseballtracker\`.\`player_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`batter_game_participations\` ADD CONSTRAINT \`FK_b29689d47b22e01defb6efd7af3\` FOREIGN KEY (\`game_id\`) REFERENCES \`snubaseballtracker\`.\`games\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`batter_game_participations\` ADD CONSTRAINT \`FK_a7ccc1dd62d56aac8100c4c6ba6\` FOREIGN KEY (\`team_id\`) REFERENCES \`snubaseballtracker\`.\`teams\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`batter_game_participations\` ADD CONSTRAINT \`FK_16148e5132d3068b00ade5c7827\` FOREIGN KEY (\`team_tournament_id\`) REFERENCES \`snubaseballtracker\`.\`team_tournaments\`(\`id\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`batter_game_stats\` ADD CONSTRAINT \`FK_3bd2cb3f2b7140f750a0fdaac8d\` FOREIGN KEY (\`batter_game_participation_id\`) REFERENCES \`snubaseballtracker\`.\`batter_game_participations\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE \`virtual_inning_stats\` ADD CONSTRAINT \`FK_bcb6efe098d74ce92775eb8c9f0\` FOREIGN KEY (\`game_id\`) REFERENCES \`snubaseballtracker\`.\`games\`(\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE \`game_inning_stats\` ADD CONSTRAINT \`FK_f6c3223e06f14dd26279cf9824c\` FOREIGN KEY (\`game_id\`) REFERENCES \`snubaseballtracker\`.\`games\`(\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`);
