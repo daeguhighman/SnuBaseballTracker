@@ -1,10 +1,10 @@
-import { AppDataSource } from '../../data-source';
-import { TournamentSeeder } from './seed-tournament';
-import { TeamSeeder } from './seed-teams';
-import { PlayerSeeder } from './seed-players';
-import { GameSeeder } from './seed-games';
-import { UserSeeder } from './seed-users';
-import { Tournament } from '../tournaments/entities/tournament.entity';
+import { AppDataSource } from '../../../../data-source';
+import { DummyTournamentSeeder } from './seed-dummy-tournament';
+import { DummyTeamSeeder } from './seed-dummy-teams';
+import { DummyPlayerSeeder } from './seed-dummy-players';
+import { DummyGameSeeder } from './seed-dummy-games';
+import { DummyUserSeeder } from './seed-dummy-users';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
 import { TournamentType } from '@/common/enums/tournament-type.enum';
 
 async function main() {
@@ -15,12 +15,12 @@ async function main() {
 
     // 1단계: Users 생성
     console.log('\n=== 1단계: 사용자 생성 ===');
-    const userSeeder = new UserSeeder(AppDataSource);
+    const userSeeder = new DummyUserSeeder(AppDataSource);
     await userSeeder.seedUsers();
 
     // 2단계: Tournament 생성
     console.log('\n=== 2단계: 대회 생성 ===');
-    const tournamentSeeder = new TournamentSeeder(AppDataSource);
+    const tournamentSeeder = new DummyTournamentSeeder(AppDataSource);
     await tournamentSeeder.seedTournament();
 
     // 3단계: 생성된 대회 ID 조회
@@ -40,22 +40,22 @@ async function main() {
 
     // 4단계: Team & TeamTournament 생성
     console.log('\n=== 4단계: 팀 및 팀-대회 생성 ===');
-    const teamSeeder = new TeamSeeder(AppDataSource);
-    await teamSeeder.seedTeams(tournamentId);
+    const teamSeeder = new DummyTeamSeeder(AppDataSource);
+    await teamSeeder.seedDummyTeams(tournamentId);
 
     // 5단계: Player & PlayerTournament 생성
     console.log('\n=== 5단계: 선수 및 선수-대회 생성 ===');
-    const playerSeeder = new PlayerSeeder(AppDataSource);
+    const playerSeeder = new DummyPlayerSeeder(AppDataSource);
     await playerSeeder.seedPlayers(tournamentId);
 
     // 6단계: Games 생성
     console.log('\n=== 6단계: 게임 생성 ===');
-    const gameSeeder = new GameSeeder(AppDataSource);
+    const gameSeeder = new DummyGameSeeder(AppDataSource);
     await gameSeeder.seedGames(tournamentId);
 
     // // 7단계: Stats 생성
     // console.log('\n=== 7단계: 통계 데이터 생성 ===');
-    // const statsSeeder = new StatsSeeder(AppDataSource);
+    // const statsSeeder = new DummyStatsSeeder(AppDataSource);
     // await statsSeeder.seedStats(tournamentId);
 
     console.log('\n🎉 모든 시드 데이터 생성 완료!');

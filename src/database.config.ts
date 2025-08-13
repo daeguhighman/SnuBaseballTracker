@@ -32,15 +32,6 @@ import { VirtualInningStat } from '@/games/entities/virtual-inning-stat.entity';
 import { VirtualRunner } from '@/plays/entities/virtual-runner.entity';
 
 export default registerAs('database', () => {
-  const env = process.env.NODE_ENV ?? 'development';
-
-  const flags = {
-    isDev: env === 'development',
-    isTest: env === 'test',
-    isProd: env === 'production',
-  };
-  console.log('DB_USERNAME:', process.env.DB_USERNAME);
-  console.log('DB_DATABASE:', process.env.DB_DATABASE);
   return {
     type: 'mysql' as const,
     host: process.env.DB_HOST,

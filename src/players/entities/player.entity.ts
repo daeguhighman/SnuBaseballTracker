@@ -26,11 +26,11 @@ export class Player {
   @Column({ name: 'email', length: 100 })
   email: string;
 
-  @Column({ name: 'student_id', length: 50 })
-  studentId: string;
+  @Column({ name: 'student_id', length: 50, nullable: true })
+  studentId?: string;
 
-  @Column({ name: 'birth_date' })
-  birthDate: Date;
+  @Column({ name: 'birth_date', nullable: true })
+  birthDate?: Date;
 
   @OneToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })

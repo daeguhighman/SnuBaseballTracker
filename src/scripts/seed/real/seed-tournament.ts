@@ -1,16 +1,10 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Tournament } from '../tournaments/entities/tournament.entity';
-import { PhaseType } from '../common/enums/phase-type.enum';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
 import { TournamentType } from '@common/enums/tournament-type.enum';
 
-interface TournamentData {
-  name: string;
-  year: number;
-}
-
-export class TournamentSeeder {
+export class DummyTournamentSeeder {
   private dataSource: DataSource;
   private tournamentRepo: Repository<Tournament>;
 
@@ -38,7 +32,7 @@ export class TournamentSeeder {
 async function main() {
   try {
     await AppDataSource.initialize();
-    const seeder = new TournamentSeeder(AppDataSource);
+    const seeder = new DummyTournamentSeeder(AppDataSource);
     await seeder.seedTournament();
   } catch (error) {
     console.error('시드 데이터 생성 중 오류 발생:', error);

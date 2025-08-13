@@ -41,8 +41,8 @@ export class PlayerTournament {
   @Column({ name: 'player_id' })
   playerId: number;
 
-  @Column()
-  backNumber: string;
+  @Column({ name: 'back_number', nullable: true })
+  backNumber?: number;
 
   /* ───────── 팀‑대회 ───────── */
   @ManyToOne(() => TeamTournament, (tt) => tt.playerTournaments, {

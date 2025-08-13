@@ -1,17 +1,17 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Team } from '../teams/entities/team.entity';
-import { TeamTournament } from '../teams/entities/team-tournament.entity';
-import { Tournament } from '../tournaments/entities/tournament.entity';
-import { User } from '../users/entities/user.entity';
+import { Team } from '../../../teams/entities/team.entity';
+import { TeamTournament } from '../../../teams/entities/team-tournament.entity';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
+import { User } from '../../../users/entities/user.entity';
 
 interface TeamData {
   name: string;
   groupName?: string;
 }
 
-export class TeamSeeder {
+export class DummyTeamSeeder {
   private dataSource: DataSource;
   private teamRepo: Repository<Team>;
   private teamTournamentRepo: Repository<TeamTournament>;
@@ -26,8 +26,8 @@ export class TeamSeeder {
     this.userRepo = dataSource.getRepository(User);
   }
 
-  async seedTeams(tournamentId: number) {
-    console.log('팀 시드 데이터 생성 시작...');
+  async seedDummyTeams(tournamentId: number) {
+    console.log('더미 팀 시드 데이터 생성 시작...');
     console.log(`대회 ID: ${tournamentId}`);
 
     // 대회 정보 확인
@@ -98,63 +98,39 @@ export class TeamSeeder {
           team = await this.teamRepo.save(team);
           console.log(`  - 팀 생성: ${teamData.name}`);
         } else {
-          console.log(`  - 기존 팀 사용: ${teamData.name}`);
+          console.log(`  - 팀 이미 존재: ${teamData.name}`);
         }
 
-        // 3. 팀-대회 관계 생성 또는 조회
+        // 3. TeamTournament 생성 또는 조회
         const existingTeamTournament = await this.teamTournamentRepo.findOne({
           where: {
-            teamId: team.id,
-            tournamentId: tournamentId,
+            team: { id: team.id },
+            tournament: { id: tournamentId },
           },
         });
 
-        if (existingTeamTournament) {
-          console.log(`⏭️  팀-대회 관계 "${teamData.name}" 이미 존재함`);
+        if (!existingTeamTournament) {
+          const teamTournament = this.teamTournamentRepo.create({
+            team: team,
+            tournament: tournament,
+            groupName: teamData.groupName,
+          });
+          await this.teamTournamentRepo.save(teamTournament);
+          console.log(
+            `  - 팀-대회 연결 생성: ${teamData.name} (${teamData.groupName})`,
+          );
+          createdCount++;
+        } else {
+          console.log(`  - 팀-대회 연결 이미 존재: ${teamData.name}`);
           skippedCount++;
-          continue;
         }
-
-        // 새 팀-대회 관계 생성
-        const teamTournament = this.teamTournamentRepo.create({
-          teamId: team.id,
-          tournamentId: tournamentId,
-          groupName: teamData.groupName,
-        });
-
-        await this.teamTournamentRepo.save(teamTournament);
-        console.log(
-          `✅ 팀-대회 관계 "${teamData.name}" 생성 완료 (ID: ${teamTournament.id})`,
-        );
-        createdCount++;
       } catch (error) {
-        console.error(`❌ 팀 "${teamData.name}" 처리 실패:`, error.message);
+        console.error(`  - 팀 생성 중 오류 발생: ${teamData.name}`, error);
       }
     }
 
-    console.log('\n=== 팀 시드 데이터 생성 결과 ===');
-    console.log(`생성 완료: ${createdCount}개`);
-    console.log(`건너뜀: ${skippedCount}개`);
+    console.log(`\n✅ 더미 팀 시드 데이터 생성 완료!`);
+    console.log(`   - 새로 생성된 팀-대회 연결: ${createdCount}개`);
+    console.log(`   - 이미 존재하는 팀-대회 연결: ${skippedCount}개`);
   }
-}
-
-async function main() {
-  try {
-    await AppDataSource.initialize();
-    const seeder = new TeamSeeder(AppDataSource);
-    const tournamentId = 1; // 실제 대회 ID로 변경
-    await seeder.seedTeams(tournamentId);
-  } catch (error) {
-    console.error('시드 데이터 생성 중 오류 발생:', error);
-    process.exit(1);
-  } finally {
-    if (AppDataSource.isInitialized) {
-      await AppDataSource.destroy();
-    }
-  }
-}
-
-// 직접 실행될 때만 main() 호출
-if (require.main === module) {
-  main();
 }

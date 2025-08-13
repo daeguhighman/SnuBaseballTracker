@@ -1,10 +1,10 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Game } from '../games/entities/game.entity';
-import { TeamTournament } from '../teams/entities/team-tournament.entity';
-import { Tournament } from '../tournaments/entities/tournament.entity';
-import { GameStatus } from '../common/enums/game-status.enum';
+import { Game } from '../../../games/entities/game.entity';
+import { TeamTournament } from '../../../teams/entities/team-tournament.entity';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
+import { GameStatus } from '../../../common/enums/game-status.enum';
 
 interface GameData {
   awayTeamName: string;
@@ -12,7 +12,7 @@ interface GameData {
   scheduledAt: string;
 }
 
-export class GameSeeder {
+export class DummyGameSeeder {
   private dataSource: DataSource;
   private gameRepo: Repository<Game>;
   private teamTournamentRepo: Repository<TeamTournament>;
@@ -142,7 +142,7 @@ export class GameSeeder {
 async function main() {
   try {
     await AppDataSource.initialize();
-    const seeder = new GameSeeder(AppDataSource);
+    const seeder = new DummyGameSeeder(AppDataSource);
     const tournamentId = 1; // 실제 대회 ID로 변경
     await seeder.seedGames(tournamentId);
   } catch (error) {

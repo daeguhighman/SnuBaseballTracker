@@ -1,10 +1,10 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { PlayerTournament } from '../players/entities/player-tournament.entity';
-import { BatterStat } from '../records/entities/batter-stat.entity';
-import { PitcherStat } from '../records/entities/pitcher-stat.entity';
-import { Tournament } from '../tournaments/entities/tournament.entity';
+import { PlayerTournament } from '../../../players/entities/player-tournament.entity';
+import { BatterStat } from '../../../records/entities/batter-stat.entity';
+import { PitcherStat } from '../../../records/entities/pitcher-stat.entity';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
 import { TournamentType } from '@/common/enums/tournament-type.enum';
 
 async function testRealStatsSeeding() {

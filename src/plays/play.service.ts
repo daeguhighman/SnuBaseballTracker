@@ -40,6 +40,12 @@ export class PlayService {
         relations: ['gameInningStat', 'game'],
       });
       if (!play) throw new NotFoundException('Play not found');
+      if (play.status === PlayStatus.COMPLETE) {
+        return {
+          success: false,
+          message: '이미 완료된 플레이입니다.',
+        };
+      }
       play.resultCode = body.resultCode;
       await em.save(play);
 

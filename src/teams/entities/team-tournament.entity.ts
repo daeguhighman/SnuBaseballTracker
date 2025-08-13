@@ -51,8 +51,8 @@ export class TeamTournament {
 
   @Column({ name: 'representative_user_id', nullable: true })
   representativeUserId?: number;
-  @Column({ name: 'group_name', length: 50 })
-  groupName: string;
+  @Column({ name: 'group_name', length: 50, nullable: true })
+  groupName?: string;
 
   @Column({ default: 0 })
   games: number;

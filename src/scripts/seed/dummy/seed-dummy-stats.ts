@@ -1,17 +1,17 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { PlayerTournament } from '../players/entities/player-tournament.entity';
-import { BatterStat } from '../records/entities/batter-stat.entity';
-import { PitcherStat } from '../records/entities/pitcher-stat.entity';
-import { Tournament } from '../tournaments/entities/tournament.entity';
+import { PlayerTournament } from '../../../players/entities/player-tournament.entity';
+import { BatterStat } from '../../../records/entities/batter-stat.entity';
+import { PitcherStat } from '../../../records/entities/pitcher-stat.entity';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
 import { TournamentType } from '@/common/enums/tournament-type.enum';
-import { Team } from '../teams/entities/team.entity';
-import { TeamTournament } from '../teams/entities/team-tournament.entity';
-import { Player } from '../players/entities/player.entity';
-import { User } from '../users/entities/user.entity';
-import { College } from '../profiles/entities/college.entity';
-import { Department } from '../profiles/entities/department.entity';
+import { Team } from '../../../teams/entities/team.entity';
+import { TeamTournament } from '../../../teams/entities/team-tournament.entity';
+import { Player } from '../../../players/entities/player.entity';
+import { User } from '../../../users/entities/user.entity';
+import { College } from '../../../profiles/entities/college.entity';
+import { Department } from '../../../profiles/entities/department.entity';
 
 interface RealBatterData {
   name: string;
@@ -55,7 +55,7 @@ interface PlayerData {
   teamName: string;
 }
 
-export class CompleteRealStatsSeeder {
+export class DummyStatsSeeder {
   private dataSource: DataSource;
   private tournamentRepo: Repository<Tournament>;
   private teamRepo: Repository<Team>;
@@ -430,7 +430,7 @@ export class CompleteRealStatsSeeder {
           playerId: player.id,
           tournamentId,
           teamTournamentId: teamTournament.id,
-          backNumber: String(playerData.backNumber),
+          backNumber: playerData.backNumber,
         });
         playerTournament =
           await this.playerTournamentRepo.save(playerTournament);
@@ -845,7 +845,7 @@ async function main() {
     console.log('✅ 데이터베이스 연결 성공');
 
     console.log('\n=== 실제 통계 기반 완전 시딩 ===');
-    const completeSeeder = new CompleteRealStatsSeeder(AppDataSource);
+    const completeSeeder = new DummyStatsSeeder(AppDataSource);
     await completeSeeder.seedCompleteRealStats();
 
     console.log('\n🎉 완전 시딩 완료!');

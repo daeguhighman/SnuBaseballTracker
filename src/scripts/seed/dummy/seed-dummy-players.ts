@@ -1,13 +1,13 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
-import { Player } from '../players/entities/player.entity';
-import { PlayerTournament } from '../players/entities/player-tournament.entity';
-import { TeamTournament } from '../teams/entities/team-tournament.entity';
-import { Tournament } from '../tournaments/entities/tournament.entity';
-import { User, AppRole } from '../users/entities/user.entity';
-import { College } from '../profiles/entities/college.entity';
-import { Department } from '../profiles/entities/department.entity';
+import { Player } from '../../../players/entities/player.entity';
+import { PlayerTournament } from '../../../players/entities/player-tournament.entity';
+import { TeamTournament } from '../../../teams/entities/team-tournament.entity';
+import { Tournament } from '../../../tournaments/entities/tournament.entity';
+import { User, AppRole } from '../../../users/entities/user.entity';
+import { College } from '../../../profiles/entities/college.entity';
+import { Department } from '../../../profiles/entities/department.entity';
 
 interface PlayerData {
   name: string;
@@ -19,7 +19,7 @@ interface PlayerData {
   teamName: string;
 }
 
-export class PlayerSeeder {
+export class DummyPlayerSeeder {
   private dataSource: DataSource;
   private playerRepo: Repository<Player>;
   private playerTournamentRepo: Repository<PlayerTournament>;
@@ -672,7 +672,7 @@ export class PlayerSeeder {
           playerId: player.id,
           tournamentId: tournamentId,
           teamTournamentId: teamTournament.id,
-          backNumber: playerData.backNumber.toString(),
+          backNumber: playerData.backNumber,
         });
 
         await this.playerTournamentRepo.save(playerTournament);
@@ -694,7 +694,7 @@ export class PlayerSeeder {
 async function main() {
   try {
     await AppDataSource.initialize();
-    const seeder = new PlayerSeeder(AppDataSource);
+    const seeder = new DummyPlayerSeeder(AppDataSource);
     const tournamentId = 1; // 실제 대회 ID로 변경
     await seeder.seedPlayers(tournamentId);
   } catch (error) {

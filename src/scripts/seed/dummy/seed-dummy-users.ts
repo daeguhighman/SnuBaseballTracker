@@ -1,12 +1,12 @@
-import { AppDataSource } from '../../data-source';
+import { AppDataSource } from '../../../../data-source';
 import { DataSource } from 'typeorm';
-import { User, AppRole } from '../users/entities/user.entity';
-import { UserProfile } from '../profiles/entities/profile.entity';
-import { College } from '../profiles/entities/college.entity';
-import { Department } from '../profiles/entities/department.entity';
+import { User, AppRole } from '../../../users/entities/user.entity';
+import { UserProfile } from '../../../profiles/entities/profile.entity';
+import { College } from '../../../profiles/entities/college.entity';
+import { Department } from '../../../profiles/entities/department.entity';
 import * as bcrypt from 'bcrypt';
 
-export class UserSeeder {
+export class DummyUserSeeder {
   constructor(private dataSource: DataSource) {}
 
   async seedUsers() {
@@ -97,7 +97,7 @@ export class UserSeeder {
 async function main() {
   try {
     await AppDataSource.initialize();
-    const seeder = new UserSeeder(AppDataSource);
+    const seeder = new DummyUserSeeder(AppDataSource);
     await seeder.seedUsers();
   } catch (error) {
     console.error('시드 데이터 생성 중 오류 발생:', error);
