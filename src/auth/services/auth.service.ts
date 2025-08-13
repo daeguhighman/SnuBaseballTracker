@@ -198,7 +198,7 @@ export class AuthService {
   /*  4-1) 트랜잭션 내에서 토큰 발급 + 세션 생성                           */
   /* ------------------------------------------------------------------ */
   private async issueTokenPairWithManager(user: User, manager: any) {
-    const basePayload = { sub: user.id, email: user.email };
+    const basePayload = { sub: user.id, email: user.email, role: user.role };
 
     // access·refresh 병렬 발급
     const [accessToken, { token: refreshToken }] = await Promise.all([

@@ -56,6 +56,7 @@ import { GameStat } from '@games/entities/game-stat.entity';
 import { TournamentScheduleResponseDto } from './dtos/tournament-schedule.dto';
 import { Observable } from 'rxjs';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminAuthGuard } from '@/auth/guards/admin-auth.guard';
 
 @Controller('games')
 export class GamesController {
@@ -84,7 +85,7 @@ export class GamesController {
   async getTournamentSchedule(): Promise<TournamentScheduleResponseDto> {
     return this.gameCoreService.getTournamentSchedule();
   }
-  // @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/players')
   async getPlayers(
     @Param('gameId') gameId: number,
@@ -93,8 +94,9 @@ export class GamesController {
     return this.gameLineupService.getPlayers(gameId, teamTournamentId);
   }
 
+  @UseGuards(AdminAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/players-with-in-lineup')
-  // @UseGuards(UmpireAuthGuard)
+  @UseGuards(UmpireAuthGuard)
   async getPlayersWithInLineup(
     @Param('gameId') gameId: number,
     @Param('teamTournamentId', ParseIntPipe) teamTournamentId: number,
@@ -104,6 +106,8 @@ export class GamesController {
       teamTournamentId,
     );
   }
+
+  @UseGuards(UmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/substitutable-batters')
   async getSubstitutableBatters(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -115,7 +119,7 @@ export class GamesController {
       GameRole.BATTER,
     );
   }
-  // @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/substitutable-pitchers')
   async getSubstitutablePitchers(
     @Param('gameId') gameId: number,
@@ -127,7 +131,7 @@ export class GamesController {
       GameRole.PITCHER,
     );
   }
-
+  @UseGuards(AdminAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/lineup')
   async getLineup(
     @Param('gameId') gameId: number,
@@ -135,7 +139,7 @@ export class GamesController {
   ): Promise<LineupResponseDto> {
     return this.gameLineupService.getLineup(gameId, teamTournamentId);
   }
-  // @UseGuards(SubmitLineupGuard)
+  @UseGuards(AdminAuthGuard)
   @Post(':gameId/teams/:teamTournamentId/lineup')
   async submitLineup(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -144,7 +148,7 @@ export class GamesController {
   ): Promise<{ success: boolean; message: string }> {
     return this.gameLineupService.submitLineup(gameId, teamTournamentId, body);
   }
-  // @UseGuards(SubmitLineupGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch(':gameId/teams/:teamTournamentId/lineup')
   async updateLineup(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -154,33 +158,15 @@ export class GamesController {
     return this.gameLineupService.updateLineup(gameId, teamTournamentId, body);
   }
 
-  // @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Post(':gameId/start')
   async startGame(
     @Param('gameId') gameId: number,
   ): Promise<{ success: boolean; message: string; snapshot: any }> {
     return this.gameCoreService.startGame(gameId);
   }
-  // @UseGuards(UmpireAuthGuard)
-  // @Get(':gameId/current-batter')
 
-  // async getCurrentBatter(
-  //   @Param('gameId') gameId: number,
-  //   @Query('teamType') teamType: 'home' | 'away',
-  // ): Promise<CurrentBatterResponseDto> {
-  //   return this.gameStatsService.getCurrentBatter(gameId, teamType);
-  // }
-  // @UseGuards(UmpireAuthGuard)
-  // @Get(':gameId/current-pitcher')
-
-  // async getCurrentPitcher(
-  //   @Param('gameId') gameId: number,
-  //   @Query('teamType') teamType: 'home' | 'away',
-  // ): Promise<CurrentPitcherResponseDto> {
-  //   return this.gameStatsService.getCurrentPitcher(gameId, teamType);
-  // }
-
-  // @UseGuards(SubmitLineupGuard)
+  @UseGuards(AdminAuthGuard)
   @Post(':gameId/teams/:teamTournamentId/substitution')
   async submitSubstitution(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -201,7 +187,7 @@ export class GamesController {
   ): Promise<GameResultResponseDto> {
     return this.gameStatsService.getGameResult(gameId, req.user);
   }
-  // @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Post(':gameId/result')
   async endGame(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -209,7 +195,7 @@ export class GamesController {
     return this.gameCoreService.finalizeGame(gameId);
   }
 
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch(':gameId/result/batters/:batterGameStatsId')
   async updateBatterStats(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -222,7 +208,7 @@ export class GamesController {
       updateDto,
     );
   }
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Patch(':gameId/result/pitchers/:pitcherGameStatsId')
   async updatePitcherStats(
     @Param('gameId', ParseIntPipe) gameId: number,

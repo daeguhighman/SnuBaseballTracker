@@ -76,10 +76,10 @@ const imports = [
   imports,
   providers: [
     LoggingInterceptor,
-    // {
-    //   // provide: APP_GUARD,
-    //   // useClass: JwtAuthGuard,
-    // },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AppModule {}

@@ -17,7 +17,13 @@ async function bootstrap() {
   const corsOptions = {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    origin: 'http://localhost:3001',
+    origin: (origin, callback) => {
+      if (!origin || whitelist.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   };
   const app = await NestFactory.create(AppModule, {
@@ -32,7 +38,6 @@ async function bootstrap() {
   ];
   app.enableCors({
     ...corsOptions,
-    // origin: isProduction ? 'https://snubaseball.site' : true,
   });
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalInterceptors(app.get(LoggingInterceptor));
