@@ -147,7 +147,7 @@ export class AuthService {
   }
 
   /* ------------------------------------------------------------------ */
-  /*  3) 리프레시 & 세션 회전                                             */
+  /*  3) 리프레시 (access token만 재발급)                                 */
   /* ------------------------------------------------------------------ */
   async refresh(oldToken: string) {
     console.log('[POST] auth/refresh -> oldToken:', oldToken);
@@ -172,10 +172,15 @@ export class AuthService {
         throw new UnauthorizedException('Session dead');
       }
 
-      session.revoked = true; // rotate
-      await manager.save(session);
+      // refresh 토큰은 그대로 유지하고 access token만 재발급
+      const basePayload = {
+        sub: session.user.id,
+        email: session.user.email,
+        role: session.user.role,
+      };
+      const accessToken = await this.signAccessToken(basePayload);
 
-      return this.issueTokenPairWithManager(session.user, manager);
+      return { accessToken, refreshToken: oldToken };
     });
   }
 

@@ -475,17 +475,17 @@ paths:
         "404":
           description: "해당 날짜 범위의 경기가 존재하지 않음"
 
-  # /games/bracket-schedule:
-  #   get:
-  #     summary: "토너먼트 브라켓 일정 조회"
-  #     tags: [games]
-  #     responses:
-  #       "200":
-  #         description: "토너먼트 브라켓 일정 조회 성공"
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/TournamentScheduleResponse"
+  /games/bracket-schedule:
+    get:
+      summary: "토너먼트 브라켓 일정 조회"
+      tags: [games]
+      responses:
+        "200":
+          description: "토너먼트 브라켓 일정 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentScheduleResponse"
 
   /games/{gameId}/teams/{teamTournamentId}/players:
     get:
