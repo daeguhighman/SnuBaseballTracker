@@ -79,11 +79,11 @@ export class AuthController {
 
     const { accessToken, refreshToken: newRefreshToken } =
       await this.authService.refresh(refreshToken);
-    res.cookie(
-      'refresh_token',
-      newRefreshToken,
-      REFRESH_COOKIE(this.configService),
-    );
+    // res.cookie(
+    //   'refresh_token',
+    //   newRefreshToken,
+    //   REFRESH_COOKIE(this.configService),
+    // );
     return { accessToken };
   }
 
