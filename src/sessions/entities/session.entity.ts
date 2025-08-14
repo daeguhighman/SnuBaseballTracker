@@ -14,8 +14,11 @@ export class Session {
   id: number;
 
   @ManyToOne(() => User, { cascade: false })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @Column({ name: 'user_id' })
+  userId: number;
 
   @Column({ type: 'text' })
   tokenHash: string;

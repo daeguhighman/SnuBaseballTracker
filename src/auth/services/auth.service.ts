@@ -408,11 +408,7 @@ export class AuthService {
       await manager.save(user);
 
       // 기존 세션 무효화
-      await manager.update(
-        Session,
-        { user: { id: userId } },
-        { revoked: true },
-      );
+      await manager.update(Session, { userId: user.id }, { revoked: true });
 
       // 새로운 리프레시 토큰 발급
       const { token: refreshToken } = await this.signRefreshTokenWithManager(
@@ -569,7 +565,7 @@ export class AuthService {
     await this.dataSource.transaction(async (manager) => {
       await manager.update(
         Session,
-        { user: { id: parseInt(userId) } },
+        { userId: Number(userId) },
         { revoked: true },
       );
     });
