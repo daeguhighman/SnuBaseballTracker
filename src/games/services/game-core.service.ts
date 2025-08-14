@@ -26,6 +26,7 @@ import { BracketPosition, MatchStage } from '@/common/enums/match-stage.enum';
 import { Observable, ReplaySubject } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
 import { Play, PlayStatus } from '@/plays/entities/play.entity';
+import { AppRole, User } from '@/users/entities/user.entity';
 /*
   기본 조회, 상태 변경 등 핵심 로직
  */
@@ -44,6 +45,8 @@ export class GameCoreService {
     private readonly umpireRepository: Repository<Umpire>,
     @InjectRepository(Tournament)
     private readonly tournamentRepository: Repository<Tournament>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async getSchedules(
@@ -121,6 +124,16 @@ export class GameCoreService {
     //   userId,
     // );
 
+    let isAdmin = false;
+    if (userId) {
+      const user = await this.userRepository.findOne({
+        where: { id: parseInt(userId) },
+        select: ['role'],
+      });
+      console.log('user: ', user);
+      isAdmin = user?.role === AppRole.ADMIN;
+    }
+
     return {
       id: game.id,
       time: kstTime,
@@ -140,7 +153,7 @@ export class GameCoreService {
         score: game.gameStat?.awayScore ?? null,
       },
       isForfeit: game.isForfeit,
-      canRecord: true, // TODO: 심판 권한 확인 후 수정
+      canRecord: isAdmin,
       // canSubmitLineup,
     };
   }

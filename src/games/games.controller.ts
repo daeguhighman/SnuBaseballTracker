@@ -44,7 +44,7 @@ import { GameScoreboardService } from '@games/services/game-scoreboard.service';
 import { GameStatsService } from '@games/services/game-stats.service';
 import { GameCoreService } from '@games/services/game-core.service';
 import { BatterPlateAppearanceRequestDto } from './dtos/plate-appearance.dto';
-import { UmpireAuthGuard } from '@/auth/guards/umpire-auth.guard';
+// import { UmpireAuthGuard } from '@/auth/guards/umpire-auth.guard';
 import { SubmitLineupGuard } from '@/auth/guards/submit-lineup.guard';
 import { GameRole } from '@common/enums/game-role.enum';
 import {
@@ -72,7 +72,7 @@ export class GamesController {
     @Query() query: GetGamesByDateQuery,
     @Request() req: any,
   ): Promise<GamesByDatesResponseDto> {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const result = await this.gameCoreService.getSchedules(
       query.from,
       query.to,
@@ -96,7 +96,6 @@ export class GamesController {
 
   @UseGuards(AdminAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/players-with-in-lineup')
-  @UseGuards(UmpireAuthGuard)
   async getPlayersWithInLineup(
     @Param('gameId') gameId: number,
     @Param('teamTournamentId', ParseIntPipe) teamTournamentId: number,
@@ -106,8 +105,7 @@ export class GamesController {
       teamTournamentId,
     );
   }
-
-  @UseGuards(UmpireAuthGuard)
+  @UseGuards(AdminAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/substitutable-batters')
   async getSubstitutableBatters(
     @Param('gameId', ParseIntPipe) gameId: number,

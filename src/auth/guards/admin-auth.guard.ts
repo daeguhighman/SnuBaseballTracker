@@ -25,6 +25,7 @@ export class AdminAuthGuard extends AuthGuard('jwt') {
 
     // Admin 권한 확인
     if (user.role !== AppRole.ADMIN) {
+      console.log(user);
       this.logger.warn(
         `Admin Auth Guard - Non-admin user attempted access: ${user.userId}`,
       );

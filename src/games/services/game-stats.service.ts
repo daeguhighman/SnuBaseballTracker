@@ -1785,7 +1785,7 @@ export class GameStatsService {
         AB: b.batterGameStat?.atBats ?? 0,
         H: b.batterGameStat?.hits ?? 0,
         R: b.batterGameStat?.runs ?? 0,
-        RBI: b.batterGameStat?.RBI ?? 0,
+        RBI: b.batterGameStat?.runsBattedIn ?? 0,
       },
     });
     const mapPitcher = (p) => ({
@@ -1864,6 +1864,7 @@ export class GameStatsService {
       relations: [
         'batter',
         'batter.playerTournament',
+        'batter.batterGameStat',
         'batter.playerTournament.player',
       ],
       order: { seq: 'DESC' }, // 최신 타석부터 역순으로

@@ -21,6 +21,7 @@ import { GameRoaster } from '@games/entities/game-roaster.entity';
 import { UmpiresModule } from '@umpires/umpires.module';
 import { TournamentsModule } from '@tournaments/tournaments.module';
 import { PlaysModule } from '@/plays/plays.module';
+import { UsersModule } from '@/users/users.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -38,6 +39,7 @@ import { PlaysModule } from '@/plays/plays.module';
     TeamsModule,
     UmpiresModule,
     TournamentsModule,
+    UsersModule,
     forwardRef(() => PlaysModule),
   ],
   controllers: [GamesController],

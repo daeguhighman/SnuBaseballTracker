@@ -39,6 +39,8 @@ import { Play } from '@/plays/entities/play.entity';
 import { PlayStatus } from '@/plays/entities/play.entity';
 import { GameCoreService } from './game-core.service';
 import { GameStatsService } from './game-stats.service';
+import { Runner } from '@/plays/entities/runner.entity';
+
 @Injectable()
 export class GameLineupService {
   constructor(
@@ -581,9 +583,11 @@ export class GameLineupService {
     let currentPlayId: number | null = null;
 
     await this.dataSource.transaction(async (manager) => {
+      // 0) 필수 엔티티 조회
       const game = await manager.findOne(Game, {
         where: { id: gameId },
         relations: ['homeTeam', 'awayTeam', 'gameStat'],
+        // 필요시: lock: { mode: 'pessimistic_write' },
       });
       if (!game) {
         throw new BaseException(
@@ -593,7 +597,6 @@ export class GameLineupService {
         );
       }
 
-      // teamTournamentId로 TeamTournament 조회
       const teamTournament = await manager.findOne(TeamTournament, {
         where: { id: teamTournamentId },
         relations: ['team'],
@@ -611,7 +614,7 @@ export class GameLineupService {
         teamTournamentId: teamTournament.id,
       });
 
-      // 1. 기존 라인업 조회
+      // 1) 기존 라인업 조회
       const [existingBatters, existingPitcher] = await Promise.all([
         manager.find(BatterGameParticipation, {
           where: {
@@ -630,87 +633,80 @@ export class GameLineupService {
           relations: ['playerTournament'],
         }),
       ]);
-      const isHome = game.homeTeam.id === teamTournament.id;
+
+      const isHome = Number(game.homeTeam.id) === Number(teamTournament.id);
+
       const currentBatterParticipationId = isHome
         ? game.gameStat.homeBatterParticipationId
         : game.gameStat.awayBatterParticipationId;
+
       const currentPitcherParticipationId = isHome
         ? game.gameStat.homePitcherParticipationId
         : game.gameStat.awayPitcherParticipationId;
 
-      // 2. 타자 교체 비교
+      // 2) 타자 교체 비교/적용
       const updatedBatterId = await this.updateBatters(
         manager,
         gameId,
         teamTournament.id,
         submitLineupDto.batters,
         existingBatters,
-        currentBatterParticipationId,
+        currentBatterParticipationId ?? null,
       );
 
-      // 3. 투수 교체 비교
+      // 3) 투수 교체 비교/적용
       const updatedPitcherId = await this.updatePitcher(
         manager,
         gameId,
         teamTournament.id,
         submitLineupDto.pitcher,
-        existingPitcher,
-        currentPitcherParticipationId,
+        existingPitcher ?? null,
+        currentPitcherParticipationId ?? null,
       );
 
-      // 4. GameStat 업데이트
+      // 4) GameStat 업데이트 (부분 업데이트만!)
       if (game.gameStat) {
-        const isHome = game.homeTeam.id === teamTournament.id;
+        const gsPatch: Partial<GameStat> = {};
+
         if (isHome) {
-          // 타자가 교체되지 않았으면 기존 값 유지
-          if (updatedBatterId !== null) {
-            game.gameStat.homeBatterParticipationId = updatedBatterId;
-          }
-          // 투수가 교체되지 않았으면 기존 값 유지
-          if (updatedPitcherId !== null) {
-            game.gameStat.homePitcherParticipationId = updatedPitcherId;
-          }
+          if (updatedBatterId !== null)
+            gsPatch.homeBatterParticipationId = updatedBatterId;
+          if (updatedPitcherId !== null)
+            gsPatch.homePitcherParticipationId = updatedPitcherId;
         } else {
-          // 타자가 교체되지 않았으면 기존 값 유지
-          if (updatedBatterId !== null) {
-            game.gameStat.awayBatterParticipationId = updatedBatterId;
-          }
-          // 투수가 교체되지 않았으면 기존 값 유지
-          if (updatedPitcherId !== null) {
-            game.gameStat.awayPitcherParticipationId = updatedPitcherId;
-          }
+          if (updatedBatterId !== null)
+            gsPatch.awayBatterParticipationId = updatedBatterId;
+          if (updatedPitcherId !== null)
+            gsPatch.awayPitcherParticipationId = updatedPitcherId;
         }
-        await manager.save(game.gameStat);
+
+        if (Object.keys(gsPatch).length > 0) {
+          await manager.update(GameStat, game.gameStat.id, gsPatch);
+        }
+        // ✅ save(game.gameStat) 금지 — 오래된 메모리 값으로 전체 컬럼 덮어쓰기 방지
       }
 
-      // 5. 현재 진행 중인 플레이 업데이트
+      // 5) 현재 진행 중인 플레이 업데이트
       const currentPlay = await manager.findOne(Play, {
-        where: {
-          gameId,
-          status: PlayStatus.LIVE,
-        },
+        where: { gameId, status: PlayStatus.LIVE },
         order: { seq: 'DESC' },
       });
 
       if (currentPlay) {
         let needsUpdate = false;
 
-        // 타자가 교체된 경우, 현재 플레이의 타자 정보 조회
+        // 타자가 교체된 경우, 현재 플레이의 타자 교체 필요 여부 확인
         if (updatedBatterId !== null) {
           const currentBatter = existingBatters.find(
-            (batter) => batter.id === currentPlay.batterGpId,
+            (b) => b.id === currentPlay.batterGpId,
           );
-
-          if (currentBatter) {
-            // 현재 플레이의 타자가 교체된 타자인지 확인
-            if (!currentBatter.isActive) {
-              currentPlay.batterGpId = updatedBatterId;
-              needsUpdate = true;
-            }
+          if (currentBatter && !currentBatter.isActive) {
+            currentPlay.batterGpId = updatedBatterId;
+            needsUpdate = true;
           }
         }
 
-        // 투수가 교체된 경우, 무조건 새로운 투수로 업데이트
+        // 투수는 교체되면 무조건 반영
         if (updatedPitcherId !== null) {
           currentPlay.pitcherGpId = updatedPitcherId;
           needsUpdate = true;
@@ -721,10 +717,8 @@ export class GameLineupService {
         }
 
         currentPlayId = currentPlay.id;
-        await this.gameCoreService.pushSnapshotAudience(gameId, currentPlay.id);
-        console.log('currentPlayId', currentPlayId);
 
-        // 6. umpire snapshot 생성 (트랜잭션 내부)
+        // 6) umpire snapshot 생성 (트랜잭션 내부)
         snapshot = await this.gameStatsService.makePlaySnapshotUmpire(
           gameId,
           currentPlay.id,
@@ -733,7 +727,11 @@ export class GameLineupService {
       }
     });
 
-    // 7. currentPlay가 없는 경우 트랜잭션 외부에서 최신 umpire snapshot 조회
+    // 트랜잭션 외부: 관중용 스냅샷 push
+    if (currentPlayId) {
+      await this.gameCoreService.pushSnapshotAudience(gameId, currentPlayId);
+    }
+
     if (!snapshot) {
       throw new BaseException(
         `현재 진행 중인 플레이를 찾을 수 없습니다.`,
@@ -755,7 +753,7 @@ export class GameLineupService {
     teamTournamentId: number,
     newBatters: SubmitLineupRequestDto['batters'],
     existing: BatterGameParticipation[],
-    currentBatterId: number,
+    currentBatterId: number | null,
   ): Promise<number | null> {
     let updatedBatterId: number | null = null;
 
@@ -765,35 +763,45 @@ export class GameLineupService {
       );
       if (!prev) continue;
 
-      // player 변경
+      // 선수 자체가 변경된 경우 (교체)
       if (prev.playerTournament.id !== newBatter.id) {
+        // 기존 비활성화
         prev.isActive = false;
         await manager.save(prev);
 
-        const newBatterParticipation = manager.create(BatterGameParticipation, {
+        // 새 참여 생성
+        const newParticipation = manager.create(BatterGameParticipation, {
           gameId,
           teamTournament: { id: teamTournamentId },
           playerTournament: { id: newBatter.id },
           position: newBatter.position as Position,
           battingOrder: newBatter.battingOrder,
-          substitutionOrder: prev.substitutionOrder + 1,
+          substitutionOrder: (prev.substitutionOrder ?? 0) + 1, // ✅ null-safe
           isActive: true,
         });
-        const savedBatterParticipation = await manager.save(
-          newBatterParticipation,
-        );
+        const saved = await manager.save(newParticipation);
 
+        // 신규 타자 스탯 생성
         const batterGameStat = manager.create(BatterGameStat, {
-          batterGameParticipation: savedBatterParticipation,
+          batterGameParticipation: saved,
         });
         await manager.save(batterGameStat);
 
-        if (prev.id === currentBatterId) {
-          updatedBatterId = savedBatterParticipation.id;
+        // 베이스에 있던 주자 교체 처리
+        await this.handleRunnerSubstitution(
+          manager,
+          gameId,
+          prev.id,
+          newBatter.id,
+          teamTournamentId,
+        );
+
+        // 현재 타순이 교체 대상이었다면 GameStat용 반환값 설정
+        if (currentBatterId !== null && prev.id === currentBatterId) {
+          updatedBatterId = saved.id;
         }
       }
-
-      // position만 변경된 경우
+      // 선수 동일, 포지션만 변경
       else if (prev.position !== newBatter.position) {
         prev.position = newBatter.position as Position;
         await manager.save(prev);
@@ -803,99 +811,151 @@ export class GameLineupService {
     return updatedBatterId;
   }
 
+  private async handleRunnerSubstitution(
+    manager: EntityManager,
+    gameId: number,
+    oldBatterParticipationId: number,
+    newPlayerTournamentId: number,
+    teamTournamentId: number,
+  ): Promise<void> {
+    // 1) 게임/스탯 조회
+    const game = await manager.findOne(Game, {
+      where: { id: gameId },
+      relations: ['gameStat'],
+    });
+    if (!game || !game.gameStat) return;
+
+    // 2) 현재 이닝 스탯
+    const currentInningStat = await manager.findOne(GameInningStat, {
+      where: {
+        gameId,
+        inning: game.gameStat.inning,
+        inningHalf: game.gameStat.inningHalf,
+      },
+    });
+    if (!currentInningStat) return;
+
+    // 3) 교체되는 선수가 현재 활성 주자인지 확인
+    const activeRunner = await manager.findOne(Runner, {
+      where: {
+        runnerGpId: oldBatterParticipationId,
+        gameInningStatId: currentInningStat.id,
+        isActive: true,
+      },
+    });
+    if (!activeRunner) return;
+
+    // 4) 새로운 대주자의 "활성" 참여 레코드 찾기 (가장 최근 선호)
+    const newRunnerParticipation = await manager.findOne(
+      BatterGameParticipation,
+      {
+        where: {
+          gameId,
+          teamTournament: { id: teamTournamentId },
+          playerTournament: { id: newPlayerTournamentId },
+          isActive: true, // ✅ 활성만
+        },
+        order: { id: 'DESC' }, // ✅ 최근 레코드 우선
+      },
+    );
+    if (!newRunnerParticipation) return;
+
+    // 5) 기존 Runner 비활성화
+    activeRunner.isActive = false;
+    await manager.save(activeRunner);
+
+    // 6) 새 Runner 생성
+    const newRunner = manager.create(Runner, {
+      runnerGpId: newRunnerParticipation.id,
+      responsiblePitcherGpId: activeRunner.responsiblePitcherGpId,
+      originPlay: activeRunner.originPlay,
+      gameInningStatId: currentInningStat.id,
+      isActive: true,
+    });
+    await manager.save(newRunner);
+
+    // 7) GameStat 베이스 정보 부분 업데이트 (update만 사용)
+    const oldId = Number(oldBatterParticipationId);
+    const newId = Number(newRunnerParticipation.id);
+
+    const patch: Partial<GameStat> = {};
+    if (
+      game.gameStat.onFirstGpId &&
+      Number(game.gameStat.onFirstGpId) === oldId
+    ) {
+      patch.onFirstGpId = newId;
+    } else if (
+      game.gameStat.onSecondGpId &&
+      Number(game.gameStat.onSecondGpId) === oldId
+    ) {
+      patch.onSecondGpId = newId;
+    } else if (
+      game.gameStat.onThirdGpId &&
+      Number(game.gameStat.onThirdGpId) === oldId
+    ) {
+      patch.onThirdGpId = newId;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await manager.update(GameStat, game.gameStat.id, patch);
+    }
+    // ✅ game.gameStat 객체를 다시 save하지 않음 — 부분 업데이트만 수행
+  }
+
   private async updatePitcher(
     manager: EntityManager,
     gameId: number,
     teamTournamentId: number,
     newPitcher: SubmitLineupRequestDto['pitcher'],
-    existing: PitcherGameParticipation,
-    currentPitcherParticipationId?: number, // optional로 변경
+    existingPitcher: PitcherGameParticipation | null,
+    currentPitcherId: number | null,
   ): Promise<number | null> {
-    if (!existing) return null;
-
-    // player 변경
-    if (existing.playerTournament.id !== newPitcher.id) {
-      existing.isActive = false;
-      await manager.save(existing);
-
-      // 현재 게임 상태와 이닝 정보 조회
-      const game = await manager.findOne(Game, {
-        where: { id: gameId },
-        relations: ['gameStat'],
-      });
-      if (!game) {
-        throw new BaseException(
-          `게임 ID ${gameId}를 찾을 수 없습니다.`,
-          ErrorCodes.GAME_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      // 현재 이닝 정보 조회
-      const currentInningStat = await manager.findOne(GameInningStat, {
-        where: {
-          gameId,
-          inning: game.gameStat.inning,
-          inningHalf: game.gameStat.inningHalf,
-        },
-      });
-
-      if (!currentInningStat) {
-        throw new BaseException(
-          `현재 이닝 정보를 찾을 수 없습니다.`,
-          ErrorCodes.GAME_INNING_STAT_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      // entryOuts는 현재 이닝의 아웃카운트
-      const entryOuts = currentInningStat.outs;
-
-      // targetVirtualOuts 계산
-      let targetVirtualOuts = 0;
-      if (currentInningStat.errorFlag) {
-        // errorFlag가 true인 경우 VirtualInningStat 조회
-        const virtualInningStat = await manager.findOne(VirtualInningStat, {
-          where: {
-            originalInningStatId: currentInningStat.id,
-          },
-        });
-
-        if (virtualInningStat) {
-          // y + 3 - x 계산 (y는 virtualInningStat.outs, x는 entryOuts)
-          targetVirtualOuts = virtualInningStat.outs + 3 - entryOuts;
-        }
-      }
-
-      const newPitcherParticipation = manager.create(PitcherGameParticipation, {
+    // 기존 없음 → 신규 등록
+    if (!existingPitcher) {
+      const created = manager.create(PitcherGameParticipation, {
         gameId,
         teamTournament: { id: teamTournamentId },
         playerTournament: { id: newPitcher.id },
-        substitutionOrder: existing.substitutionOrder + 1,
+        substitutionOrder: 0,
         isActive: true,
-        entryGameInningStat: currentInningStat,
-        entryGameInningStatId: currentInningStat.id,
-        entryOuts,
-        targetVirtualOuts,
       });
-      const savedPitcherParticipation = await manager.save(
-        newPitcherParticipation,
-      );
+      const saved = await manager.save(created);
 
-      const pitcherGameStat = manager.create(PitcherGameStat, {
-        pitcherGameParticipation: savedPitcherParticipation,
+      const pitcherStat = manager.create(PitcherGameStat, {
+        pitcherGameParticipation: saved,
       });
-      await manager.save(pitcherGameStat);
+      await manager.save(pitcherStat);
 
-      // 현재 투수가 교체되었는지 확인
-      if (
-        currentPitcherParticipationId &&
-        existing.id === currentPitcherParticipationId
-      ) {
-        return savedPitcherParticipation.id;
-      }
+      return saved.id; // GameStat에 반영되도록 반환
     }
 
+    // 같은 투수면 변경사항 없음
+    if (existingPitcher.playerTournament.id === newPitcher.id) {
+      return null; // 교체 아님
+    }
+
+    // 투수 교체
+    existingPitcher.isActive = false;
+    await manager.save(existingPitcher);
+
+    const newParticipation = manager.create(PitcherGameParticipation, {
+      gameId,
+      teamTournament: { id: teamTournamentId },
+      playerTournament: { id: newPitcher.id },
+      substitutionOrder: (existingPitcher.substitutionOrder ?? 0) + 1,
+      isActive: true,
+    });
+    const saved = await manager.save(newParticipation);
+
+    const pitcherStat = manager.create(PitcherGameStat, {
+      pitcherGameParticipation: saved,
+    });
+    await manager.save(pitcherStat);
+
+    // 현재 투수였다면 GameStat에 반영되도록 ID 반환
+    if (currentPitcherId !== null && existingPitcher.id === currentPitcherId) {
+      return saved.id;
+    }
     return null;
   }
 

@@ -134,7 +134,7 @@ export class AuthService {
   async login({ email, password }: LoginDto) {
     const user = await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'passwordHash', 'email'],
+      select: ['id', 'passwordHash', 'email', 'role'], // role 추가
     });
     console.log(user);
     if (!user) {
@@ -183,7 +183,7 @@ export class AuthService {
   /*  4) 토큰 발급 + 세션 생성 (단일 진입점)                               */
   /* ------------------------------------------------------------------ */
   private async issueTokenPair(user: User) {
-    const basePayload = { sub: user.id, email: user.email };
+    const basePayload = { sub: user.id, email: user.email, role: user.role }; // role 추가
 
     // access·refresh 병렬 발급
     const [accessToken, { token: refreshToken }] = await Promise.all([
