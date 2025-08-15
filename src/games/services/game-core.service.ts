@@ -418,6 +418,10 @@ export class GameCoreService {
       // 7. 게임 상태 업데이트
       await manager.update(Game, gameId, { status: GameStatus.FINALIZED });
     });
+
+    // 트랜잭션 완료 후 스트림 종료
+    this.closeSnapshotStream(gameId);
+
     return { success: true, message: '게임 확정 완료.' };
   }
 
@@ -812,6 +816,27 @@ export class GameCoreService {
     });
     if (latestPlay) {
       await this.pushSnapshotAudience(gameId, latestPlay.id);
+    }
+  }
+
+  /**
+   * 게임의 스냅샷 스트림을 종료합니다.
+   * @param gameId 종료할 게임 ID
+   */
+  private closeSnapshotStream(gameId: number) {
+    const stream = this.snapshotStreams.get(gameId);
+    if (stream) {
+      // 스트림에 완료 이벤트를 보내고 종료
+      stream.next({
+        data: {
+          type: 'GAME_ENDED',
+          message: '게임이 종료되었습니다.',
+          gameId,
+        },
+      });
+      stream.complete();
+      this.snapshotStreams.delete(gameId);
+      this.logger.log(`Snapshot stream closed for game ${gameId}`);
     }
   }
 }

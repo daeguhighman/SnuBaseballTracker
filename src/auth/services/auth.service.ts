@@ -31,6 +31,8 @@ import { sha256 } from 'js-sha256';
 import * as ms from 'ms';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
+import { UserProfile } from '@/profiles/entities/profile.entity';
+
 @Injectable()
 export class AuthService {
   private readonly codeExpireMinutes: number;
@@ -123,6 +125,13 @@ export class AuthService {
       });
       console.log(user);
       await manager.save(user);
+
+      // UserProfile 생성
+      const profile = manager.create(UserProfile, {
+        user,
+        nickname,
+      });
+      await manager.save(profile);
 
       return this.issueTokenPairWithManager(user, manager);
     });

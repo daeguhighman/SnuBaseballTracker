@@ -975,16 +975,13 @@ export class GameStatsService {
 
   private calculateERA(earnedRuns: number, inningPitchedOuts: number): number {
     if (inningPitchedOuts === 0) {
-      if (earnedRuns === 0) {
-        return 0;
-      } else {
-        return 99.99;
-      }
+      return earnedRuns > 0 ? 99.99 : 0; // 아웃 없이 실점했으면 관례상 큰 값, 아니면 0.00
     }
 
     return new Decimal(earnedRuns)
+      .times(27) // 9이닝 × 3아웃 = 27
       .dividedBy(inningPitchedOuts)
-      .toDecimalPlaces(2, Decimal.ROUND_DOWN)
+      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP) // 표준 표기
       .toNumber();
   }
 
