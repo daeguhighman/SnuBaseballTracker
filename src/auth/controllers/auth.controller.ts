@@ -89,7 +89,7 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
-    await this.authService.logout(req.user.id);
+    await this.authService.logout(req.user.userId);
     res.clearCookie('refresh_token');
     return { ok: true };
   }
@@ -102,7 +102,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.changePassword(
-      req.user.id,
+      req.user.userId,
       dto.currentPassword,
       dto.newPassword,
     );
@@ -119,7 +119,7 @@ export class AuthController {
 
   @Delete('user')
   async delete(@Req() req, @Res({ passthrough: true }) res: Response) {
-    await this.authService.deleteAccount(req.user.id);
+    await this.authService.deleteAccount(req.user.userId);
     // Optional: clear tokens/cookies
     res.clearCookie('refresh_token');
     return { message: 'Account deleted' };
