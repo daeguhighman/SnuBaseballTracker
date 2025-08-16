@@ -391,7 +391,11 @@ export class GameStatsService {
     // 2. Find the batter stats by ID
     const batterStats = await this.batterGameStatRepository.findOne({
       where: { id: batterGameStatsId },
-      relations: ['batterGameParticipation', 'batterGameParticipation.player'],
+      relations: [
+        'batterGameParticipation',
+        'batterGameParticipation.playerTournament',
+        'batterGameParticipation.playerTournament.player',
+      ],
     });
 
     if (!batterStats || !batterStats.batterGameParticipation) {
@@ -516,7 +520,8 @@ export class GameStatsService {
       where: { id: pitcherGameStatsId },
       relations: [
         'pitcherGameParticipation',
-        'pitcherGameParticipation.player',
+        'pitcherGameParticipation.playerTournament',
+        'pitcherGameParticipation.playerTournament.player',
       ],
     });
 
@@ -1091,11 +1096,8 @@ export class GameStatsService {
     // 5. Map to DTO
     const response = new GameResultResponseDto();
 
-    // canRecord 설정 - 사용자가 심판인지 확인
-    response.canRecord = await this.gameAuthService.checkUserCanRecord(
-      gameId,
-      userId,
-    );
+    // canRecord 설정 - 사용자가 admin인지 확인
+    response.canRecord = await this.gameAuthService.checkUserIsAdmin(userId);
 
     // 이닝별 점수를 홈팀/원정팀 형태로 변환
     const inningsMap = new Map<

@@ -94,4 +94,22 @@ export class GameAuthService {
       return { home: false, away: false };
     }
   }
+
+  async checkUserIsAdmin(userId?: string): Promise<boolean> {
+    if (!userId) return false;
+
+    try {
+      // 사용자가 admin인지 확인
+      const user = await this.gameRepository.manager
+        .getRepository('User')
+        .findOne({
+          where: { id: parseInt(userId) },
+        });
+
+      return user?.role === 'ADMIN';
+    } catch (error) {
+      this.logger.error(`Error checking user is admin: ${error.message}`);
+      return false;
+    }
+  }
 }
