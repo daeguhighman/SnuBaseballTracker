@@ -123,7 +123,6 @@ export class AuthService {
         passwordHash: await bcrypt.hash(password, 12),
         nickname,
       });
-      console.log(user);
       await manager.save(user);
 
       // UserProfile 생성
@@ -145,7 +144,6 @@ export class AuthService {
       where: { email },
       select: ['id', 'passwordHash', 'email', 'role'], // role 추가
     });
-    console.log(user);
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 이메일입니다.');
     }
@@ -159,7 +157,6 @@ export class AuthService {
   /*  3) 리프레시 (access token만 재발급)                                 */
   /* ------------------------------------------------------------------ */
   async refresh(oldToken: string) {
-    console.log('[POST] auth/refresh -> oldToken:', oldToken);
     return this.dataSource.transaction(async (manager) => {
       const payload = await this.verifyRefresh(oldToken);
 
@@ -171,7 +168,6 @@ export class AuthService {
         },
         relations: ['user'],
       });
-      console.log('[POST] auth/refresh -> session:', session);
       if (
         !session ||
         session.revoked ||

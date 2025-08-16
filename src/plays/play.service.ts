@@ -407,10 +407,6 @@ export class PlayService {
               },
             );
             responsiblePitcherGp.pitcherGameStat.earnedRuns++;
-            console.log(
-              'earnedRuns',
-              responsiblePitcherGp.pitcherGameStat.earnedRuns,
-            );
             await em.save(responsiblePitcherGp.pitcherGameStat);
           }
         }
@@ -666,7 +662,6 @@ export class PlayService {
     play: Play,
     phase?: 'PREV' | 'AFTER',
   ) {
-    console.log('play.gameInningStat.id', play.gameInningStat);
     const virtualInningStat = await em.findOne(VirtualInningStat, {
       where: {
         originalInningStatId: play.gameInningStat.id,
@@ -689,7 +684,6 @@ export class PlayService {
     // 아웃 처리
     if (event.endBase === 'O') {
       // Virtual inning event에 outs++
-      console.log('outs++');
       virtualInningStat.outs += 1;
 
       // VirtualRunner를 비활성화 (아웃)
