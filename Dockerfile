@@ -14,10 +14,13 @@ RUN npm ci
 # 1‑3. 소스 복사 & 컴파일
 COPY . .
 
+# Excel 파일 복사 (빌드 스테이지에서)
+COPY ./snu-narae.players.xlsx ./snu-narae.players.xlsx
+
 # dist/ 생성
 RUN npm run build                      
 
-# prebuild/postinstall 스크립트에 prisma generate 등 포함 시 여기서 실행
+# prebuild/postinstall 스크립트에 prisma generate 등 포함 시 여기서 실행
 
 # 1‑4. 프로덕션 의존성만 추출
 RUN npm prune --omit=dev
@@ -34,7 +37,8 @@ USER nestjs
 # 2‑1. 빌드 결과 받기
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-# (설정 파일이 dist 밖에 있으면 추가 COPY)
+# Excel 파일을 런타임 스테이지로 복사
+COPY --from=builder /app/snu-narae.players.xlsx ./snu-narae.players.xlsx
 
 EXPOSE 3000
 # # 2‑2. 헬스체크 (포트 3000 기준)
