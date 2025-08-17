@@ -42,7 +42,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.signup(body);
-    // (1) refresh ⇒ HttpOnly 쿠키
     res.cookie(
       'refresh_token',
       refreshToken,
@@ -60,11 +59,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.login(dto);
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 14,
-    });
+    res.cookie(
+      'refresh_token',
+      refreshToken,
+      REFRESH_COOKIE(this.configService),
+    );
     return { accessToken };
   }
   @Public()
@@ -78,11 +77,7 @@ export class AuthController {
 
     const { accessToken, refreshToken: newRefreshToken } =
       await this.authService.refresh(refreshToken);
-    // res.cookie(
-    //   'refresh_token',
-    //   newRefreshToken,
-    //   REFRESH_COOKIE(this.configService),
-    // );
+
     return { accessToken };
   }
 
@@ -107,11 +102,11 @@ export class AuthController {
     );
 
     // 새로운 리프레시 토큰을 쿠키로 설정
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14일
-    });
+    res.cookie(
+      'refresh_token',
+      result.refreshToken,
+      REFRESH_COOKIE(this.configService),
+    );
 
     return { message: 'Password changed successfully' };
   }
