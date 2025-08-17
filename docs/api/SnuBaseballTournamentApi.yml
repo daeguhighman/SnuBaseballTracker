@@ -2300,37 +2300,9 @@ components:
                   - inning
                   - away
                   - home
-            totals:
-              type: object
-              properties:
-                away:
-                  type: object
-                  properties:
-                    R:
-                      type: integer
-                      description: "원정팀 총 득점"
-                      example: 3
-                    H:
-                      type: integer
-                      description: "원정팀 총 안타"
-                      example: 8
-                home:
-                  type: object
-                  properties:
-                    R:
-                      type: integer
-                      description: "홈팀 총 득점"
-                      example: 4
-                    H:
-                      type: integer
-                      description: "홈팀 총 안타"
-                      example: 12
-              required:
-                - away
-                - home
+  
           required:
             - innings
-            - totals
         teamSummary:
           type: object
           properties:

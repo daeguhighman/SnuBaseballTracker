@@ -1795,7 +1795,7 @@ export class GameStatsService {
       ERA: p.pitcherStats?.ERA ?? 0,
       todayStats: {
         IP: p.pitcherGameStat?.inningPitchedOuts ?? 0,
-        R: p.pitcherGameStat?.runs ?? 0,
+        R: p.pitcherGameStat?.allowedRuns ?? 0,
         ER: p.pitcherGameStat?.earnedRuns ?? 0,
         H: p.pitcherGameStat?.hits ?? 0,
         K: p.pitcherGameStat?.strikeouts ?? 0,
