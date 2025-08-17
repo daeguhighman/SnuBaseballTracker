@@ -16,6 +16,7 @@ import {
   UpdateScheduleDto,
 } from '@admin/dtos/admin.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Public } from '@/common/decorators/public.decorator';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -23,6 +24,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class AdminController {
   constructor(private readonly gameCoreService: GameCoreService) {}
 
+  @Public()
   @Get('/debug-sentry')
   getError() {
     throw new Error('My first Sentry error!');
