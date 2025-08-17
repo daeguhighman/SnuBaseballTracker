@@ -5,6 +5,6 @@ export const REFRESH_COOKIE = (configService: ConfigService) => ({
   secure: true, // 반드시 HTTPS
   sameSite: 'lax' as const,
   domain: 'snubaseball.site',
-  path: 'auth/refresh',
+  path: '/auth/refresh',
   maxAge: 14 * 24 * 60 * 60 * 1000,
 });

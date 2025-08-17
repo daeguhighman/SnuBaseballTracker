@@ -168,6 +168,7 @@ export class AuthService {
         },
         relations: ['user'],
       });
+      console.log(session);
       if (
         !session ||
         session.revoked ||
