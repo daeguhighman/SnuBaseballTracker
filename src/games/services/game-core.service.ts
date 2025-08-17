@@ -130,7 +130,6 @@ export class GameCoreService {
         where: { id: parseInt(userId) },
         select: ['role'],
       });
-      console.log('user: ', user);
       isAdmin = user?.role === AppRole.ADMIN;
     }
 
