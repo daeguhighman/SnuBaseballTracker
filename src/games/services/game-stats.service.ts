@@ -1784,6 +1784,7 @@ export class GameStatsService {
         AB: b.batterGameStat?.atBats ?? 0,
         H: b.batterGameStat?.hits ?? 0,
         R: b.batterGameStat?.runs ?? 0,
+        BB: b.batterGameStat?.walks ?? 0,
         RBI: b.batterGameStat?.runsBattedIn ?? 0,
       },
     });
