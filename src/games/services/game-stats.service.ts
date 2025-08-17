@@ -131,7 +131,11 @@ export class GameStatsService {
     const currentPitcher =
       await this.pitcherGameParticipationRepository.findOne({
         where: { id: currentPitcherParticipationId },
-        relations: ['playerTournament', 'playerTournament.player'],
+        relations: [
+          'playerTournament',
+          'playerTournament.player',
+          'playerTournament.pitcherStats',
+        ],
       });
     if (!currentPitcher) {
       throw new BaseException(
@@ -1619,10 +1623,12 @@ export class GameStatsService {
         'inningStats',
         'batterGameParticipations',
         'batterGameParticipations.playerTournament',
+        'batterGameParticipations.playerTournament.batterStats',
         'batterGameParticipations.playerTournament.player',
         'batterGameParticipations.batterGameStat',
         'pitcherGameParticipations',
         'pitcherGameParticipations.playerTournament',
+        'pitcherGameParticipations.playerTournament.pitcherStats',
         'pitcherGameParticipations.playerTournament.player',
         'pitcherGameParticipations.pitcherGameStat',
       ],
@@ -1778,7 +1784,7 @@ export class GameStatsService {
       isElite: b.playerTournament.isElite,
       battingOrder: b.battingOrder,
       battingResult: resultCode, // Play의 resultCode 사용
-      battingAverage: b.batterStats?.battingAverage ?? 0,
+      battingAverage: b.playerTournament.batterStats?.battingAverage ?? 0,
       todayStats: {
         PA: b.batterGameStat?.plateAppearances ?? 0,
         AB: b.batterGameStat?.atBats ?? 0,
@@ -1793,7 +1799,7 @@ export class GameStatsService {
       name: p.playerTournament.player.name,
       position: 'P',
       isElite: p.playerTournament.isElite,
-      ERA: p.pitcherStats?.ERA ?? 0,
+      ERA: p.playerTournament.pitcherStats?.era ?? 0,
       todayStats: {
         IP: p.pitcherGameStat?.inningPitchedOuts ?? 0,
         R: p.pitcherGameStat?.allowedRuns ?? 0,
@@ -1866,6 +1872,7 @@ export class GameStatsService {
         'batter.playerTournament',
         'batter.batterGameStat',
         'batter.playerTournament.player',
+        'batter.playerTournament.batterStats',
       ],
       order: { seq: 'DESC' }, // 최신 타석부터 역순으로
     });
@@ -1908,7 +1915,11 @@ export class GameStatsService {
         });
       }
     }
-
+    // console.log(
+    //   'battingAverage',
+    //   currentInningBatters[0].playerTournament.batterStats.battingAverage,
+    // );
+    // console.log('era', currentPitcher.playerTournament.pitcherStats.era);
     return {
       playId,
       gameSummary: {
