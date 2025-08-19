@@ -31,6 +31,8 @@ import { sha256 } from 'js-sha256';
 import * as ms from 'ms';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
+import { UserProfile } from '@/profiles/entities/profile.entity';
+
 @Injectable()
 export class AuthService {
   private readonly codeExpireMinutes: number;
@@ -121,8 +123,14 @@ export class AuthService {
         passwordHash: await bcrypt.hash(password, 12),
         nickname,
       });
-      console.log(user);
       await manager.save(user);
+
+      // UserProfile 생성
+      const profile = manager.create(UserProfile, {
+        user,
+        nickname,
+      });
+      await manager.save(profile);
 
       return this.issueTokenPairWithManager(user, manager);
     });
@@ -136,7 +144,6 @@ export class AuthService {
       where: { email },
       select: ['id', 'passwordHash', 'email', 'role'], // role 추가
     });
-    console.log(user);
     if (!user) {
       throw new UnauthorizedException('존재하지 않는 이메일입니다.');
     }
@@ -147,10 +154,9 @@ export class AuthService {
   }
 
   /* ------------------------------------------------------------------ */
-  /*  3) 리프레시 & 세션 회전                                             */
+  /*  3) 리프레시 (access token만 재발급)                                 */
   /* ------------------------------------------------------------------ */
   async refresh(oldToken: string) {
-    console.log('[POST] auth/refresh -> oldToken:', oldToken);
     return this.dataSource.transaction(async (manager) => {
       const payload = await this.verifyRefresh(oldToken);
 
@@ -162,7 +168,7 @@ export class AuthService {
         },
         relations: ['user'],
       });
-      console.log('[POST] auth/refresh -> session:', session);
+      console.log(session);
       if (
         !session ||
         session.revoked ||
@@ -172,10 +178,15 @@ export class AuthService {
         throw new UnauthorizedException('Session dead');
       }
 
-      session.revoked = true; // rotate
-      await manager.save(session);
+      // refresh 토큰은 그대로 유지하고 access token만 재발급
+      const basePayload = {
+        sub: session.user.id,
+        email: session.user.email,
+        role: session.user.role,
+      };
+      const accessToken = await this.signAccessToken(basePayload);
 
-      return this.issueTokenPairWithManager(session.user, manager);
+      return { accessToken, refreshToken: oldToken };
     });
   }
 
@@ -403,11 +414,7 @@ export class AuthService {
       await manager.save(user);
 
       // 기존 세션 무효화
-      await manager.update(
-        Session,
-        { user: { id: userId } },
-        { revoked: true },
-      );
+      await manager.update(Session, { userId: user.id }, { revoked: true });
 
       // 새로운 리프레시 토큰 발급
       const { token: refreshToken } = await this.signRefreshTokenWithManager(
@@ -564,7 +571,7 @@ export class AuthService {
     await this.dataSource.transaction(async (manager) => {
       await manager.update(
         Session,
-        { user: { id: parseInt(userId) } },
+        { userId: Number(userId) },
         { revoked: true },
       );
     });

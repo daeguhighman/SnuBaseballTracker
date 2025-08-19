@@ -131,7 +131,11 @@ export class GameStatsService {
     const currentPitcher =
       await this.pitcherGameParticipationRepository.findOne({
         where: { id: currentPitcherParticipationId },
-        relations: ['playerTournament', 'playerTournament.player'],
+        relations: [
+          'playerTournament',
+          'playerTournament.player',
+          'playerTournament.pitcherStats',
+        ],
       });
     if (!currentPitcher) {
       throw new BaseException(
@@ -391,7 +395,11 @@ export class GameStatsService {
     // 2. Find the batter stats by ID
     const batterStats = await this.batterGameStatRepository.findOne({
       where: { id: batterGameStatsId },
-      relations: ['batterGameParticipation', 'batterGameParticipation.player'],
+      relations: [
+        'batterGameParticipation',
+        'batterGameParticipation.playerTournament',
+        'batterGameParticipation.playerTournament.player',
+      ],
     });
 
     if (!batterStats || !batterStats.batterGameParticipation) {
@@ -516,7 +524,8 @@ export class GameStatsService {
       where: { id: pitcherGameStatsId },
       relations: [
         'pitcherGameParticipation',
-        'pitcherGameParticipation.player',
+        'pitcherGameParticipation.playerTournament',
+        'pitcherGameParticipation.playerTournament.player',
       ],
     });
 
@@ -975,16 +984,13 @@ export class GameStatsService {
 
   private calculateERA(earnedRuns: number, inningPitchedOuts: number): number {
     if (inningPitchedOuts === 0) {
-      if (earnedRuns === 0) {
-        return 0;
-      } else {
-        return 99.99;
-      }
+      return earnedRuns > 0 ? 99.99 : 0; // 아웃 없이 실점했으면 관례상 큰 값, 아니면 0.00
     }
 
     return new Decimal(earnedRuns)
+      .times(27) // 9이닝 × 3아웃 = 27
       .dividedBy(inningPitchedOuts)
-      .toDecimalPlaces(2, Decimal.ROUND_DOWN)
+      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP) // 표준 표기
       .toNumber();
   }
 
@@ -1094,11 +1100,8 @@ export class GameStatsService {
     // 5. Map to DTO
     const response = new GameResultResponseDto();
 
-    // canRecord 설정 - 사용자가 심판인지 확인
-    response.canRecord = await this.gameAuthService.checkUserCanRecord(
-      gameId,
-      userId,
-    );
+    // canRecord 설정 - 사용자가 admin인지 확인
+    response.canRecord = await this.gameAuthService.checkUserIsAdmin(userId);
 
     // 이닝별 점수를 홈팀/원정팀 형태로 변환
     const inningsMap = new Map<
@@ -1620,10 +1623,12 @@ export class GameStatsService {
         'inningStats',
         'batterGameParticipations',
         'batterGameParticipations.playerTournament',
+        'batterGameParticipations.playerTournament.batterStats',
         'batterGameParticipations.playerTournament.player',
         'batterGameParticipations.batterGameStat',
         'pitcherGameParticipations',
         'pitcherGameParticipations.playerTournament',
+        'pitcherGameParticipations.playerTournament.pitcherStats',
         'pitcherGameParticipations.playerTournament.player',
         'pitcherGameParticipations.pitcherGameStat',
       ],
@@ -1779,12 +1784,13 @@ export class GameStatsService {
       isElite: b.playerTournament.isElite,
       battingOrder: b.battingOrder,
       battingResult: resultCode, // Play의 resultCode 사용
-      battingAverage: b.batterStats?.battingAverage ?? 0,
+      battingAverage: b.playerTournament.batterStats?.battingAverage ?? 0,
       todayStats: {
         PA: b.batterGameStat?.plateAppearances ?? 0,
         AB: b.batterGameStat?.atBats ?? 0,
         H: b.batterGameStat?.hits ?? 0,
         R: b.batterGameStat?.runs ?? 0,
+        BB: b.batterGameStat?.walks ?? 0,
         RBI: b.batterGameStat?.runsBattedIn ?? 0,
       },
     });
@@ -1793,10 +1799,10 @@ export class GameStatsService {
       name: p.playerTournament.player.name,
       position: 'P',
       isElite: p.playerTournament.isElite,
-      ERA: p.pitcherStats?.ERA ?? 0,
+      ERA: p.playerTournament.pitcherStats?.era ?? 0,
       todayStats: {
         IP: p.pitcherGameStat?.inningPitchedOuts ?? 0,
-        R: p.pitcherGameStat?.runs ?? 0,
+        R: p.pitcherGameStat?.allowedRuns ?? 0,
         ER: p.pitcherGameStat?.earnedRuns ?? 0,
         H: p.pitcherGameStat?.hits ?? 0,
         K: p.pitcherGameStat?.strikeouts ?? 0,
@@ -1866,6 +1872,7 @@ export class GameStatsService {
         'batter.playerTournament',
         'batter.batterGameStat',
         'batter.playerTournament.player',
+        'batter.playerTournament.batterStats',
       ],
       order: { seq: 'DESC' }, // 최신 타석부터 역순으로
     });
@@ -1908,7 +1915,11 @@ export class GameStatsService {
         });
       }
     }
-
+    // console.log(
+    //   'battingAverage',
+    //   currentInningBatters[0].playerTournament.batterStats.battingAverage,
+    // );
+    // console.log('era', currentPitcher.playerTournament.pitcherStats.era);
     return {
       playId,
       gameSummary: {

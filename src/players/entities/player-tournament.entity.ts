@@ -12,6 +12,7 @@ import {
   DeleteDateColumn,
   RelationId,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 
 import { Player } from '@/players/entities/player.entity';
@@ -21,6 +22,8 @@ import { Tournament } from '@/tournaments/entities/tournament.entity';
 import { User } from '@/users/entities/user.entity';
 import { BatterGameParticipation } from '@/games/entities/batter-game-participation.entity';
 import { PitcherGameParticipation } from '@/games/entities/pitcher-game-participation.entity';
+import { BatterStat } from '@/records/entities/batter-stat.entity';
+import { PitcherStat } from '@/records/entities/pitcher-stat.entity';
 
 @Entity('player_tournaments')
 @Unique(['player', 'teamTournament']) // ① 한 팀‑대회에 중복 등록 금지
@@ -75,6 +78,12 @@ export class PlayerTournament {
     (pitcher) => pitcher.playerTournament,
   )
   pitcherGameParticipations: PitcherGameParticipation[];
+
+  @OneToOne(() => BatterStat, (batterStat) => batterStat.playerTournament)
+  batterStats?: BatterStat;
+
+  @OneToOne(() => PitcherStat, (pitcherStat) => pitcherStat.playerTournament)
+  pitcherStats?: PitcherStat;
 
   /* ───────── 사용자 클레임 ───────── */
   @ManyToOne(() => User, (u) => u.playerClaims, { nullable: true })

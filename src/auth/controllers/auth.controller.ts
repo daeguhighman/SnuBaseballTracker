@@ -42,7 +42,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.signup(body);
-    // (1) refresh ⇒ HttpOnly 쿠키
     res.cookie(
       'refresh_token',
       refreshToken,
@@ -60,18 +59,17 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.login(dto);
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 14,
-    });
+    res.cookie(
+      'refresh_token',
+      refreshToken,
+      REFRESH_COOKIE(this.configService),
+    );
     return { accessToken };
   }
   @Public()
   @Post('refresh')
   async refresh(@Req() req, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refresh_token'];
-    console.log('Debug - refreshToken:', refreshToken);
 
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token not found');
@@ -79,17 +77,13 @@ export class AuthController {
 
     const { accessToken, refreshToken: newRefreshToken } =
       await this.authService.refresh(refreshToken);
-    res.cookie(
-      'refresh_token',
-      newRefreshToken,
-      REFRESH_COOKIE(this.configService),
-    );
+
     return { accessToken };
   }
 
   @Post('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
-    await this.authService.logout(req.user.id);
+    await this.authService.logout(req.user.userId);
     res.clearCookie('refresh_token');
     return { ok: true };
   }
@@ -102,24 +96,24 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.changePassword(
-      req.user.id,
+      req.user.userId,
       dto.currentPassword,
       dto.newPassword,
     );
 
     // 새로운 리프레시 토큰을 쿠키로 설정
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14일
-    });
+    res.cookie(
+      'refresh_token',
+      result.refreshToken,
+      REFRESH_COOKIE(this.configService),
+    );
 
     return { message: 'Password changed successfully' };
   }
 
   @Delete('user')
   async delete(@Req() req, @Res({ passthrough: true }) res: Response) {
-    await this.authService.deleteAccount(req.user.id);
+    await this.authService.deleteAccount(req.user.userId);
     // Optional: clear tokens/cookies
     res.clearCookie('refresh_token');
     return { message: 'Account deleted' };

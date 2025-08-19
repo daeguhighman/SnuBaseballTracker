@@ -4,6 +4,8 @@ services:
     image: docker.io/daeguhighman/snubaseball-nestjs:latest
     container_name: nestjs
     env_file: .env
+    environment:
+      - NODE_ENV=production
     restart: always
     ports:
       - "3000:3000"           # 내부 통신용 → 외부는 Nginx가 80 포트로 노출

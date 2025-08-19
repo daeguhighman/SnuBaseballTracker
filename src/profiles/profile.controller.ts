@@ -10,11 +10,11 @@ export class ProfileController {
 
   @Get('me')
   me(@Req() { user }) {
-    return this.profSvc.getByUserId(user.id);
+    return this.profSvc.getByUserId(user.userId);
   }
 
   @Put('me')
   update(@Req() { user }, @Body() dto: UpdateProfileDto) {
-    return this.profSvc.upsert(user.id, dto);
+    return this.profSvc.upsert(user.userId, dto);
   }
 }

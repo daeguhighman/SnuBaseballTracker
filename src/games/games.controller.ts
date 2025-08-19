@@ -183,8 +183,9 @@ export class GamesController {
     @Param('gameId', ParseIntPipe) gameId: number,
     @Request() req: any,
   ): Promise<GameResultResponseDto> {
-    return this.gameStatsService.getGameResult(gameId, req.user);
+    return this.gameStatsService.getGameResult(gameId, req.user?.userId);
   }
+
   @UseGuards(AdminAuthGuard)
   @Post(':gameId/result')
   async endGame(

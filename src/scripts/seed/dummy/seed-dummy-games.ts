@@ -39,18 +39,18 @@ export class DummyGameSeeder {
 
     const games: GameData[] = [
       {
-        awayTeamName: '두산 베어스',
-        homeTeamName: '한화 이글스',
+        awayTeamName: '롯데 자이언츠',
+        homeTeamName: '키움 히어로즈',
         scheduledAt: '2025-08-22 08:00:00',
       },
       {
-        awayTeamName: 'NC 다이노스',
-        homeTeamName: 'KT 위즈',
+        awayTeamName: '롯데 자이언츠',
+        homeTeamName: '키움 히어로즈',
         scheduledAt: '2025-08-22 10:00:00',
       },
       {
-        awayTeamName: 'LG 트윈스',
-        homeTeamName: '기아 타이거즈',
+        awayTeamName: '롯데 자이언츠',
+        homeTeamName: '키움 히어로즈',
         scheduledAt: '2025-08-22 12:00:00',
       },
       {
@@ -59,8 +59,8 @@ export class DummyGameSeeder {
         scheduledAt: '2025-08-22 14:00:00',
       },
       {
-        awayTeamName: 'SSG 랜더스',
-        homeTeamName: '삼성 라이온즈',
+        awayTeamName: '롯데 자이언츠',
+        homeTeamName: '키움 히어로즈',
         scheduledAt: '2025-08-22 16:00:00',
       },
     ];
@@ -100,6 +100,7 @@ export class DummyGameSeeder {
             homeTeam: { id: homeTeamTournament.id },
             awayTeam: { id: awayTeamTournament.id },
             tournamentId: tournamentId,
+            startTime: new Date(gameData.scheduledAt),
           },
         });
 

@@ -35,31 +35,13 @@ export class DummyUserSeeder {
       {
         email: 'admin@snu.ac.kr',
         nickname: '관리자',
-        password: 'admin123',
+        password: 'Admin1234!',
         role: AppRole.ADMIN,
-      },
-      {
-        email: 'umpire1@snu.ac.kr',
-        nickname: '심판1',
-        password: 'umpire123',
-        role: AppRole.NORMAL,
-      },
-      {
-        email: 'umpire2@snu.ac.kr',
-        nickname: '심판2',
-        password: 'umpire123',
-        role: AppRole.NORMAL,
       },
       {
         email: 'user1@snu.ac.kr',
         nickname: '일반사용자1',
-        password: 'user123',
-        role: AppRole.NORMAL,
-      },
-      {
-        email: 'user2@snu.ac.kr',
-        nickname: '일반사용자2',
-        password: 'user123',
+        password: 'User1234!',
         role: AppRole.NORMAL,
       },
     ];

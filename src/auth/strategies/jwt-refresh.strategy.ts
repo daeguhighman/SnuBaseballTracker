@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 
 // 1) 쿠키에서 'refreshToken' 필드를 꺼내는 함수
 const cookieExtractor = (req: Request): string | null => {
-  return req?.cookies?.refreshToken ?? null;
+  return req?.cookies?.refresh_token ?? null; // refreshToken -> refresh_token으로 변경
 };
 
 @Injectable()
