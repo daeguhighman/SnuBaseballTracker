@@ -8,10 +8,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
-import { SwaggerModule } from '@nestjs/swagger';
 import { AppLogger } from './common/logger/logger.service';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import './instrument';
+import * as Sentry from '@sentry/nestjs';
+import * as SentryNode from '@sentry/node';
+
 async function bootstrap() {
   const isProduction = process.env.NODE_ENV === 'production';
   const corsOptions = {

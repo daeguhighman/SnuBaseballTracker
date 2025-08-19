@@ -65,7 +65,7 @@ export class PitcherGameParticipation {
     name: 'target_virtual_outs',
     type: 'int',
     nullable: true,
-    default: null,
+    default: 3,
   })
   targetVirtualOuts: number | null;
 

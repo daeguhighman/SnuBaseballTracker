@@ -69,7 +69,7 @@ const imports = [
   PlaysModule,
   /* 5️⃣  로깅 */
   LoggerModule,
-  SentryModule.forRoot(),
+  // SentryModule.forRoot(),
 ];
 
 @Module({
