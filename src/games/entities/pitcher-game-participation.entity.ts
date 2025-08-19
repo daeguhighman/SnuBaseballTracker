@@ -57,15 +57,11 @@ export class PitcherGameParticipation {
   @Column({ name: 'entry_game_inning_stat_id', nullable: true })
   entryGameInningStatId: number | null;
 
-  // 투수 등판시점의 아웃카운트 (평균자책점 계산용)
-  @Column({ name: 'entry_outs', type: 'int', default: 0 })
-  entryOuts: number;
-
   @Column({
     name: 'target_virtual_outs',
     type: 'int',
     nullable: true,
-    default: 3,
+    default: null,
   })
   targetVirtualOuts: number | null;
 

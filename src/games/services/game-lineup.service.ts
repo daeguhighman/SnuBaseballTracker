@@ -654,7 +654,24 @@ export class GameLineupService {
         currentBatterParticipationId ?? null,
       );
 
-      // 3) 투수 교체 비교/적용
+      // 3) 현재 이닝 상태 조회
+      const currentInningStat = await manager.findOne(GameInningStat, {
+        where: {
+          gameId,
+          inning: game.gameStat.inning,
+          inningHalf: game.gameStat.inningHalf,
+        },
+      });
+
+      const virtualInningStat = await manager.findOne(VirtualInningStat, {
+        where: {
+          gameId,
+          inning: game.gameStat.inning,
+          inningHalf: game.gameStat.inningHalf,
+        },
+      });
+
+      // 4) 투수 교체 비교/적용
       const updatedPitcherId = await this.updatePitcher(
         manager,
         gameId,
@@ -662,6 +679,8 @@ export class GameLineupService {
         submitLineupDto.pitcher,
         existingPitcher ?? null,
         currentPitcherParticipationId ?? null,
+        currentInningStat,
+        virtualInningStat,
       );
 
       // 4) GameStat 업데이트 (부분 업데이트만!)
@@ -909,15 +928,26 @@ export class GameLineupService {
     newPitcher: SubmitLineupRequestDto['pitcher'],
     existingPitcher: PitcherGameParticipation | null,
     currentPitcherId: number | null,
+    currentInningStat: GameInningStat | null,
+    virtualInningStat: VirtualInningStat | null,
   ): Promise<number | null> {
     // 기존 없음 → 신규 등록
     if (!existingPitcher) {
+      // targetVirtualOuts 계산: virtualInningOutCount + 3 - 현재의 inningOutCount
+      let targetVirtualOuts: number | null = null;
+      if (virtualInningStat && currentInningStat) {
+        targetVirtualOuts = virtualInningStat.outs + 3 - currentInningStat.outs;
+      }
+
       const created = manager.create(PitcherGameParticipation, {
         gameId,
         teamTournament: { id: teamTournamentId },
         playerTournament: { id: newPitcher.id },
         substitutionOrder: 0,
         isActive: true,
+        targetVirtualOuts,
+        entryOuts: currentInningStat?.outs ?? 0,
+        entryGameInningStatId: currentInningStat?.id ?? null,
       });
       const saved = await manager.save(created);
 
@@ -938,12 +968,21 @@ export class GameLineupService {
     existingPitcher.isActive = false;
     await manager.save(existingPitcher);
 
+    // targetVirtualOuts 계산: virtualInningOutCount + 3 - 현재의 inningOutCount
+    let targetVirtualOuts: number | null = null;
+    if (virtualInningStat && currentInningStat) {
+      targetVirtualOuts = virtualInningStat.outs + 3 - currentInningStat.outs;
+    }
+
     const newParticipation = manager.create(PitcherGameParticipation, {
       gameId,
       teamTournament: { id: teamTournamentId },
       playerTournament: { id: newPitcher.id },
       substitutionOrder: (existingPitcher.substitutionOrder ?? 0) + 1,
       isActive: true,
+      targetVirtualOuts,
+      entryOuts: currentInningStat?.outs ?? 0,
+      entryGameInningStatId: currentInningStat?.id ?? null,
     });
     const saved = await manager.save(newParticipation);
 

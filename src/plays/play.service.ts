@@ -720,6 +720,11 @@ export class PlayService {
                 shouldAddEarnedRun = false;
               }
             }
+          } else {
+            const targetVirtualOuts = 3;
+            if (virtualInningStat.outs >= targetVirtualOuts) {
+              shouldAddEarnedRun = false;
+            }
           }
 
           if (shouldAddEarnedRun) {
