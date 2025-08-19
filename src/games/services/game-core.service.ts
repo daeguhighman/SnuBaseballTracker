@@ -174,8 +174,10 @@ export class GameCoreService {
       relations: [
         'homeTeam',
         'awayTeam',
+        'winnerTeam',
         'homeTeam.team',
         'awayTeam.team',
+        'winnerTeam.team',
         'gameStat',
       ],
     });
