@@ -138,7 +138,7 @@ export class GameCoreService {
       time: kstTime,
       status: game.status as GameStatus,
       stage: game.stage as MatchStage,
-      winnerTeamId: game.winnerTeam?.team.id ?? null,
+      winnerTeamId: game.winnerTeamTournamentId ?? null,
       inning: game.gameStat?.inning ?? null,
       inningHalf: game.gameStat?.inningHalf ?? null,
       homeTeam: {
