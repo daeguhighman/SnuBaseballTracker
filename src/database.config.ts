@@ -66,8 +66,6 @@ export default registerAs('database', () => {
       Session,
       PasswordResetToken,
       Play,
-      RunnerEvent,
-      Runner,
     ],
     charset: 'utf8mb4',
   };
