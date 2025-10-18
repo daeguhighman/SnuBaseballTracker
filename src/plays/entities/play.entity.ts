@@ -68,7 +68,7 @@ export class Play {
 
   /* ---------- 결과 & 상태 ---------- */
   /** 타석이 *끝난 뒤* 세트 – 진행 중엔 NULL */
-  @Column({ type: 'char', length: 3, nullable: true, name: 'result_code' })
+  @Column({ type: 'char', length: 10, nullable: true, name: 'result_code' })
   resultCode: PlateAppearanceResult | null;
 
   /** 타석 진행 상태(LIVE/COMPLETE/ABANDONED) */
