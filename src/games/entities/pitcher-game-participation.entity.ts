@@ -57,14 +57,6 @@ export class PitcherGameParticipation {
   @Column({ name: 'entry_game_inning_stat_id', nullable: true })
   entryGameInningStatId: number | null;
 
-  @Column({
-    name: 'target_virtual_outs',
-    type: 'int',
-    nullable: true,
-    default: null,
-  })
-  targetVirtualOuts: number | null;
-
   @OneToOne(() => PitcherGameStat, (stat) => stat.pitcherGameParticipation, {
     cascade: ['insert', 'update'],
   })

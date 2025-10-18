@@ -19,9 +19,7 @@ import { RunnerEventInput } from './dtos/create-runner-events.dto';
 import { UpdatePlayDto } from './dtos/update-play.dto';
 import { RunnerEvent } from './entities/runner-event.entity';
 import { GameInningStat } from '@/games/entities/game-inning-stat.entity';
-import { VirtualInningStat } from '@/games/entities/virtual-inning-stat.entity';
 import { Runner } from './entities/runner.entity';
-import { VirtualRunner } from './entities/virtual-runner.entity';
 
 @Injectable()
 export class PlayService {
@@ -89,23 +87,14 @@ export class PlayService {
       // 2. 검증 로직 실행
       this.validateResultCode(play, dto);
       this.validateBatterInAfterPhase(dto);
-      this.checkEquivalentStartEndBase(dto.actual);
-      if (dto.virtual && dto.virtual.length > 0) {
-        this.checkEquivalentStartEndBase(dto.virtual);
-      }
+      this.checkEquivalentStartEndBase(dto.events);
 
       // 3. 이벤트 정렬 및 처리
-      const actualRunnerEvents = await this.sortActualEvents(dto, play, em);
-      const virtualRunnerEvents = await this.sortVirtualEvents(dto, play, em);
+      const runnerEvents = await this.sortRunnerEvents(dto, play, em);
 
-      // 모든 실제 이벤트를 처리
-      for (const event of actualRunnerEvents) {
+      // 모든 이벤트를 처리
+      for (const event of runnerEvents) {
         await this.processActualEvent(em, event, play, dto.phase);
-      }
-
-      // 모든 가상 이벤트를 처리 (virtual이 있을 때만)
-      for (const event of virtualRunnerEvents) {
-        await this.processVirtualEvent(em, event, play, dto.phase);
       }
 
       // 모든 이벤트 처리 후 3아웃 체크 및 게임 상태 업데이트
@@ -140,15 +129,8 @@ export class PlayService {
    * 타석 결과 코드 검증
    */
   private validateResultCode(play: Play, dto: AddRunnerEventsDto): void {
-    if (
-      play.resultCode === PlateAppearanceResult.ERROR ||
-      play.resultCode === PlateAppearanceResult.STRIKEOUT_DROP ||
-      play.resultCode === PlateAppearanceResult.INTERFERENCE
-    ) {
-      if (!dto.virtual) {
-        throw new BadRequestException('이닝의 재구성을 해야합니다.');
-      }
-    }
+    // virtual 기능 제거로 인해 에러 관련 검증 로직 단순화
+    // 필요시 다른 방식으로 처리
   }
 
   /**
@@ -156,9 +138,9 @@ export class PlayService {
    */
   private validateBatterInAfterPhase(dto: AddRunnerEventsDto): void {
     if (dto.phase === 'AFTER') {
-      const hasBatterRunner =
-        dto.actual.some((event) => event.startBase === 'B') ||
-        (dto.virtual && dto.virtual.some((event) => event.startBase === 'B'));
+      const hasBatterRunner = dto.events.some(
+        (event) => event.startBase === 'B',
+      );
 
       if (!hasBatterRunner) {
         throw new BadRequestException(
@@ -184,101 +166,20 @@ export class PlayService {
   /**
    * 실제 이벤트들의 사전작업 (검증, 정렬, 생성, 저장)
    */
-  private async sortActualEvents(
+  private async sortRunnerEvents(
     dto: AddRunnerEventsDto,
     play: Play,
     em: EntityManager,
   ): Promise<RunnerEvent[]> {
-    // 실제 이벤트를 startBase 순으로 정렬 (B -> 1 -> 2 -> 3)
-    const sortedActual = this.sortRunnerEventsByStartBase(dto.actual);
-    const actualRunnerEvents = await this.makeRunnerEvents(
-      sortedActual,
-      play,
-      em,
-    );
+    // 이벤트를 startBase 순으로 정렬 (B -> 1 -> 2 -> 3)
+    const sortedEvents = this.sortRunnerEventsByStartBase(dto.events);
+    const runnerEvents = await this.makeRunnerEvents(sortedEvents, play, em);
 
-    for (const runnerEvent of actualRunnerEvents) {
+    for (const runnerEvent of runnerEvents) {
       await em.save(runnerEvent);
     }
 
-    return actualRunnerEvents;
-  }
-
-  /**
-   * 가상 이벤트들의 정렬 및 처리
-   */
-  private async sortVirtualEvents(
-    dto: AddRunnerEventsDto,
-    play: Play,
-    em: EntityManager,
-  ): Promise<RunnerEvent[]> {
-    let virtualRunnerEvents: RunnerEvent[] = [];
-
-    if (dto.virtual && dto.virtual.length > 0) {
-      // 가상 이벤트도 startBase 순으로 정렬 (B -> 1 -> 2 -> 3)
-      const sortedVirtual = this.sortRunnerEventsByStartBase(dto.virtual);
-      virtualRunnerEvents = await this.makeRunnerEvents(
-        sortedVirtual,
-        play,
-        em,
-      );
-
-      for (const runnerEvent of virtualRunnerEvents) {
-        runnerEvent.isActual = false; // 가상 이벤트로 설정
-        await em.save(runnerEvent);
-      }
-
-      // errorFlag가 false이지만 virtual이 존재하는 경우, virtualInningStat 생성
-      if (!play.gameInningStat.errorFlag) {
-        await this.createVirtualInningStat(play, em);
-      }
-    }
-
-    return virtualRunnerEvents;
-  }
-
-  /**
-   * VirtualInningStat 생성 및 관련 데이터 복사
-   */
-  private async createVirtualInningStat(
-    play: Play,
-    em: EntityManager,
-  ): Promise<void> {
-    // inningStat을 기반으로 virtualInningStat 생성
-    const virtualInningStat = em.create(VirtualInningStat, {
-      gameId: play.gameId,
-      inning: play.gameInningStat.inning,
-      inningHalf: play.gameInningStat.inningHalf,
-      runs: play.gameInningStat.runs,
-      outs: play.gameInningStat.outs,
-      onFirstGpId: play.game.gameStat.onFirstGpId,
-      onSecondGpId: play.game.gameStat.onSecondGpId,
-      onThirdGpId: play.game.gameStat.onThirdGpId,
-      originalInningStatId: play.gameInningStat.id,
-    });
-
-    play.gameInningStat.errorFlag = true;
-    await em.save(play.gameInningStat);
-    await em.save(virtualInningStat);
-
-    // 현재 존재하는 runner들을 virtual runner로 복사
-    const existingRunners = await em.find(Runner, {
-      where: {
-        gameInningStatId: play.gameInningStat.id,
-        isActive: true, // 현재 루상에 있는 주자들만
-      },
-    });
-
-    for (const runner of existingRunners) {
-      const virtualRunner = em.create(VirtualRunner, {
-        runnerGpId: runner.runnerGpId,
-        responsiblePitcherGpId: runner.responsiblePitcherGpId,
-        originPlay: runner.originPlay,
-        gameInningStatId: runner.gameInningStatId,
-        isActive: runner.isActive,
-      });
-      await em.save(virtualRunner);
-    }
+    return runnerEvents;
   }
 
   // 트랜잭션 외부에서 관중용 스냅샷 생성
@@ -377,9 +278,6 @@ export class PlayService {
         relations: ['batterGameStat'],
       });
       if (batterGp?.batterGameStat) {
-        if (!play.gameInningStat.errorFlag) {
-          batterGp.batterGameStat.runsBattedIn++;
-        }
         await em.save(batterGp.batterGameStat);
       }
       // e. 투수 기록 업데이트
@@ -390,18 +288,6 @@ export class PlayService {
       if (pitcherGp?.pitcherGameStat) {
         pitcherGp.pitcherGameStat.allowedRuns++;
         await em.save(pitcherGp.pitcherGameStat);
-        // errorFlag가 false인 경우 earnedRun도 증가
-        if (!play.gameInningStat.errorFlag) {
-          const responsiblePitcherGp = await em.findOne(
-            PitcherGameParticipation,
-            {
-              where: { id: runner.responsiblePitcherGpId },
-              relations: ['pitcherGameStat'],
-            },
-          );
-          responsiblePitcherGp.pitcherGameStat.earnedRuns++;
-          await em.save(responsiblePitcherGp.pitcherGameStat);
-        }
       }
     }
     await em.save(play.gameInningStat);
@@ -600,17 +486,8 @@ export class PlayService {
     await em.save(gameStat);
   }
 
-  private async updateVirtualBasesForEvent(
-    em: EntityManager,
-    virtualInningStat: VirtualInningStat,
-    event: RunnerEvent,
-  ) {
-    await this.updateBasesForEventCommon(virtualInningStat, event);
-    await em.save(virtualInningStat);
-  }
-
   private async updateBasesForEventCommon(
-    baseHolder: GameStat | VirtualInningStat,
+    baseHolder: GameStat,
     event: RunnerEvent,
   ) {
     const { startBase, endBase, runnerGpId } = event;
@@ -646,114 +523,6 @@ export class PlayService {
       else if (startBase === '2') baseHolder.onSecondGpId = null;
       else if (startBase === '3') baseHolder.onThirdGpId = null;
     }
-  }
-
-  private async processVirtualEvent(
-    em: EntityManager,
-    event: RunnerEvent,
-    play: Play,
-    phase?: 'PREV' | 'AFTER',
-  ) {
-    const virtualInningStat = await em.findOne(VirtualInningStat, {
-      where: {
-        originalInningStatId: play.gameInningStat.id,
-      },
-    });
-    if (!virtualInningStat) {
-      throw new NotFoundException('VirtualInningStat not found');
-    }
-    if (event.startBase === 'B' && event.endBase != 'O') {
-      const virtualRunner = await em.create(VirtualRunner, {
-        runnerGpId: event.runnerGpId,
-        responsiblePitcherGpId: play.pitcherGpId,
-        originPlay: play,
-        gameInningStatId: play.gameInningStat.id,
-        isActive: true, // 출루 시 활성 상태로 설정
-      });
-      await em.save(virtualRunner);
-    }
-    // Virtual 이벤트 처리
-    // 아웃 처리
-    if (event.endBase === 'O') {
-      // Virtual inning event에 outs++
-      virtualInningStat.outs += 1;
-
-      // VirtualRunner를 비활성화 (아웃)
-      const virtualRunner = await em.findOne(VirtualRunner, {
-        where: {
-          runnerGpId: event.runnerGpId,
-          gameInningStatId: play.gameInningStat.id,
-          isActive: true,
-        },
-      });
-      if (virtualRunner) {
-        virtualRunner.isActive = false;
-        await em.save(virtualRunner);
-      }
-    }
-    // 득점 처리
-    else if (event.endBase === 'H') {
-      // Virtual inning event에 runs++
-      virtualInningStat.runs += 1;
-
-      const virtualRunner = await em.findOne(VirtualRunner, {
-        where: {
-          runnerGpId: event.runnerGpId,
-          gameInningStatId: play.gameInningStat.id,
-        },
-      });
-      if (virtualRunner) {
-        const pitcherGp = await em.findOne(PitcherGameParticipation, {
-          where: { id: virtualRunner.responsiblePitcherGpId },
-          relations: ['pitcherGameStat', 'entryGameInningStat'],
-        });
-        if (pitcherGp) {
-          // 자책점 계산 조건 체크
-          let shouldAddEarnedRun = true;
-
-          // 1. 현재 투수가 등판한 이닝인지 확인
-          if (pitcherGp.entryGameInningStatId === play.gameInningStat.id) {
-            // 2. targetVirtualOuts가 null이 아닌지 확인
-            if (pitcherGp.targetVirtualOuts !== null) {
-              // 3. 현재 virtualInningStat의 outs >= targetVirtualOuts인지 확인
-              if (virtualInningStat.outs >= pitcherGp.targetVirtualOuts) {
-                shouldAddEarnedRun = false;
-              }
-            }
-          } else {
-            const targetVirtualOuts = 3;
-            if (virtualInningStat.outs >= targetVirtualOuts) {
-              shouldAddEarnedRun = false;
-            }
-          }
-
-          if (shouldAddEarnedRun) {
-            pitcherGp.pitcherGameStat.earnedRuns++;
-            await em.save(pitcherGp.pitcherGameStat);
-          }
-        }
-
-        // VirtualRunner를 비활성화 (득점)
-        virtualRunner.isActive = false;
-        await em.save(virtualRunner);
-      }
-
-      // 타자 RBI 증가 (phase가 'AFTER'인 경우에만)
-      if (phase === 'AFTER') {
-        const runnerGp = await em.findOne(BatterGameParticipation, {
-          where: { id: event.runnerGpId },
-          relations: ['batterGameStat'],
-        });
-        if (runnerGp?.batterGameStat) {
-          runnerGp.batterGameStat.runsBattedIn++;
-          await em.save(runnerGp.batterGameStat);
-        }
-      }
-    }
-
-    // Virtual inning stat에 주자판 업데이트
-    await this.updateBasesForEventCommon(virtualInningStat, event);
-    await em.save(virtualInningStat);
   }
 
   private async makeRunnerEvents(

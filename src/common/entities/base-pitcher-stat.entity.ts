@@ -15,7 +15,4 @@ export abstract class BasePitcherStat {
 
   @Column({ default: 0, name: 'allowed_runs' })
   allowedRuns: number;
-
-  @Column({ default: 0, name: 'earned_runs' })
-  earnedRuns: number;
 }

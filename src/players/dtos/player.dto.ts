@@ -10,6 +10,9 @@ export class BasePlayerDto {
 
   @IsBoolean()
   isElite: boolean;
+
+  @IsBoolean()
+  isWc: boolean;
 }
 
 export class PlayerWithLineupDto extends BasePlayerDto {

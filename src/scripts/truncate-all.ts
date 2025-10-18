@@ -15,7 +15,6 @@ import { PlayerTournament } from '../players/entities/player-tournament.entity';
 import { Game } from '../games/entities/game.entity';
 import { GameStat } from '../games/entities/game-stat.entity';
 import { GameInningStat } from '../games/entities/game-inning-stat.entity';
-import { VirtualInningStat } from '../games/entities/virtual-inning-stat.entity';
 import { BatterGameParticipation } from '../games/entities/batter-game-participation.entity';
 import { PitcherGameParticipation } from '../games/entities/pitcher-game-participation.entity';
 import { BatterGameStat } from '../games/entities/batter-game-stat.entity';
@@ -31,7 +30,6 @@ import { PasswordResetToken } from '../mail/entities/password-reset-token.entity
 import { Session } from '../sessions/entities/session.entity';
 import { BatterStat } from '../records/entities/batter-stat.entity';
 import { PitcherStat } from '../records/entities/pitcher-stat.entity';
-import { VirtualRunner } from '../plays/entities/virtual-runner.entity';
 
 export class TruncateService {
   private dataSource: DataSource;
@@ -47,14 +45,12 @@ export class TruncateService {
     const tables = [
       { name: 'RunnerEvent', entity: RunnerEvent },
       { name: 'Runner', entity: Runner },
-      { name: 'VirtualRunner', entity: VirtualRunner },
       { name: 'Play', entity: Play },
       { name: 'BatterGameStat', entity: BatterGameStat },
       { name: 'PitcherGameStat', entity: PitcherGameStat },
       { name: 'BatterGameParticipation', entity: BatterGameParticipation },
       { name: 'PitcherGameParticipation', entity: PitcherGameParticipation },
       { name: 'GameRoaster', entity: GameRoaster },
-      { name: 'VirtualInningStat', entity: VirtualInningStat },
       { name: 'GameInningStat', entity: GameInningStat },
       { name: 'GameStat', entity: GameStat },
       { name: 'Game', entity: Game },

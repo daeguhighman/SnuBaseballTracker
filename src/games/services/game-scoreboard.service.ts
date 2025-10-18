@@ -140,7 +140,6 @@ export class GameScoreboardService {
       inningHalf: gameStat.inningHalf,
       runs: 0,
       outs: 0,
-      errorFlag: false,
     });
     await em.save(newInningStat);
   }

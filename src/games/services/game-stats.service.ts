@@ -32,12 +32,11 @@ import { BatterStat } from '@/records/entities/batter-stat.entity';
 import { PitcherStat } from '@/records/entities/pitcher-stat.entity';
 import { PlayerTournament } from '@/players/entities/player-tournament.entity';
 import { Decimal } from 'decimal.js';
-import { In } from 'typeorm';
+import { In, Between } from 'typeorm';
 import { GameInningStat } from '../entities/game-inning-stat.entity';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 import { BaseException } from '@/common/exceptions/base.exception';
 import { Runner } from '@/plays/entities/runner.entity';
-import { VirtualInningStat } from '../entities/virtual-inning-stat.entity';
 import { Play } from '@/plays/entities/play.entity';
 import { GameAuthService } from './game-auth.service';
 
@@ -445,7 +444,6 @@ export class GameStatsService {
         '3B': updateDto['3B'],
         HR: updateDto.HR,
         R: updateDto.R,
-        RBI: updateDto.RBI,
         SH: updateDto.SH,
         SF: updateDto.SF,
         BB: updateDto.BB,
@@ -496,7 +494,6 @@ export class GameStatsService {
       '3B': batterStats.triples,
       HR: batterStats.homeRuns,
       R: batterStats.runs,
-      RBI: batterStats.runsBattedIn,
       SH: batterStats.sacrificeBunts,
       SF: batterStats.sacrificeFlies,
       BB: batterStats.walks,
@@ -559,7 +556,6 @@ export class GameStatsService {
         .name,
       IP: pitcherGameStat.inningPitchedOuts || 0,
       R: pitcherGameStat.allowedRuns || 0,
-      ER: pitcherGameStat.earnedRuns || 0,
       BB: pitcherGameStat.walks || 0,
       K: pitcherGameStat.strikeouts || 0,
     };
@@ -822,7 +818,7 @@ export class GameStatsService {
       // 누적 통계 업데이트
       this.updatePitcherStatCounts(cumulativeStat, gameStat);
 
-      this.calculatePitcherDerivedStats(cumulativeStat);
+      // this.calculatePitcherDerivedStats(cumulativeStat);
     }
 
     return Array.from(pitcherStatMap.values());
@@ -853,7 +849,6 @@ export class GameStatsService {
     stat.walks = 0;
     stat.allowedHits = 0;
     stat.allowedRuns = 0;
-    stat.earnedRuns = 0;
     stat.era = 0;
   }
   private updatePitcherStatCounts(
@@ -865,11 +860,10 @@ export class GameStatsService {
     cumulativeStat.walks += gameStat.walks || 0;
     cumulativeStat.allowedHits += gameStat.allowedHits || 0;
     cumulativeStat.allowedRuns += gameStat.allowedRuns || 0;
-    cumulativeStat.earnedRuns += gameStat.earnedRuns || 0;
   }
-  private calculatePitcherDerivedStats(stat: PitcherStat): void {
-    stat.era = this.calculateERA(stat.earnedRuns, stat.inningPitchedOuts);
-  }
+  // private calculatePitcherDerivedStats(stat: PitcherStat): void {
+  //   stat.era = this.calculateERA(stat.earnedRuns, stat.inningPitchedOuts);
+  // }
   // 통계 업데이트 헬퍼 메서드
   private updateBatterStatCounts(
     cumulativeStat: BatterStat,
@@ -1202,7 +1196,6 @@ export class GameStatsService {
       name: participation.playerTournament.player.name,
       IP: participation.pitcherGameStat?.inningPitchedOuts ?? 0,
       R: participation.pitcherGameStat?.allowedRuns ?? 0,
-      ER: participation.pitcherGameStat?.earnedRuns ?? 0,
       K: participation.pitcherGameStat?.strikeouts ?? 0,
       BB: participation.pitcherGameStat?.walks ?? 0,
     });
@@ -1490,82 +1483,6 @@ export class GameStatsService {
       }
     }
 
-    // 9. 새로운 구조로 반환
-    // 현재 이닝의 virtualInningStat 조회
-    let virtualInningStat = null;
-    let virtualRunnersOnBase = [];
-    let virtualOuts = 0;
-
-    if (inningStat?.errorFlag) {
-      virtualInningStat = await manager.findOne(VirtualInningStat, {
-        where: {
-          originalInningStatId: inningStat.id,
-        },
-      });
-
-      if (virtualInningStat) {
-        // virtualInningStat에서 주자 정보 구성
-        if (virtualInningStat.onFirstGpId) {
-          const firstRunner =
-            awayBatters.find(
-              (b) => b.id === Number(virtualInningStat.onFirstGpId),
-            ) ||
-            homeBatters.find(
-              (b) => b.id === Number(virtualInningStat.onFirstGpId),
-            );
-          if (firstRunner) {
-            virtualRunnersOnBase.push({
-              base: 1,
-              id: firstRunner.id,
-              name: firstRunner.playerTournament.player.name,
-              position: firstRunner.position,
-              battingOrder: firstRunner.battingOrder,
-              isElite: firstRunner.playerTournament.isElite,
-            });
-          }
-        }
-        if (virtualInningStat.onSecondGpId) {
-          const secondRunner =
-            awayBatters.find(
-              (b) => b.id === Number(virtualInningStat.onSecondGpId),
-            ) ||
-            homeBatters.find(
-              (b) => b.id === Number(virtualInningStat.onSecondGpId),
-            );
-          if (secondRunner) {
-            virtualRunnersOnBase.push({
-              base: 2,
-              id: secondRunner.id,
-              name: secondRunner.playerTournament.player.name,
-              position: secondRunner.position,
-              battingOrder: secondRunner.battingOrder,
-              isElite: secondRunner.playerTournament.isElite,
-            });
-          }
-        }
-        if (virtualInningStat.onThirdGpId) {
-          const thirdRunner =
-            awayBatters.find(
-              (b) => b.id === Number(virtualInningStat.onThirdGpId),
-            ) ||
-            homeBatters.find(
-              (b) => b.id === Number(virtualInningStat.onThirdGpId),
-            );
-          if (thirdRunner) {
-            virtualRunnersOnBase.push({
-              base: 3,
-              id: thirdRunner.id,
-              name: thirdRunner.playerTournament.player.name,
-              position: thirdRunner.position,
-              battingOrder: thirdRunner.battingOrder,
-              isElite: thirdRunner.playerTournament.isElite,
-            });
-          }
-        }
-        virtualOuts = virtualInningStat.outs;
-      }
-    }
-
     return {
       playId,
       gameSummary: {
@@ -1576,20 +1493,10 @@ export class GameStatsService {
         scoreboard,
       },
       inningStats: {
-        errorFlag: inningStat?.errorFlag ?? false,
         actual: {
           runnersOnBase: actualRunnersOnBase,
           outs: actualOuts,
         },
-        virtual: inningStat?.errorFlag
-          ? {
-              runnersOnBase: virtualRunnersOnBase,
-              outs: virtualOuts,
-            }
-          : {
-              runnersOnBase: actualRunnersOnBase,
-              outs: actualOuts,
-            },
       },
       lineup: {
         away: lineupObject(awayBatters, awayPitcher),
@@ -1777,7 +1684,7 @@ export class GameStatsService {
       : game.pitcherGameParticipations.find(
           (p) => p.id === stat.awayPitcherParticipationId,
         );
-    const mapBatter = (b, resultCode = null) => ({
+    const mapBatter = (b, resultCode = null, pitcher = null) => ({
       id: b.id, // 스냅샷에서는 BatterGameParticipation ID 사용
       name: b.playerTournament.player.name,
       position: b.position,
@@ -1785,6 +1692,12 @@ export class GameStatsService {
       battingOrder: b.battingOrder,
       battingResult: resultCode, // Play의 resultCode 사용
       battingAverage: b.playerTournament.batterStats?.battingAverage ?? 0,
+      opposingPitcher: pitcher
+        ? {
+            id: pitcher.id,
+            name: pitcher.playerTournament.player.name,
+          }
+        : null,
       todayStats: {
         PA: b.batterGameStat?.plateAppearances ?? 0,
         AB: b.batterGameStat?.atBats ?? 0,
@@ -1803,7 +1716,7 @@ export class GameStatsService {
       todayStats: {
         IP: p.pitcherGameStat?.inningPitchedOuts ?? 0,
         R: p.pitcherGameStat?.allowedRuns ?? 0,
-        ER: p.pitcherGameStat?.earnedRuns ?? 0,
+        // ER: p.pitcherGameStat?.earnedRuns ?? 0,
         H: p.pitcherGameStat?.hits ?? 0,
         K: p.pitcherGameStat?.strikeouts ?? 0,
         BB: p.pitcherGameStat?.walks ?? 0,
@@ -1858,13 +1771,12 @@ export class GameStatsService {
     );
     const outs = inningStat?.outs ?? 0;
 
-    // --- 현재 이닝에서 타석에 들어선 타자들 찾기 ---
-    const currentInningPlays = await this.playRepository.find({
+    // --- 1회부터 7회까지 모든 타석에 들어선 타자들 찾기 ---
+    const allInningPlays = await this.playRepository.find({
       where: {
         gameId: gameId,
         gameInningStat: {
-          inning: stat.inning,
-          inningHalf: stat.inningHalf,
+          inning: Between(1, 7), // 1회부터 7회까지
         },
       },
       relations: [
@@ -1873,16 +1785,58 @@ export class GameStatsService {
         'batter.batterGameStat',
         'batter.playerTournament.player',
         'batter.playerTournament.batterStats',
+        'pitcher',
+        'pitcher.playerTournament',
+        'pitcher.pitcherGameStat',
+        'pitcher.playerTournament.player',
+        'pitcher.playerTournament.pitcherStats',
+        'gameInningStat', // 이닝 정보를 위해 추가
       ],
-      order: { seq: 'DESC' }, // 최신 타석부터 역순으로
+      order: {
+        seq: 'ASC', // 타석 순서대로
+      },
     });
 
-    // 현재 이닝에서 타석에 들어선 타자들을 역순으로 정렬 (최신 타석부터)
-    const currentInningBatters = currentInningPlays.map((play) => ({
+    // 1-7회 모든 타석에 들어선 타자들을 이닝별로 그룹화
+    const allInningBatters = allInningPlays.map((play) => ({
       ...play.batter, // BatterGameParticipation 객체 전체를 포함
       seq: play.seq, // 타석 순서
       resultCode: play.resultCode, // Play의 resultCode 추가
+      inning: play.gameInningStat.inning, // 이닝 정보 추가
+      inningHalf: play.gameInningStat.inningHalf, // 이닝하프 정보 추가
+      pitcher: play.pitcher, // 해당 타석의 투수 정보 추가
     }));
+
+    // 이닝별로 그룹화
+    const inningGroups: Record<
+      string,
+      {
+        inning: number;
+        inningHalf: string;
+        batters: any[];
+      }
+    > = {};
+
+    allInningBatters.forEach((batter) => {
+      const key = `${batter.inning}_${batter.inningHalf}`;
+      if (!inningGroups[key]) {
+        inningGroups[key] = {
+          inning: batter.inning,
+          inningHalf: batter.inningHalf,
+          batters: [],
+        };
+      }
+      inningGroups[key].batters.push(batter);
+    });
+
+    // 이닝 순서대로 정렬된 배열로 변환
+    const sortedInningGroups = Object.values(inningGroups).sort((a, b) => {
+      if (a.inning !== b.inning) {
+        return a.inning - b.inning;
+      }
+      // 같은 이닝이면 TOP이 먼저
+      return a.inningHalf === 'TOP' ? -1 : 1;
+    });
 
     // --- waitingBatters 계산 (현재 공격팀, 현재 타자 뒤 3명만) ---
     let waitingBatters = [];
@@ -1937,10 +1891,13 @@ export class GameStatsService {
       outs,
       waitingBatters,
       playerRecords: {
-        batters: currentInningBatters.map((batter) =>
-          mapBatter(batter, batter.resultCode),
-        ),
-        pitcher: currentPitcher ? mapPitcher(currentPitcher) : null,
+        innings: sortedInningGroups.map((group) => ({
+          inning: group.inning,
+          inningHalf: group.inningHalf,
+          batters: group.batters.map((batter) =>
+            mapBatter(batter, batter.resultCode, batter.pitcher),
+          ),
+        })),
       },
     };
   }

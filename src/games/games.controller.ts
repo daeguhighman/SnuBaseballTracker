@@ -57,6 +57,7 @@ import { TournamentScheduleResponseDto } from './dtos/tournament-schedule.dto';
 import { Observable } from 'rxjs';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { AdminAuthGuard } from '@/auth/guards/admin-auth.guard';
+import { AdminOrUmpireAuthGuard } from '@/auth/guards/admin-or-umpire-auth.guard';
 
 @Controller('games')
 export class GamesController {
@@ -85,7 +86,7 @@ export class GamesController {
   async getTournamentSchedule(): Promise<TournamentScheduleResponseDto> {
     return this.gameCoreService.getTournamentSchedule();
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/players')
   async getPlayers(
     @Param('gameId') gameId: number,
@@ -94,7 +95,7 @@ export class GamesController {
     return this.gameLineupService.getPlayers(gameId, teamTournamentId);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/players-with-in-lineup')
   async getPlayersWithInLineup(
     @Param('gameId') gameId: number,
@@ -105,7 +106,7 @@ export class GamesController {
       teamTournamentId,
     );
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/substitutable-batters')
   async getSubstitutableBatters(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -117,7 +118,7 @@ export class GamesController {
       GameRole.BATTER,
     );
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/substitutable-pitchers')
   async getSubstitutablePitchers(
     @Param('gameId') gameId: number,
@@ -129,7 +130,7 @@ export class GamesController {
       GameRole.PITCHER,
     );
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Get(':gameId/teams/:teamTournamentId/lineup')
   async getLineup(
     @Param('gameId') gameId: number,
@@ -137,7 +138,7 @@ export class GamesController {
   ): Promise<LineupResponseDto> {
     return this.gameLineupService.getLineup(gameId, teamTournamentId);
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Post(':gameId/teams/:teamTournamentId/lineup')
   async submitLineup(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -146,7 +147,7 @@ export class GamesController {
   ): Promise<{ success: boolean; message: string }> {
     return this.gameLineupService.submitLineup(gameId, teamTournamentId, body);
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Patch(':gameId/teams/:teamTournamentId/lineup')
   async updateLineup(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -156,7 +157,7 @@ export class GamesController {
     return this.gameLineupService.updateLineup(gameId, teamTournamentId, body);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Post(':gameId/start')
   async startGame(
     @Param('gameId') gameId: number,
@@ -164,7 +165,7 @@ export class GamesController {
     return this.gameCoreService.startGame(gameId);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Post(':gameId/teams/:teamTournamentId/substitution')
   async submitSubstitution(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -186,7 +187,7 @@ export class GamesController {
     return this.gameStatsService.getGameResult(gameId, req.user?.userId);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Post(':gameId/result')
   async endGame(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -194,7 +195,7 @@ export class GamesController {
     return this.gameCoreService.finalizeGame(gameId);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Patch(':gameId/result/batters/:batterGameStatsId')
   async updateBatterStats(
     @Param('gameId', ParseIntPipe) gameId: number,
@@ -207,7 +208,7 @@ export class GamesController {
       updateDto,
     );
   }
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Patch(':gameId/result/pitchers/:pitcherGameStatsId')
   async updatePitcherStats(
     @Param('gameId', ParseIntPipe) gameId: number,

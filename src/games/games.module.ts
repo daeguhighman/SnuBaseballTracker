@@ -3,7 +3,6 @@ import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Game } from '@games/entities/game.entity';
 import { GameInningStat } from '@games/entities/game-inning-stat.entity';
-import { VirtualInningStat } from '@games/entities/virtual-inning-stat.entity';
 import { GamesController } from '@games/games.controller';
 import { GameStat } from '@games/entities/game-stat.entity';
 import { BatterGameParticipation } from '@games/entities/batter-game-participation.entity';
@@ -22,12 +21,12 @@ import { UmpiresModule } from '@umpires/umpires.module';
 import { TournamentsModule } from '@tournaments/tournaments.module';
 import { PlaysModule } from '@/plays/plays.module';
 import { UsersModule } from '@/users/users.module';
+import { AdminOrUmpireAuthGuard } from '@/auth/guards/admin-or-umpire-auth.guard';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Game,
       GameInningStat,
-      VirtualInningStat,
       GameStat,
       BatterGameParticipation,
       BatterGameStat,
@@ -49,6 +48,7 @@ import { UsersModule } from '@/users/users.module';
     GameLineupService,
     GameScoreboardService,
     GameAuthService,
+    AdminOrUmpireAuthGuard,
   ],
   exports: [
     TypeOrmModule,

@@ -14,7 +14,6 @@ import {
 import { Tournament } from '@tournaments/entities/tournament.entity';
 import { Umpire } from '@umpires/entities/umpire.entity';
 import { GameInningStat } from './game-inning-stat.entity';
-import { VirtualInningStat } from './virtual-inning-stat.entity';
 import { BatterGameParticipation } from './batter-game-participation.entity';
 import { PitcherGameParticipation } from './pitcher-game-participation.entity';
 import { GameStat } from './game-stat.entity';
@@ -77,11 +76,6 @@ export class Game {
     cascade: ['insert', 'update'],
   })
   inningStats: GameInningStat[];
-
-  @OneToMany(() => VirtualInningStat, (v) => v.game, {
-    cascade: ['insert', 'update'],
-  })
-  virtualInningStats: VirtualInningStat[];
 
   @OneToMany(() => BatterGameParticipation, (b) => b.game, {
     cascade: ['insert', 'update'],

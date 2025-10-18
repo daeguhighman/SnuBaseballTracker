@@ -973,6 +973,11 @@ paths:
         ```
         data: {"playId": 123, "gameSummary": {...}}
         ```
+        
+        **playerRecords 구조:**
+        - `innings`: 이닝과 이닝하프별로 그룹화된 타자 기록
+        - 각 이닝 그룹에는 `inning`, `inningHalf`, `batters` 정보가 포함
+        - 각 타자 기록에는 `opposingPitcher` 정보가 포함되어 해당 타석의 상대투수 이름 제공
       tags: [games]
       parameters:
         - name: gameId
@@ -1063,68 +1068,136 @@ paths:
                       { "id": 101, "name": "김타자", "position": "LF", "battingOrder": 1, "isElite": false }
                     ],
                     "playerRecords": {
-                      "batters": [
+                      "innings": [
                         {
-                          "id": 101,
-                          "name": "김타자",
-                          "position": "LF",
-                          "isElite": false,
-                          "battingOrder": 1,
-                          "battingResult": "",
-                          "battingAverage": 0.333,
-                          "todayStats": { "PA": 2, "AB": 2, "H": 1, "R": 0, "RBI": 0 }
+                          "inning": 1,
+                          "inningHalf": "TOP",
+                          "batters": [
+                            {
+                              "id": 101,
+                              "name": "김타자",
+                              "position": "LF",
+                              "isElite": false,
+                              "battingOrder": 1,
+                              "battingResult": "1B",
+                              "battingAverage": 0.333,
+                              "inning": 1,
+                              "inningHalf": "TOP",
+                              "opposingPitcher": {
+                                "id": 202,
+                                "name": "이투수",
+                              },
+                              "todayStats": { "PA": 2, "AB": 2, "H": 1, "R": 0 }
+                            },
+                            {
+                              "id": 102,
+                              "name": "박타자",
+                              "position": "CF",
+                              "isElite": false,
+                              "battingOrder": 2,
+                              "battingResult": "FO",
+                              "battingAverage": 0.286,
+                              "inning": 1,
+                              "inningHalf": "TOP",
+                              "opposingPitcher": {
+                                "id": 202,
+                                "name": "이투수",
+                              },
+                              "todayStats": { "PA": 2, "AB": 2, "H": 0, "R": 0 }
+                            },
+                            {
+                              "id": 103,
+                              "name": "이타자",
+                              "position": "SS",
+                              "isElite": true,
+                              "battingOrder": 3,
+                              "battingResult": "HR",
+                              "battingAverage": 0.412,
+                              "inning": 1,
+                              "inningHalf": "TOP",
+                              "opposingPitcher": {
+                                "id": 202,
+                                "name": "이투수",
+                              },
+                              "todayStats": { "PA": 2, "AB": 2, "H": 1, "R": 1 }
+                            }
+                          ]
                         },
                         {
-                          "id": 102,
-                          "name": "박타자",
-                          "position": "CF",
-                          "isElite": false,
-                          "battingOrder": 2,
-                          "battingResult": "",
-                          "battingAverage": 0.286,
-                          "todayStats": { "PA": 2, "AB": 2, "H": 0, "R": 0, "RBI": 0 }
+                          "inning": 1,
+                          "inningHalf": "BOT",
+                          "batters": [
+                            {
+                              "id": 301,
+                              "name": "최타자",
+                              "position": "CF",
+                              "isElite": false,
+                              "battingOrder": 1,
+                              "battingResult": "2B",
+                              "battingAverage": 0.250,
+                              "inning": 1,
+                              "inningHalf": "BOT",
+                              "opposingPitcher": {
+                                "id": 201,
+                                "name": "박투수",
+                              },
+                              "todayStats": { "PA": 1, "AB": 1, "H": 1, "R": 0 }
+                            },
+                            {
+                              "id": 302,
+                              "name": "강타자",
+                              "position": "2B",
+                              "isElite": false,
+                              "battingOrder": 2,
+                              "battingResult": "1B",
+                              "battingAverage": 0.300,
+                              "inning": 1,
+                              "inningHalf": "BOT",
+                              "opposingPitcher": {
+                                "id": 201,
+                                "name": "박투수",
+                              },
+                              "todayStats": { "PA": 1, "AB": 1, "H": 1, "R": 1 }
+                            }
+                          ]
                         },
                         {
-                          "id": 103,
-                          "name": "이타자",
-                          "position": "SS",
-                          "isElite": true,
-                          "battingOrder": 3,
-                          "battingResult": "",
-                          "battingAverage": 0.412,
-                          "todayStats": { "PA": 2, "AB": 2, "H": 1, "R": 1, "RBI": 1 }
-                        }
-                      ],
-                      "pitcher": [
-                        {
-                          "id": 201,
-                          "name": "박투수",
-                          "position": "P",
-                          "isElite": false,
-                          "ERA": 3.86,
-                          "todayStats": {
-                            "IP": 9,
-                            "R": 2,
-                            "ER": 2,
-                            "H": 4,
-                            "K": 3,
-                            "BB": 1
-                          }
-                        },
-                        {
-                          "id": 202,
-                          "name": "이투수",
-                          "position": "P",
-                          "isElite": true,
-                          "ERA": 2.74,
-                          "todayStats": {
-                            "IP": 9,
-                            "R": 1,
-                            "ER": 1,
-                            "H": 3,
-                            "K": 4,
-                            "BB": 0
-                          }
+                          "inning": 2,
+                          "inningHalf": "TOP",
+                          "batters": [
+                            {
+                              "id": 101,
+                              "name": "김타자",
+                              "position": "LF",
+                              "isElite": false,
+                              "battingOrder": 1,
+                              "battingResult": "K",
+                              "battingAverage": 0.333,
+                              "inning": 2,
+                              "inningHalf": "TOP",
+                              "opposingPitcher": {
+                                "id": 202,
+                                "name": "이투수",
+                              },
+                              "todayStats": { "PA": 2, "AB": 2, "H": 1, "R": 0 }
+                            },
+                            {
+                              "id": 102,
+                              "name": "박타자",
+                              "position": "CF",
+                              "isElite": false,
+                              "battingOrder": 2,
+                              "battingResult": "BB",
+                              "battingAverage": 0.286,
+                              "inning": 2,
+                              "inningHalf": "TOP",
+                              "opposingPitcher": {
+                                "id": 202,
+                                "name": "이투수",
+                              },
+                              "todayStats": { "PA": 2, "AB": 2, "H": 0, "R": 0 }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -2140,10 +2213,6 @@ components:
           type: integer
           description: "홈런 (Home Runs)"
           example: 0
-        RBI:
-          type: integer
-          description: "타점 (Runs Batted In)"
-          example: 8
         R:
           type: integer
           description: "득점 (Runs)"
@@ -2210,11 +2279,6 @@ components:
           type: string
           description: "소속 팀 이름"
           example: "관악사"
-        ERA:
-          type: string
-          format: float
-          description: "평균자책점 (Earned Run Average)"
-          example: "2.50"
         IP:
           type: integer
           description: "이닝 (Innings Pitched)"
@@ -2223,10 +2287,6 @@ components:
           type: integer
           description: "실점 (Runs)"
           example: 8
-        ER:
-          type: integer
-          description: "자책점 (Earned Runs)"
-          example: 6
         K:
           type: integer
           description: "삼진 수 (Strikeouts)"
@@ -2239,10 +2299,8 @@ components:
         - rank
         - name
         - team
-        - ERA
         - IP
         - R
-        - ER
         - K
         - BB
 
@@ -2387,10 +2445,6 @@ components:
           type: integer
           description: "득점"
           example: 1
-        RBI:
-          type: integer
-          description: "타점"
-          example: 1
         BB:
           type: integer
           description: "볼넷"
@@ -2435,10 +2489,6 @@ components:
           type: integer
           description: "실점"
           example: 3
-        ER:
-          type: integer
-          description: "자책점"
-          example: 2
         K:
           type: integer
           description: "삼진"
@@ -2452,7 +2502,6 @@ components:
         - name
         - IP
         - R
-        - ER
         - K
         - BB
     UpdateBatterStatsRequest:
@@ -2486,10 +2535,6 @@ components:
           type: integer
           description: "득점"
           example: 1
-        RBI:
-          type: integer
-          description: "타점"
-          example: 1
         SH:
           type: integer
           description: "희생타"
@@ -2514,7 +2559,6 @@ components:
         - "3B"
         - HR
         - R
-        - RBI
         - SH
         - SF
         - BB
@@ -2554,10 +2598,6 @@ components:
           type: integer
           description: "득점"
           example: 1
-        RBI:
-          type: integer
-          description: "타점"
-          example: 1
         SH:
           type: integer
           description: "희생번트"
@@ -2585,10 +2625,6 @@ components:
           type: integer
           description: "실점"
           example: 3
-        ER:
-          type: integer
-          description: "자책점"
-          example: 2
         K:
           type: integer
           description: "삼진"
@@ -2600,7 +2636,6 @@ components:
       required:
         - IP
         - R
-        - ER
         - K
         - BB
     UpdatePitcherResponse:
@@ -2622,10 +2657,6 @@ components:
           type: integer
           description: "실점"
           example: 3
-        ER:
-          type: integer
-          description: "자책점"
-          example: 2
         K:
           type: integer
           description: "삼진"
@@ -2637,7 +2668,6 @@ components:
       required:
         - IP
         - R
-        - ER
         - K
         - BB
     # Score Related Schemas
@@ -2788,10 +2818,6 @@ components:
           description: "타석 상태"
           enum: ["LIVE", "COMPLETE", "ABANDONED"]
           example: "COMPLETE"
-        errorFlag:
-          type: boolean
-          description: "실책 발생 여부"
-          example: false
         createdAt:
           type: string
           format: date-time
@@ -2804,7 +2830,6 @@ components:
         - batterGpId
         - pitcherGpId
         - status
-        - errorFlag
         - createdAt
 
     UpdatePlayRequest:
@@ -2826,19 +2851,14 @@ components:
           enum: [PREV, AFTER]
           description: "타석 진행 단계 (PREV: 타석 중, AFTER: 타석 결과)"
           example: "AFTER"
-        actual:
+        events:
           type: array
-          description: "실제 발생한 주자 이벤트 목록"
-          items:
-            $ref: "#/components/schemas/RunnerEventInput"
-        virtual:
-          type: array
-          description: "가상 주자 이벤트 목록 (선택사항)"
+          description: "주자 이벤트 목록"
           items:
             $ref: "#/components/schemas/RunnerEventInput"
       required:
         - phase
-        - actual
+        - events
 
     RunnerEventInput:
       type: object
@@ -3150,10 +3170,6 @@ components:
           type: object
           description: "이닝 통계 정보"
           properties:
-            errorFlag:
-              type: boolean
-              description: "이닝에 실책(PB, CI 포함) 발생 여부"
-              example: true
             actual:
               type: object
               description: "실제 상황"
@@ -3187,42 +3203,7 @@ components:
               required:
                 - runnersOnBase
                 - outs
-            virtual:
-              type: object
-              nullable: true
-              description: "가상 재구성(에러 없는 가정) 결과. null일 수 있으며, errorFlag가 false인 경우 null을 반환합니다."
-              properties:
-                runnersOnBase:
-                  type: array
-                  description: "가상 루상 주자 목록"
-                  items:
-                    type: object
-                    properties:
-                      base:
-                        type: integer
-                        description: "베이스 번호 (1, 2, 3)"
-                        example: 2
-                      id:
-                        type: integer
-                        description: "BatterGameParticipation ID"
-                        example: 102
-                      name:
-                        type: string
-                        description: "선수 이름"
-                        example: "이주자"
-                    required:
-                      - base
-                      - id
-                      - name
-                outs:
-                  type: integer
-                  description: "가상 아웃 카운트"
-                  example: 1
-              required:
-                - runnersOnBase
-                - outs
           required:
-            - errorFlag
             - actual
         lineup:
           type: object

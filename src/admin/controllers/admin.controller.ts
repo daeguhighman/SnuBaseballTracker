@@ -8,7 +8,10 @@ import {
   UsePipes,
   ValidationPipe,
   Param,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { join } from 'path';
 import { GameCoreService } from '@games/services/game-core.service';
 import {
   ForfeitGameDto,
@@ -28,6 +31,12 @@ export class AdminController {
   @Get('/debug-sentry')
   getError() {
     throw new Error('My first Sentry error!');
+  }
+
+  @Public()
+  @Get('/page')
+  getAdminPage(@Res() res: Response) {
+    res.sendFile(join(process.cwd(), 'public', 'admin.html'));
   }
 
   @Post('assign-umpire')

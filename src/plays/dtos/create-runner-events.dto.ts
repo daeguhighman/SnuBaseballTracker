@@ -36,11 +36,5 @@ export class AddRunnerEventsDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RunnerEventInput)
-  actual: RunnerEventInput[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => RunnerEventInput)
-  @IsOptional()
-  virtual?: RunnerEventInput[];
+  events: RunnerEventInput[];
 }

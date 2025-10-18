@@ -13,11 +13,12 @@ import { PlayService } from './play.service';
 import { AddRunnerEventsDto } from './dtos/create-runner-events.dto';
 
 import { AdminAuthGuard } from '@/auth/guards/admin-auth.guard';
+import { AdminOrUmpireAuthGuard } from '@/auth/guards/admin-or-umpire-auth.guard';
 @Controller('plays')
 export class PlaysController {
   constructor(private readonly playService: PlayService) {}
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Patch(':playId/result')
   async updatePlay(
     @Param('playId', ParseIntPipe) playId: number,
@@ -26,7 +27,7 @@ export class PlaysController {
     return this.playService.updatePlay(playId, body);
   }
 
-  @UseGuards(AdminAuthGuard)
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Post(':playId/runner-events')
   async addRunnerEvents(
     @Param('playId', ParseIntPipe) playId: number,

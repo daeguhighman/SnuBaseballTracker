@@ -28,8 +28,6 @@ import { PasswordResetToken } from '@/mail/entities/password-reset-token.entity'
 import { Play } from '@/plays/entities/play.entity';
 import { RunnerEvent } from '@/plays/entities/runner-event.entity';
 import { Runner } from '@/plays/entities/runner.entity';
-import { VirtualInningStat } from '@/games/entities/virtual-inning-stat.entity';
-import { VirtualRunner } from '@/plays/entities/virtual-runner.entity';
 
 export default registerAs('database', () => {
   return {
@@ -39,7 +37,7 @@ export default registerAs('database', () => {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    synchronize: true, // 개발/테스트 환경에서만 동기화
+    synchronize: false, // 개발/테스트 환경에서만 동기화
     dropSchema: false,
 
     entities: [
@@ -53,7 +51,6 @@ export default registerAs('database', () => {
       BatterGameParticipation,
       PitcherGameParticipation,
       GameInningStat,
-      VirtualInningStat,
       Game,
       GameStat,
       GameRoaster,
@@ -71,7 +68,6 @@ export default registerAs('database', () => {
       Play,
       RunnerEvent,
       Runner,
-      VirtualRunner,
     ],
     charset: 'utf8mb4',
   };

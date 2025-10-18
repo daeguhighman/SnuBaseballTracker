@@ -44,9 +44,6 @@ export class BatterDailyStats {
   R: number;
 
   @IsInt()
-  RBI: number;
-
-  @IsInt()
   SF: number;
 
   @IsInt()
@@ -71,9 +68,6 @@ export class PitcherDailyStats {
 
   @IsInt()
   R: number;
-
-  @IsInt()
-  ER: number;
 
   @IsInt()
   K: number;
@@ -167,11 +161,6 @@ export class UpdateBatterStatsDto {
   @IsInt()
   @IsOptional()
   @Min(0)
-  RBI: number;
-
-  @IsInt()
-  @IsOptional()
-  @Min(0)
   BB: number;
 
   @IsInt()
@@ -190,11 +179,6 @@ export class UpdatePitcherStatsDto {
   @IsOptional()
   @Min(0)
   R: number;
-
-  @IsInt()
-  @IsOptional()
-  @Min(0)
-  ER: number;
 
   @IsInt()
   @IsOptional()

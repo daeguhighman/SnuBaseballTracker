@@ -92,7 +92,7 @@ export class RecordsService {
         'stat.era             AS "ERA"',
         'stat.inningPitchedOuts  AS "IP"',
         'stat.allowedRuns     AS "R"',
-        'stat.earnedRuns      AS "ER"',
+        // 'stat.earnedRuns      AS "ER"',
         'stat.strikeouts      AS "K"',
         'stat.walks           AS "BB"',
       ])

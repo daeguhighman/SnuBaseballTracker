@@ -13,6 +13,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import './instrument';
 import * as Sentry from '@sentry/nestjs';
 import * as SentryNode from '@sentry/node';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -28,9 +30,12 @@ async function bootstrap() {
     },
     credentials: true,
   };
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+
+  // 정적 파일 서빙 설정
+  app.useStaticAssets(join(__dirname, '..', 'public'));
   app.useLogger(app.get(AppLogger));
   const whitelist = [
     'http://localhost:3000',

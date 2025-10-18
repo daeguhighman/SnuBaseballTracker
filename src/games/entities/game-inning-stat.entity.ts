@@ -39,9 +39,6 @@ export class GameInningStat {
   @Column({ type: 'int', default: 0 })
   outs: number;
 
-  @Column({ type: 'boolean', default: false, name: 'error_flag' })
-  errorFlag: boolean;
-
   @Column({ type: 'int', nullable: true, name: 'start_seq' })
   startSeq: number | null;
 

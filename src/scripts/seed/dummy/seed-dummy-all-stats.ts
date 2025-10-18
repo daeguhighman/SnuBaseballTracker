@@ -59,9 +59,7 @@ async function testRealStatsSeeding() {
         console.log(
           `      타석: ${stat.plateAppearances}, 타수: ${stat.atBats}, 안타: ${stat.hits}`,
         );
-        console.log(
-          `      홈런: ${stat.homeRuns}, 타점: ${stat.runsBattedIn}, 볼넷: ${stat.walks}`,
-        );
+        console.log(`      홈런: ${stat.homeRuns}, 볼넷: ${stat.walks}`);
         console.log(
           `      타율: ${stat.battingAverage}, 출루율: ${stat.onBasePercentage}, 장타율: ${stat.sluggingPercentage}, OPS: ${stat.ops}`,
         );
@@ -78,9 +76,8 @@ async function testRealStatsSeeding() {
           `      이닝: ${(stat.inningPitchedOuts / 3).toFixed(1)}, 삼진: ${stat.strikeouts}, 볼넷: ${stat.walks}`,
         );
         console.log(
-          `      피안타: ${stat.allowedHits}, 실점: ${stat.allowedRuns}, 자책점: ${stat.earnedRuns}`,
+          `      피안타: ${stat.allowedHits}, 실점: ${stat.allowedRuns}`,
         );
-        console.log(`      ERA: ${stat.era}`);
         console.log('');
       });
     }
@@ -122,21 +119,6 @@ async function testRealStatsSeeding() {
       topOPS.forEach((stat, index) => {
         console.log(
           `   ${index + 1}. ${stat.playerTournament.player.name} - OPS: ${stat.ops}`,
-        );
-      });
-    }
-
-    // ERA 상위 3명 (낮을수록 좋음)
-    if (pitcherStats.length > 0) {
-      console.log('\n🏆 평균자책점 상위 3명 (낮을수록 좋음):');
-      const topPitchers = pitcherStats
-        .filter((stat) => stat.inningPitchedOuts > 0)
-        .sort((a, b) => a.era - b.era)
-        .slice(0, 3);
-
-      topPitchers.forEach((stat, index) => {
-        console.log(
-          `   ${index + 1}. ${stat.playerTournament.player.name} - ERA: ${stat.era} (${stat.earnedRuns}ER/${(stat.inningPitchedOuts / 3).toFixed(1)}IP)`,
         );
       });
     }
