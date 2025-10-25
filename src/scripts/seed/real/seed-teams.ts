@@ -40,28 +40,68 @@ export class TeamSeeder {
 
     const teams: TeamData[] = [
       {
-        name: '포톤스',
+        name: '사회대B',
+        groupName: 'A',
+      },
+      {
+        name: '포톤스A',
+        groupName: 'A',
+      },
+      {
+        name: '라디칼스',
+        groupName: 'A',
       },
       {
         name: '법대',
+        groupName: 'A',
       },
       {
-        name: '공대',
+        name: '워리어즈',
+        groupName: 'B',
       },
       {
-        name: '재약수',
+        name: '체육교육과',
+        groupName: 'B',
       },
       {
-        name: '사회대',
+        name: '룰루',
+        groupName: 'B',
       },
       {
-        name: '룰벌',
+        name: '의대',
+        groupName: 'B',
       },
       {
-        name: '건환공경영대',
+        name: '몽키스패너즈',
+        groupName: 'C',
+      },
+      {
+        name: '재료공',
+        groupName: 'C',
       },
       {
         name: '관악사',
+        groupName: 'C',
+      },
+      {
+        name: '포톤스B',
+        groupName: 'C',
+      },
+      {
+        name: '소이쏘스',
+        groupName: 'D',
+      },
+      {
+        name: '사회대A',
+        groupName: 'D',
+      },
+      {
+        name: '농생대',
+        groupName: 'D',
+      },
+      {
+        name: '로스쿨',
+        groupName: 'D',
       },
     ];
 

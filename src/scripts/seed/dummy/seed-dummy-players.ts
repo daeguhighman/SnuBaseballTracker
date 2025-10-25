@@ -638,7 +638,6 @@ export class DummyPlayerSeeder {
         if (!player) {
           player = this.playerRepo.create({
             name: playerData.name,
-            email: playerData.email,
             studentId:
               '2024' +
               Math.floor(Math.random() * 10000)

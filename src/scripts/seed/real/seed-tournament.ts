@@ -18,7 +18,7 @@ export class DummyTournamentSeeder {
 
     // 새 대회 생성
     const tournament = this.tournamentRepo.create({
-      name: TournamentType.SNU_NARAE,
+      name: TournamentType.JONGHAP,
       year: 2025,
     });
 

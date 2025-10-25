@@ -544,7 +544,11 @@ export class GameStatsService {
     }
 
     // 4. Update the stats fields
+    if (updateDto.IP !== undefined)
+      pitcherGameStat.inningPitchedOuts = updateDto.IP;
+    if (updateDto.R !== undefined) pitcherGameStat.allowedRuns = updateDto.R;
     if (updateDto.K !== undefined) pitcherGameStat.strikeouts = updateDto.K;
+    if (updateDto.BB !== undefined) pitcherGameStat.walks = updateDto.BB;
 
     // 5. Save the updated stats
     await this.pitcherGameStatRepository.save(pitcherGameStat);

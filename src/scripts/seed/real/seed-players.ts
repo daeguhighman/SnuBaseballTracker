@@ -11,30 +11,30 @@ import * as XLSX from 'xlsx';
 import { College } from '../../../profiles/entities/college.entity';
 
 interface PlayerData {
-  name: string;
-  email: string;
   college: string;
   department: string;
-  backNumber: string | number;
+  studentId: string;
+  name: string;
+  isWildcard: string;
   teamName: string;
 }
 
-// 등번호 정리 함수
-function cleanBackNumber(backNumber: string | number): number | null {
-  if (typeof backNumber === 'number') {
-    return backNumber;
-  }
+// // 등번호 정리 함수
+// function cleanBackNumber(backNumber: string | number): number | null {
+//   if (typeof backNumber === 'number') {
+//     return backNumber;
+//   }
 
-  // 문자열에서 숫자만 추출
-  const cleaned = backNumber.toString().replace(/[^0-9]/g, '');
+//   // 문자열에서 숫자만 추출
+//   const cleaned = backNumber.toString().replace(/[^0-9]/g, '');
 
-  if (cleaned === '') {
-    return null; // 숫자가 없으면 null 반환
-  }
+//   if (cleaned === '') {
+//     return null; // 숫자가 없으면 null 반환
+//   }
 
-  const num = parseInt(cleaned, 10);
-  return isNaN(num) ? null : num;
-}
+//   const num = parseInt(cleaned, 10);
+//   return isNaN(num) ? null : num;
+// }
 
 export class RealPlayerSeeder {
   private dataSource: DataSource;
@@ -136,7 +136,7 @@ export class RealPlayerSeeder {
         let player = await this.playerRepo.findOne({
           where: {
             name: playerData.name,
-            email: playerData.email,
+            studentId: playerData.studentId,
             department: { id: department.id },
           },
           relations: ['department'],
@@ -147,11 +147,11 @@ export class RealPlayerSeeder {
             name: playerData.name,
             college: college,
             department: department,
-            email: playerData.email,
+            studentId: playerData.studentId,
           });
           player = await this.playerRepo.save(player);
           console.log(
-            `  - 선수 생성: ${playerData.name} (${playerData.email}) (${department.name}) (${team.name})`,
+            `  - 선수 생성: ${playerData.name} (${playerData.studentId}) (${department.name}) (${team.name})`,
           );
         }
 
@@ -165,31 +165,28 @@ export class RealPlayerSeeder {
           });
 
         // 등번호 정리
-        const cleanedBackNumber = cleanBackNumber(playerData.backNumber);
-        if (cleanedBackNumber === null) {
-          console.warn(
-            `  - 등번호가 유효하지 않음: ${playerData.name} (${playerData.backNumber}) - 등번호 없이 등록`,
-          );
-        }
+        // const cleanedBackNumber = cleanBackNumber(playerData.backNumber);
+        // if (cleanedBackNumber === null) {
+        //   console.warn(
+        //     `  - 등번호가 유효하지 않음: ${playerData.name} (${playerData.backNumber}) - 등번호 없이 등록`,
+        //   );
+        // }
 
         if (!existingPlayerTournament) {
           const playerTournament = this.playerTournamentRepo.create({
-            playerId: player.id,
-            teamTournamentId: teamTournament.id,
+            player: player,
+            teamTournament: teamTournament,
             tournamentId: tournamentId,
-            backNumber: cleanedBackNumber || undefined, // 등번호가 없으면 undefined로 설정
+            isWildcard: playerData.isWildcard === 'WC',
           });
           await this.playerTournamentRepo.save(playerTournament);
-          const backNumberText = cleanedBackNumber
-            ? `${cleanedBackNumber}번`
-            : '등번호 없음';
           console.log(
-            `  - 선수-대회 연결 생성: ${playerData.name} (${playerData.email}) (${backNumberText})`,
+            `  - 선수-대회 연결 생성: ${playerData.name} (${playerData.studentId}) (${playerData.teamName})`,
           );
           createdCount++;
         } else {
           console.log(
-            `  - 선수-대회 연결 이미 존재: ${playerData.name} (${playerData.email})`,
+            `  - 선수-대회 연결 이미 존재: ${playerData.name} (${playerData.studentId})`,
           );
           skippedCount++;
         }

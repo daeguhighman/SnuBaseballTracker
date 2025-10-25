@@ -411,7 +411,6 @@ export class DummyStatsSeeder {
       if (!player) {
         player = this.playerRepo.create({
           name: playerData.name,
-          email: playerData.email,
           studentId: `2024${String(playerData.backNumber).padStart(4, '0')}`,
           birthDate: new Date('2000-01-01'),
           college: college,

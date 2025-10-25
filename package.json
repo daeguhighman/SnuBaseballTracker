@@ -37,6 +37,7 @@
     "seed:teams": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-teams.ts",
     "seed:players": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-players.ts",
     "seed:games": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-games.ts",
+    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-admin.ts",
     "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed/dummy/seed-dummy-all-play.ts",
     "seed:stats": "ts-node -r tsconfig-paths/register src/scripts/seed-real-stats-complete.ts",
     "truncate:all": "ts-node -r tsconfig-paths/register src/scripts/truncate-all.ts",
