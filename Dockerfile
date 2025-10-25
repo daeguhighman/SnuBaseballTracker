@@ -15,7 +15,7 @@ RUN npm ci
 COPY . .
 
 # Excel 파일 복사 (빌드 스테이지에서)
-COPY ./snu-narae.players.xlsx ./snu-narae.players.xlsx
+COPY ./*.xlsx ./
 
 # dist/ 생성
 RUN npm run build                      
@@ -38,7 +38,7 @@ USER nestjs
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 # Excel 파일을 런타임 스테이지로 복사
-COPY --from=builder /app/snu-narae.players.xlsx ./snu-narae.players.xlsx
+COPY --from=builder /app/*.xlsx ./
 
 EXPOSE 3000
 # # 2‑2. 헬스체크 (포트 3000 기준)
