@@ -23,9 +23,6 @@ export class Player {
   @Column({ length: 50 })
   name: string;
 
-  @Column({ name: 'email', length: 100 })
-  email: string;
-
   @Column({ name: 'student_id', length: 50, nullable: true })
   studentId?: string;
 
