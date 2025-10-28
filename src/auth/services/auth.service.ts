@@ -64,10 +64,10 @@ export class AuthService {
       'auth.passwordResetExpireHours',
       1,
     );
-    this.frontendUrl = this.configService.get(
-      'app.frontendUrl',
-      'http://localhost:3001',
-    );
+    this.frontendUrl =
+      this.configService.get('NODE_ENV') === 'production'
+        ? 'https://www.snubaseball.site'
+        : 'http://localhost:3001';
   }
 
   /* ------------------------------------------------------------------ */
@@ -476,7 +476,7 @@ export class AuthService {
     await this.passwordResetTokenRepository.save(resetTokenEntity);
 
     // 재설정 URL 생성
-    const resetUrl = `${this.frontendUrl}//login/findPassword/resetPassword?token=${resetToken}`;
+    const resetUrl = `${this.frontendUrl}/login/findPassword/resetPassword?token=${resetToken}`;
 
     // 이메일 발송
     await this.mail.sendPasswordResetEmail(dto.email, resetToken, resetUrl);
