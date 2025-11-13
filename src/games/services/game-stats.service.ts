@@ -152,140 +152,6 @@ export class GameStatsService {
     };
   }
 
-  async recordPlateAppearance(
-    gameId: number,
-    batterPlateAppearanceDto: BatterPlateAppearanceRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const game = await queryRunner.manager.findOne(Game, {
-        where: { id: gameId },
-        relations: ['gameStat'],
-      });
-      if (!game)
-        throw new BaseException(
-          `게임 ID ${gameId}를 찾을 수 없습니다.`,
-          ErrorCodes.GAME_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-
-      const isTopInning = game.gameStat.inningHalf === InningHalf.TOP;
-      const batterParticipationId = isTopInning
-        ? game.gameStat.awayBatterParticipationId
-        : game.gameStat.homeBatterParticipationId;
-      const pitcherParticipationId = isTopInning
-        ? game.gameStat.homePitcherParticipationId
-        : game.gameStat.awayPitcherParticipationId;
-
-      // 현재 타자 정보 조회
-      const currentBatter = await queryRunner.manager.findOne(
-        BatterGameParticipation,
-        {
-          where: { id: batterParticipationId },
-          relations: ['game', 'team'],
-        },
-      );
-
-      if (!currentBatter) {
-        throw new BaseException(
-          '현재 타자 정보를 찾을 수 없습니다.',
-          ErrorCodes.PARTICIPATION_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      const nextBatter = await this.getNextBatter(
-        queryRunner,
-        gameId,
-        currentBatter.teamTournament.id,
-        currentBatter.battingOrder,
-      );
-
-      if (!nextBatter) {
-        throw new BaseException(
-          '다음 타자 정보를 찾을 수 없습니다.',
-          ErrorCodes.PARTICIPATION_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      // 타자, 투수 기록 조회 또는 생성
-      const batterGameStat = await queryRunner.manager.findOne(BatterGameStat, {
-        where: { batterGameParticipation: { id: batterParticipationId } },
-      });
-      if (!batterGameStat) {
-        throw new BaseException(
-          '타자 기록을 찾을 수 없습니다.',
-          ErrorCodes.BATTER_GAME_STAT_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      const pitcherGameStat = await queryRunner.manager.findOne(
-        PitcherGameStat,
-        {
-          where: { pitcherGameParticipation: { id: pitcherParticipationId } },
-        },
-      );
-      if (!pitcherGameStat) {
-        throw new BaseException(
-          '투수 기록을 찾을 수 없습니다.',
-          ErrorCodes.PITCHER_GAME_STAT_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      // 안타 여부 체크를 위한 변수
-      const isHit = this.updateStats(
-        batterGameStat,
-        pitcherGameStat,
-        batterPlateAppearanceDto.result,
-      );
-
-      // 안타 수 업데이트
-      if (isHit) {
-        isTopInning ? game.gameStat.awayHits++ : game.gameStat.homeHits++;
-      }
-
-      // 다음 타자로 업데이트
-      if (isTopInning) {
-        game.gameStat.awayBatterParticipationId = nextBatter.id;
-      } else {
-        game.gameStat.homeBatterParticipationId = nextBatter.id;
-      }
-
-      // 변경사항 저장
-      await queryRunner.manager.save(batterGameStat);
-      await queryRunner.manager.save(pitcherGameStat);
-      await queryRunner.manager.save(game.gameStat);
-
-      await queryRunner.commitTransaction();
-
-      return {
-        success: true,
-        message: '타자 타석 기록 성공',
-        // nextBatter: {
-        //   playerId: nextBatter.playerId,
-        //   name: nextBatter.player.name,
-        //   battingOrder: nextBatter.battingOrder,
-        //   position: nextBatter.position,
-        //   isWc: nextBatter.player.isWc,
-        //   isElite: nextBatter.player.isElite,
-        // },
-      };
-    } catch (error) {
-      if (queryRunner.isTransactionActive) {
-        await queryRunner.rollbackTransaction();
-      }
-      this.logger.error(error);
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
-  }
-
   private async getNextBatter(
     queryRunner: QueryRunner,
     gameId: number,
@@ -324,56 +190,6 @@ export class GameStatsService {
         HttpStatus.NOT_FOUND,
       );
     return next;
-  }
-  private updateStats(
-    batterStat: BatterGameStat,
-    pitcherStat: PitcherGameStat,
-    result: PlateAppearanceResult,
-  ): boolean {
-    batterStat.plateAppearances++;
-    let isHit = false;
-
-    switch (result) {
-      case PlateAppearanceResult.SINGLE:
-        batterStat.atBats++;
-        batterStat.singles++;
-        isHit = true;
-        break;
-      case PlateAppearanceResult.DOUBLE:
-        batterStat.atBats++;
-        batterStat.doubles++;
-        isHit = true;
-        break;
-      case PlateAppearanceResult.TRIPLE:
-        batterStat.atBats++;
-        batterStat.triples++;
-        isHit = true;
-        break;
-      case PlateAppearanceResult.HOMERUN:
-        batterStat.atBats++;
-        batterStat.homeRuns++;
-        isHit = true;
-        break;
-      case PlateAppearanceResult.WALK:
-        batterStat.walks++;
-        break;
-      case PlateAppearanceResult.SACRIFICE_FLY:
-        batterStat.sacrificeFlies++;
-        break;
-      case PlateAppearanceResult.OUT:
-        batterStat.atBats++;
-        break;
-      case PlateAppearanceResult.STRIKEOUT:
-      case PlateAppearanceResult.STRIKEOUT_DROP:
-        batterStat.atBats++;
-        pitcherStat.strikeouts++;
-        break;
-      case PlateAppearanceResult.FIELDERS_CHOICE:
-        batterStat.atBats++;
-        break;
-    }
-
-    return isHit;
   }
 
   async updateBatterGameStats(
@@ -429,9 +245,9 @@ export class GameStatsService {
         homeRuns: batterStats.homeRuns || 0,
         walks: batterStats.walks || 0,
         sacrificeFlies: batterStats.sacrificeFlies || 0,
+        strikeouts: batterStats.strikeouts || 0,
         runs: batterStats.runs || 0,
         runsBattedIn: batterStats.runsBattedIn || 0,
-        strikeouts: batterStats.strikeouts || 0,
         sacrificeBunts: batterStats.sacrificeBunts || 0,
       };
 
@@ -450,7 +266,23 @@ export class GameStatsService {
         SO: updateDto.SO,
       });
 
-      // 6. 조정된 스탯 적용
+      // 6. 업데이트 전 스탯 저장 (diff 계산용)
+      const beforeStats = {
+        plateAppearances: batterStats.plateAppearances || 0,
+        atBats: batterStats.atBats || 0,
+        singles: batterStats.singles || 0,
+        doubles: batterStats.doubles || 0,
+        triples: batterStats.triples || 0,
+        homeRuns: batterStats.homeRuns || 0,
+        runs: batterStats.runs || 0,
+        runsBattedIn: batterStats.runsBattedIn || 0,
+        walks: batterStats.walks || 0,
+        strikeouts: batterStats.strikeouts || 0,
+        sacrificeFlies: batterStats.sacrificeFlies || 0,
+        sacrificeBunts: batterStats.sacrificeBunts || 0,
+      };
+
+      // 7. 조정된 스탯 적용
       batterStats.plateAppearances = adjustedStats.plateAppearances;
       batterStats.atBats = adjustedStats.atBats;
       batterStats.singles = adjustedStats.singles;
@@ -464,8 +296,28 @@ export class GameStatsService {
       batterStats.sacrificeFlies = adjustedStats.sacrificeFlies;
       batterStats.sacrificeBunts = adjustedStats.sacrificeBunts;
 
-      // 7. Save the updated stats
+      // 8. Save the updated stats
       await this.batterGameStatRepository.save(batterStats);
+
+      // 9. 누적 통계 업데이트 (diff 기반)
+      await this.updateBatterCumulativeStatsByDiff(
+        batterStats.batterGameParticipation.playerTournament.id,
+        beforeStats,
+        {
+          plateAppearances: adjustedStats.plateAppearances,
+          atBats: adjustedStats.atBats,
+          singles: adjustedStats.singles,
+          doubles: adjustedStats.doubles,
+          triples: adjustedStats.triples,
+          homeRuns: adjustedStats.homeRuns,
+          runs: adjustedStats.runs,
+          runsBattedIn: adjustedStats.runsBattedIn,
+          walks: adjustedStats.walks,
+          strikeouts: adjustedStats.strikeouts,
+          sacrificeFlies: adjustedStats.sacrificeFlies,
+          sacrificeBunts: adjustedStats.sacrificeBunts,
+        },
+      );
     } catch (error) {
       if (error instanceof BaseException) {
         throw error;
@@ -477,7 +329,7 @@ export class GameStatsService {
       );
     }
 
-    // 8. Return the response DTO
+    // 9. Return the response DTO
     return {
       id: batterStats.id,
       name: batterStats.batterGameParticipation.playerTournament.player.name,
@@ -543,17 +395,37 @@ export class GameStatsService {
       );
     }
 
-    // 4. Update the stats fields
+    // 4. 업데이트 전 스탯 저장 (diff 계산용)
+    const beforeStats = {
+      inningPitchedOuts: pitcherGameStat.inningPitchedOuts || 0,
+      allowedRuns: pitcherGameStat.allowedRuns || 0,
+      strikeouts: pitcherGameStat.strikeouts || 0,
+      walks: pitcherGameStat.walks || 0,
+    };
+
+    // 5. Update the stats fields
     if (updateDto.IP !== undefined)
       pitcherGameStat.inningPitchedOuts = updateDto.IP;
     if (updateDto.R !== undefined) pitcherGameStat.allowedRuns = updateDto.R;
     if (updateDto.K !== undefined) pitcherGameStat.strikeouts = updateDto.K;
     if (updateDto.BB !== undefined) pitcherGameStat.walks = updateDto.BB;
 
-    // 5. Save the updated stats
+    // 6. Save the updated stats
     await this.pitcherGameStatRepository.save(pitcherGameStat);
 
-    // 6. Return the response DTO
+    // 7. 누적 통계 업데이트 (diff 기반)
+    await this.updatePitcherCumulativeStatsByDiff(
+      pitcherGameStat.pitcherGameParticipation.playerTournament.id,
+      beforeStats,
+      {
+        inningPitchedOuts: pitcherGameStat.inningPitchedOuts || 0,
+        allowedRuns: pitcherGameStat.allowedRuns || 0,
+        strikeouts: pitcherGameStat.strikeouts || 0,
+        walks: pitcherGameStat.walks || 0,
+      },
+    );
+
+    // 8. Return the response DTO
     return {
       id: pitcherGameStat.id,
       name: pitcherGameStat.pitcherGameParticipation.playerTournament.player
@@ -741,6 +613,212 @@ export class GameStatsService {
     return cumulativeBatterStatsToSave;
   }
 
+  // diff 기반 타자 누적 통계 업데이트
+  private async updateBatterCumulativeStatsByDiff(
+    playerTournamentId: number,
+    beforeStats: {
+      plateAppearances: number;
+      atBats: number;
+      singles: number;
+      doubles: number;
+      triples: number;
+      homeRuns: number;
+      runs: number;
+      runsBattedIn: number;
+      walks: number;
+      strikeouts: number;
+      sacrificeFlies: number;
+      sacrificeBunts: number;
+    },
+    afterStats: {
+      plateAppearances: number;
+      atBats: number;
+      singles: number;
+      doubles: number;
+      triples: number;
+      homeRuns: number;
+      runs: number;
+      runsBattedIn: number;
+      walks: number;
+      strikeouts: number;
+      sacrificeFlies: number;
+      sacrificeBunts: number;
+    },
+  ): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    try {
+      await queryRunner.startTransaction();
+
+      // 기존 누적 통계 조회 또는 생성
+      let cumulativeStat = await queryRunner.manager.findOne(BatterStat, {
+        where: { playerTournament: { id: playerTournamentId } },
+        relations: ['playerTournament'],
+      });
+
+      if (!cumulativeStat) {
+        const playerTournament = await queryRunner.manager.findOne(
+          PlayerTournament,
+          {
+            where: { id: playerTournamentId },
+            relations: ['player'],
+          },
+        );
+
+        if (!playerTournament) {
+          throw new BaseException(
+            `PlayerTournament with ID ${playerTournamentId} not found`,
+            ErrorCodes.NOT_FOUND,
+            HttpStatus.NOT_FOUND,
+          );
+        }
+
+        cumulativeStat = new BatterStat();
+        cumulativeStat.playerTournament = playerTournament;
+        this.initializeBatterStat(cumulativeStat);
+      }
+
+      // diff 계산 및 누적 통계 업데이트
+      const diff = {
+        plateAppearances:
+          afterStats.plateAppearances - beforeStats.plateAppearances,
+        atBats: afterStats.atBats - beforeStats.atBats,
+        singles: afterStats.singles - beforeStats.singles,
+        doubles: afterStats.doubles - beforeStats.doubles,
+        triples: afterStats.triples - beforeStats.triples,
+        homeRuns: afterStats.homeRuns - beforeStats.homeRuns,
+        runs: afterStats.runs - beforeStats.runs,
+        runsBattedIn: afterStats.runsBattedIn - beforeStats.runsBattedIn,
+        walks: afterStats.walks - beforeStats.walks,
+        strikeouts: afterStats.strikeouts - beforeStats.strikeouts,
+        sacrificeFlies: afterStats.sacrificeFlies - beforeStats.sacrificeFlies,
+        sacrificeBunts: afterStats.sacrificeBunts - beforeStats.sacrificeBunts,
+      };
+
+      // diff만 누적 통계에 반영
+      cumulativeStat.plateAppearances += diff.plateAppearances;
+      cumulativeStat.atBats += diff.atBats;
+      cumulativeStat.singles += diff.singles;
+      cumulativeStat.doubles += diff.doubles;
+      cumulativeStat.triples += diff.triples;
+      cumulativeStat.homeRuns += diff.homeRuns;
+      cumulativeStat.runs += diff.runs;
+      cumulativeStat.runsBattedIn += diff.runsBattedIn;
+      cumulativeStat.walks += diff.walks;
+      cumulativeStat.strikeouts += diff.strikeouts;
+      cumulativeStat.sacrificeFlies += diff.sacrificeFlies;
+      cumulativeStat.sacrificeBunts += diff.sacrificeBunts;
+
+      // hits 재계산 (singles, doubles, triples, homeRuns의 합)
+      cumulativeStat.hits =
+        cumulativeStat.singles +
+        cumulativeStat.doubles +
+        cumulativeStat.triples +
+        cumulativeStat.homeRuns;
+
+      // 파생 통계 재계산
+      this.calculateBatterDerivedStats(cumulativeStat);
+
+      // 저장
+      await queryRunner.manager.save(BatterStat, cumulativeStat);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      this.logger.error(
+        `Error while updating batter cumulative stats by diff: ${error.message}`,
+      );
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // diff 기반 투수 누적 통계 업데이트
+  private async updatePitcherCumulativeStatsByDiff(
+    playerTournamentId: number,
+    beforeStats: {
+      inningPitchedOuts: number;
+      allowedRuns: number;
+      strikeouts: number;
+      walks: number;
+    },
+    afterStats: {
+      inningPitchedOuts: number;
+      allowedRuns: number;
+      strikeouts: number;
+      walks: number;
+    },
+  ): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    try {
+      await queryRunner.startTransaction();
+
+      // 기존 누적 통계 조회 또는 생성
+      let cumulativeStat = await queryRunner.manager.findOne(PitcherStat, {
+        where: { playerTournament: { id: playerTournamentId } },
+        relations: ['playerTournament'],
+      });
+
+      if (!cumulativeStat) {
+        const playerTournament = await queryRunner.manager.findOne(
+          PlayerTournament,
+          {
+            where: { id: playerTournamentId },
+            relations: ['player'],
+          },
+        );
+
+        if (!playerTournament) {
+          throw new BaseException(
+            `PlayerTournament with ID ${playerTournamentId} not found`,
+            ErrorCodes.NOT_FOUND,
+            HttpStatus.NOT_FOUND,
+          );
+        }
+
+        cumulativeStat = new PitcherStat();
+        cumulativeStat.playerTournament = playerTournament;
+        this.initializePitcherStat(cumulativeStat);
+      }
+
+      // diff 계산 및 누적 통계 업데이트
+      const diff = {
+        inningPitchedOuts:
+          afterStats.inningPitchedOuts - beforeStats.inningPitchedOuts,
+        allowedRuns: afterStats.allowedRuns - beforeStats.allowedRuns,
+        strikeouts: afterStats.strikeouts - beforeStats.strikeouts,
+        walks: afterStats.walks - beforeStats.walks,
+      };
+
+      // diff만 누적 통계에 반영
+      cumulativeStat.inningPitchedOuts += diff.inningPitchedOuts;
+      cumulativeStat.allowedRuns += diff.allowedRuns;
+      cumulativeStat.strikeouts += diff.strikeouts;
+      cumulativeStat.walks += diff.walks;
+
+      // 저장
+      await queryRunner.manager.save(PitcherStat, cumulativeStat);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      this.logger.error(
+        `Error while updating pitcher cumulative stats by diff: ${error.message}`,
+      );
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   // 투수 스탯 업데이트 유사하게 분리
   private async updatePitcherCumulativeStats(
     queryRunner: QueryRunner,
@@ -838,6 +916,7 @@ export class GameStatsService {
     stat.triples = 0;
     stat.homeRuns = 0;
     stat.walks = 0;
+    stat.strikeouts = 0;
     stat.sacrificeFlies = 0;
     stat.sacrificeBunts = 0;
     stat.runs = 0;
@@ -887,6 +966,7 @@ export class GameStatsService {
     cumulativeStat.triples += gameStat.triples || 0;
     cumulativeStat.homeRuns += gameStat.homeRuns || 0;
     cumulativeStat.walks += gameStat.walks || 0;
+    cumulativeStat.strikeouts += gameStat.strikeouts || 0;
     cumulativeStat.sacrificeFlies += gameStat.sacrificeFlies || 0;
     cumulativeStat.sacrificeBunts += gameStat.sacrificeBunts || 0;
     cumulativeStat.runs += gameStat.runs || 0;

@@ -151,6 +151,8 @@ export class BatterStatsValidator {
     if (updateDto.HR !== undefined) result.homeRuns = updateDto.HR;
     if (updateDto.BB !== undefined) result.walks = updateDto.BB;
     if (updateDto.SH !== undefined) result.sacrificeFlies = updateDto.SH;
+    if (updateDto.SF !== undefined) result.sacrificeBunts = updateDto.SF;
+    if (updateDto.SO !== undefined) result.strikeouts = updateDto.SO;
 
     // 1. 총 안타(H)에 따른 1루타 조정
     if (updateDto.H !== undefined) {
