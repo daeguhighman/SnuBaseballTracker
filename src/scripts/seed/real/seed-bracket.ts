@@ -8,7 +8,7 @@ import { GameStatus } from '@/common/enums/game-status.enum';
 import { TournamentType } from '@/common/enums/tournament-type.enum';
 async function seedBracket(manager: EntityManager) {
   const tournament = await manager.findOne(Tournament, {
-    where: { name: TournamentType.SNU_NARAE, year: 2025 },
+    where: { name: TournamentType.JONGHAP, year: 2025 },
   });
 
   if (!tournament) {
@@ -16,14 +16,14 @@ async function seedBracket(manager: EntityManager) {
   }
 
   const quarterfinalistNames = [
-    '공대',
-    '사회대',
-    '건환공경영대',
-    '포톤스',
-    '재약수',
+    '포톤스A',
+    '워리어즈',
+    '재료공',
+    '소이쏘스',
+    '체육교육과',
     '법대',
-    '룰벌',
-    '관악사',
+    '사회대A',
+    '몽키스패너즈',
   ];
 
   // 팀 이름으로 실제 팀 엔티티 조회
