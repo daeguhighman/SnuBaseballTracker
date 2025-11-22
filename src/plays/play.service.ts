@@ -459,7 +459,7 @@ export class PlayService {
     phase?: 'PREV' | 'AFTER',
   ) {
     // 3아웃 체크 및 게임 상태 업데이트
-    if (play.gameInningStat.outs == 3) {
+    if (play.gameInningStat.outs >= 3) {
       // 이닝 종료 처리
       return await this.handleInningEnd(em, play, phase);
     } else {
