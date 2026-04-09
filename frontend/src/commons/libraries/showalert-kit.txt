@@ -1,0 +1,20 @@
+const [alertObj, setAlertObj] = useState<any>(null);
+  // mount 체크
+
+  // ✨ window.alert 가로채기
+  useEffect(() => {
+    const orig = window.alert;
+    window.alert = (msg: string) => {
+      setAlertObj({ message: msg });
+    };
+    return () => {
+      window.alert = orig;
+    };
+  }, []);
+
+    <ShowAlert
+        error={alertObj}
+        onClose={() => {
+          setAlertObj(null);
+        }}
+      />

@@ -1,0 +1,19 @@
+1. 로그인/회원가입 함수 요청 
+    -> 회원가입 시에도 토큰 발급한다
+2. accessToken받아서 ‘메모리( inMemoryAccessToken) or Recoil State’에 저장 후 api요청 시 ‘헤더 Bearer’에 넣어서 요청
+3. 새로고침 또는 accessToken만료 확인 후 auth/refresh함수 요청
+4. refresh함수로 accessToken재발급 이후 기존 요청 다시 보내기
+
+
+
+Recoil atom setter 등록을 통해 atom과 inMemoryAccessToken를 연결해주고, 초기 화면 렌더링 시 refresh함수를 호출해서 받아온 액세스토큰을 atom에 저장해. 이때 atom과 inMemoryAccessToken은 연결되어있으니까 액세스토큰이 atom에 저장될때 inMemoryAccessToken에도 같이 저장되겠지. 
+
+이후 // libs/api.tsx에서는 메모리 액세스 토큰을 Authorization 헤더에 주입하는 로직을 실행할때 getAccessToken();함수를 실행시키고 atom이 아닌 inMemoryAccessToken에 저장된 액세스토큰을 불러와서 헤더에 입력하는거야
+
+그리고 atom은 UI 갱신용으로만 쓰이고, 인터셉터는 오직 메모리 변수만 참조
+
+
+-------토큰 만료 시 로직
+api copy 페이지에 있다
+
+https://chatgpt.com/s/t_6857a62c07c881918b11f429b15f6c8f

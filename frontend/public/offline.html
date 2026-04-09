@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>오프라인 - SNU Baseball</title>
+    <!-- <link rel="icon" href="/icons/ball.png" /> -->
+
+    <style>
+      /* ───── 색상 토큰 (다크/라이트 자동) ───── */
+      :root {
+        --bg: #1a1a1a;
+        --fg: #ffffff;
+        --accent: #e63946;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --fg: #111111;
+        }
+      }
+
+      /* ───── 레이아웃 ───── */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "KBO Dia Gothic", sans-serif;
+        text-align: center;
+        line-height: 1.5;
+      }
+
+      img {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+      }
+      p {
+        opacity: 0.8;
+        margin-bottom: 1.5rem;
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+      }
+      button:active {
+        transform: scale(0.97);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- <img src="/icons/ball.png" alt="SNU Baseball logo" /> -->
+    <h1>오프라인 상태입니다</h1>
+    <p>인터넷 연결을 확인한 후<br />다시 시도해주세요.</p>
+    <button onclick="window.location.reload()">다시 시도</button>
+
+    <script>
+      /* 온라인으로 복귀하면 자동 새로고침 */
+      window.addEventListener("online", () => location.reload());
+    </script>
+  </body>
+</html>
