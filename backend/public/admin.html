@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNU 야구 관리자 페이지</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .api-section {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border-left: 5px solid #3498db;
+        }
+
+        .api-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .btn-warning:hover {
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .response.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-info {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .api-info h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .api-info p {
+            color: #0c5460;
+            margin-bottom: 5px;
+        }
+
+        .api-info code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏟️ SNU 야구 관리자 페이지</h1>
+            <p>경기 관리 및 운영 도구</p>
+        </div>
+
+        <div class="content">
+            <!-- 심판 할당 -->
+            <div class="api-section">
+                <h2>👨‍⚖️ 심판 할당</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>POST /admin/assign-umpire</code></p>
+                    <p><strong>설명:</strong> 경기에 심판을 할당합니다.</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="assignGameId">경기 ID</label>
+                        <input type="number" id="assignGameId" placeholder="예: 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="assignUmpireId">심판 ID</label>
+                        <input type="number" id="assignUmpireId" placeholder="예: 1">
+                    </div>
+                </div>
+                <button class="btn" onclick="assignUmpire()">심판 할당</button>
+                <div class="loading" id="assignLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="assignResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- 심판 변경 -->
+            <div class="api-section">
+                <h2>🔄 심판 변경</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>PATCH /admin/change-umpire</code></p>
+                    <p><strong>설명:</strong> 경기의 심판을 변경합니다.</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="changeGameId">경기 ID</label>
+                        <input type="number" id="changeGameId" placeholder="예: 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="changeUmpireId">새 심판 ID</label>
+                        <input type="number" id="changeUmpireId" placeholder="예: 2">
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="changeUmpire()">심판 변경</button>
+                <div class="loading" id="changeLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="changeResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- 경기 일정 수정 -->
+            <div class="api-section">
+                <h2>📅 경기 일정 수정</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>PATCH /admin/update-schedule</code></p>
+                    <p><strong>설명:</strong> 경기의 시작 시간을 수정합니다.</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="scheduleGameId">경기 ID</label>
+                        <input type="number" id="scheduleGameId" placeholder="예: 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="startTime">시작 시간</label>
+                        <input type="datetime-local" id="startTime">
+                    </div>
+                </div>
+                <button class="btn" onclick="updateSchedule()">일정 수정</button>
+                <div class="loading" id="scheduleLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="scheduleResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- 몰수승 처리 -->
+            <div class="api-section">
+                <h2>🏆 몰수승 처리</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>PATCH /admin/forfeit-game</code></p>
+                    <p><strong>설명:</strong> 경기를 몰수승으로 처리합니다.</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="forfeitGameId">경기 ID</label>
+                        <input type="number" id="forfeitGameId" placeholder="예: 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="winnerTeamId">승리 팀 ID</label>
+                        <input type="number" id="winnerTeamId" placeholder="예: 1">
+                    </div>
+                </div>
+                <button class="btn btn-danger" onclick="forfeitGame()">몰수승 처리</button>
+                <div class="loading" id="forfeitLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="forfeitResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- 토너먼트 단계 변경 -->
+            <div class="api-section">
+                <h2>🏁 토너먼트 단계 변경</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>PATCH /admin/change-phase/{tournamentId}</code></p>
+                    <p><strong>설명:</strong> 토너먼트의 단계를 변경합니다.</p>
+                </div>
+                <div class="form-group">
+                    <label for="tournamentId">토너먼트 ID</label>
+                    <input type="number" id="tournamentId" placeholder="예: 1">
+                </div>
+                <button class="btn btn-warning" onclick="changePhase()">단계 변경</button>
+                <div class="loading" id="phaseLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="phaseResponse" class="response" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API 기본 URL 설정
+        const API_BASE_URL = window.location.origin;
+
+        // 공통 함수들
+        function showLoading(loadingId) {
+            document.getElementById(loadingId).style.display = 'block';
+        }
+
+        function hideLoading(loadingId) {
+            document.getElementById(loadingId).style.display = 'none';
+        }
+
+        function showResponse(responseId, data, isError = false) {
+            const responseDiv = document.getElementById(responseId);
+            responseDiv.style.display = 'block';
+            responseDiv.className = `response ${isError ? 'error' : 'success'}`;
+            responseDiv.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        async function makeRequest(url, method, data = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                };
+
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(url, options);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${result.message || '요청 실패'}`);
+                }
+
+                return result;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 심판 할당
+        async function assignUmpire() {
+            const gameId = document.getElementById('assignGameId').value;
+            const umpireId = document.getElementById('assignUmpireId').value;
+
+            if (!gameId || !umpireId) {
+                alert('경기 ID와 심판 ID를 모두 입력해주세요.');
+                return;
+            }
+
+            showLoading('assignLoading');
+            hideResponse('assignResponse');
+
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/assign-umpire`, 'POST', {
+                    gameId: parseInt(gameId),
+                    umpireId: parseInt(umpireId)
+                });
+                showResponse('assignResponse', result);
+            } catch (error) {
+                showResponse('assignResponse', error.message, true);
+            } finally {
+                hideLoading('assignLoading');
+            }
+        }
+
+        // 심판 변경
+        async function changeUmpire() {
+            const gameId = document.getElementById('changeGameId').value;
+            const umpireId = document.getElementById('changeUmpireId').value;
+
+            if (!gameId || !umpireId) {
+                alert('경기 ID와 새 심판 ID를 모두 입력해주세요.');
+                return;
+            }
+
+            showLoading('changeLoading');
+            hideResponse('changeResponse');
+
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/change-umpire`, 'PATCH', {
+                    gameId: parseInt(gameId),
+                    umpireId: parseInt(umpireId)
+                });
+                showResponse('changeResponse', result);
+            } catch (error) {
+                showResponse('changeResponse', error.message, true);
+            } finally {
+                hideLoading('changeLoading');
+            }
+        }
+
+        // 경기 일정 수정
+        async function updateSchedule() {
+            const gameId = document.getElementById('scheduleGameId').value;
+            const startTime = document.getElementById('startTime').value;
+
+            if (!gameId || !startTime) {
+                alert('경기 ID와 시작 시간을 모두 입력해주세요.');
+                return;
+            }
+
+            showLoading('scheduleLoading');
+            hideResponse('scheduleResponse');
+
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/update-schedule`, 'PATCH', {
+                    gameId: parseInt(gameId),
+                    startTime: new Date(startTime).toISOString()
+                });
+                showResponse('scheduleResponse', result);
+            } catch (error) {
+                showResponse('scheduleResponse', error.message, true);
+            } finally {
+                hideLoading('scheduleLoading');
+            }
+        }
+
+        // 몰수승 처리
+        async function forfeitGame() {
+            const gameId = document.getElementById('forfeitGameId').value;
+            const winnerTeamId = document.getElementById('winnerTeamId').value;
+
+            if (!gameId || !winnerTeamId) {
+                alert('경기 ID와 승리 팀 ID를 모두 입력해주세요.');
+                return;
+            }
+
+            showLoading('forfeitLoading');
+            hideResponse('forfeitResponse');
+
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/forfeit-game`, 'PATCH', {
+                    gameId: parseInt(gameId),
+                    winnerTeamId: parseInt(winnerTeamId)
+                });
+                showResponse('forfeitResponse', result);
+            } catch (error) {
+                showResponse('forfeitResponse', error.message, true);
+            } finally {
+                hideLoading('forfeitLoading');
+            }
+        }
+
+        // 토너먼트 단계 변경
+        async function changePhase() {
+            const tournamentId = document.getElementById('tournamentId').value;
+
+            if (!tournamentId) {
+                alert('토너먼트 ID를 입력해주세요.');
+                return;
+            }
+
+            showLoading('phaseLoading');
+            hideResponse('phaseResponse');
+
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/change-phase/${tournamentId}`, 'PATCH');
+                showResponse('phaseResponse', result);
+            } catch (error) {
+                showResponse('phaseResponse', error.message, true);
+            } finally {
+                hideLoading('phaseLoading');
+            }
+        }
+
+        function hideResponse(responseId) {
+            document.getElementById(responseId).style.display = 'none';
+        }
+
+        // 페이지 로드 시 현재 시간을 기본값으로 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('startTime').value = now.toISOString().slice(0, 16);
+        });
+    </script>
+</body>
+</html>

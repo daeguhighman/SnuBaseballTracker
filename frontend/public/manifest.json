@@ -1,0 +1,16 @@
+{
+  "name": "SNUbaseball",
+  "short_name": "SNU BB",
+  "description": "서울대학교 야구 동아리 통합 플랫폼",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icons/app-logo-round.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
