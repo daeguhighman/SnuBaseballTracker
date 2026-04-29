@@ -18,6 +18,13 @@ import { join } from 'path';
 
 async function bootstrap() {
   const isProduction = process.env.NODE_ENV === 'production';
+  const whitelist = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://10.89.191.32:3001',
+    'https://snubaseball.site',
+    'https://www.snubaseball.site',
+  ];
   const corsOptions = {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -37,12 +44,6 @@ async function bootstrap() {
   // 정적 파일 서빙 설정
   app.useStaticAssets(join(__dirname, '..', 'public'));
   app.useLogger(app.get(AppLogger));
-  const whitelist = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://snubaseball.site',
-    'https://www.snubaseball.site',
-  ];
   app.enableCors({
     ...corsOptions,
   });
