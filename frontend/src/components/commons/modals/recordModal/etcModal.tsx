@@ -22,7 +22,6 @@ interface IModalProps {
 }
 
 const mapping: Record<string, string> = {
-  낫아웃: "SO_DROP",
   야수선택: "FC",
   인터페어: "IF",
 };
@@ -84,18 +83,11 @@ export default function EtcModal(props: IModalProps) {
         <ModalTitle>종류를 선택해주세요</ModalTitle>
 
         <ModalButton
-          onClick={() => handleTypeSelect("낫아웃")}
-          disabled={isSubmitting}
-        >
-          낫아웃
-        </ModalButton>
-        <ModalButton
           onClick={() => handleTypeSelect("야수선택")}
           disabled={isSubmitting}
         >
           야수선택
         </ModalButton>
-
         <ModalButton
           onClick={() => handleTypeSelect("인터페어")}
           disabled={isSubmitting}

@@ -812,25 +812,41 @@ export const ModalBottomRunnerTitle = styled.div`
 
 export const OutZoneWrapper = styled.div`
   position: absolute;
-  /* 부모의 가운데(가로·세로) */
-  top: 50%;
-  left: 50%;
+  /* 홈 진입 경로에서 분리: 좌측 하단 쓰레기통 */
+  top: 85%;
+  left: 12%;
 
-  width: 70%;
-  /* aspect-ratio: 1 / 1; */
-  height: 85%;
-  /* 자신의 크기의 절반만큼 당겨서 진짜 중앙에 위치 */
+  width: 14%;
+  aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
-  opacity: 0.5;
-  // background-color: BLUE;
-  border-radius: 50%; /* 완전한 원 */
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(2px);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 
   display: flex;
   justify-content: center;
   align-items: center;
 
-  z-index: 1;
+  color: rgba(255, 255, 255, 0.92);
+
+  z-index: 6;
   pointer-events: none;
+`;
+
+export const OutZoneIcon = styled.span`
+  font-size: clamp(20px, 3.2vh, 30px);
+  line-height: 1;
+  display: inline-flex;
+  color: #ff7875;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 `;
 
 export const CustomBoundaryWrapper = styled.div`
@@ -912,32 +928,7 @@ export const Ground = styled.div<{ outside?: boolean }>`
   z-index: 3;
   width: 100%;
   height: 100%;
-
-  /* only paint red outside the circle at 50% 55% of 40% radius */
-  /* background: ${(p) => (p.outside ? "red" : "transparent")}; */
-  background-color: #081c0c;
-
-  /* &.out-zone-active {
-    background-color: red; 
-  } */
-  opacity: 30%;
-  /* mask‐out that central circle */
-  mask-image: radial-gradient(
-    circle at 50% 55%,
-    /* center of your OutZoneWrapper */ transparent 40%,
-    /* inside the circle: transparent (cut‑out) */ black 40%
-      /* outside: opaque => show the bg */
-  );
-  mask-mode: alpha;
-
-  /* for Safari: */
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 55%,
-    black 40%
-  );
-  -webkit-mask-mode: alpha;
-
+  background-color: transparent;
   border-radius: 2vh;
 `;
 

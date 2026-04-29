@@ -29,9 +29,9 @@ export default function OutModal(props: IModalProps) {
   const router = useRouter();
   const mapping: { [key: string]: string } = {
     삼진: "SO",
+    "땅볼/뜬공/직선타": "O",
     희생번트: "SH",
     희생플라이: "SF",
-    그외아웃: "O",
   };
 
   // 아웃 종류 선택 시 실행될 비동기 함수
@@ -98,10 +98,10 @@ export default function OutModal(props: IModalProps) {
           삼진
         </ModalButton>
         <ModalButton
-          onClick={() => handleTypeSelect("희생플라이")}
+          onClick={() => handleTypeSelect("땅볼/뜬공/직선타")}
           disabled={isSubmitting}
         >
-          희생플라이
+          땅볼/뜬공/직선타
         </ModalButton>
         <ModalButton
           onClick={() => handleTypeSelect("희생번트")}
@@ -110,10 +110,10 @@ export default function OutModal(props: IModalProps) {
           희생번트
         </ModalButton>
         <ModalButton
-          onClick={() => handleTypeSelect("그외아웃")}
+          onClick={() => handleTypeSelect("희생플라이")}
           disabled={isSubmitting}
         >
-          그 외 아웃
+          희생플라이
         </ModalButton>
       </ModalContainer>
       <LoadingOverlay visible={isSubmitting}>

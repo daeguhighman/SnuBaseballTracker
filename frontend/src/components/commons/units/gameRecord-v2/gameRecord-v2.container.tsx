@@ -71,6 +71,9 @@ import {
   WildCardBoxNone,
   OnDeckWrapper,
   OutZoneWrapper,
+  OutZoneIcon,
+  OutZoneLabel,
+  ScoreToast,
   CustomBoundaryWrapper,
   Ground,
   HomeWrapper,
@@ -130,6 +133,8 @@ import LeftPolygon from "../../../../commons/libraries/leftPolygon";
 
 import { unstable_batchedUpdates } from "react-dom";
 import PortalSwitch from "./reconstructionSwitch";
+import { message } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
 
 // 1) 먼저 BaseId / BASE_IDS를 선언
 export const BASE_IDS = [
@@ -1948,13 +1953,13 @@ export default function GameRecordPageV2() {
     const cx = left + width / 2;
     const cy = top + height / 2;
 
-    // 아웃존 바깥 드롭 시: O 처리
+    // 아웃존(쓰레기통) 안에 드롭 시: O 처리
     if (
       zoneRect &&
-      (cx < zoneRect.left ||
-        cx > zoneRect.right ||
-        cy < zoneRect.top ||
-        cy > zoneRect.bottom)
+      cx >= zoneRect.left &&
+      cx <= zoneRect.right &&
+      cy >= zoneRect.top &&
+      cy <= zoneRect.bottom
     ) {
       if (reconstructMode) {
         setOutBadgesVirtual((prev) => {
@@ -2022,8 +2027,8 @@ export default function GameRecordPageV2() {
       );
     };
 
-    const SNAP_PADDING = 8; // 주변 여유
-    const MAX_CENTER_DISTANCE = 40; // 중심 거리 허용치
+    const SNAP_PADDING = 24; // 주변 여유
+    const MAX_CENTER_DISTANCE = 80; // 중심 거리 허용치
 
     const badgeRect = badgeEl.getBoundingClientRect();
     const badgeBox = {
@@ -2119,6 +2124,13 @@ export default function GameRecordPageV2() {
 
     // 홈베이스에 스냅된 경우: H 처리 + 정리
     if (dropBase === "home-base") {
+      if (!homeSnappedBadges.has(badgeId)) {
+        const next = scoreToastKey + 1;
+        setScoreToastKey(next);
+        window.setTimeout(() => {
+          setScoreToastKey((cur) => (cur === next ? 0 : cur));
+        }, 1500);
+      }
       // 1) 홈베이스 완료 배지로 표시해서 endBase="H"로 로그에 남기게
       setHomeSnappedBadgesCurrent((prev) => {
         const next = new Set(prev);
@@ -2689,6 +2701,8 @@ export default function GameRecordPageV2() {
   //   setBadgesVersion(v => v + 1);
   // }, []);
 
+  const [scoreToastKey, setScoreToastKey] = useState(0);
+
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     try {
@@ -2696,6 +2710,7 @@ export default function GameRecordPageV2() {
       // await sendRunnerEvents();
       setReconstructMode(false);
       setModalEpoch((v) => v + 1);
+      message.success("저장됨");
 
       // clearAllSnapsAndExitReconstructMode();
       // // bumpBadgesVersion();
@@ -2965,7 +2980,15 @@ export default function GameRecordPageV2() {
           <HomeBaseWrapper active={isHomeBaseActive} />
           <Ground ref={groundRef} />
 
-          <OutZoneWrapper ref={outZoneRef}></OutZoneWrapper>
+          <OutZoneWrapper ref={outZoneRef}>
+            <OutZoneIcon aria-hidden>
+              <DeleteOutlined />
+            </OutZoneIcon>
+            <OutZoneLabel>OUT</OutZoneLabel>
+          </OutZoneWrapper>
+          {scoreToastKey > 0 && (
+            <ScoreToast key={scoreToastKey}>득점 +1</ScoreToast>
+          )}
           <CustomBoundaryWrapper
             ref={(el) => {
               customBoundsRef.current = el; // ★ 이 한 줄 추가
@@ -3270,9 +3293,6 @@ export default function GameRecordPageV2() {
         </ModalOverlay>
       )}
 
-      <LoadingOverlay visible={isSubmitting}>
-        <LoadingIcon spin fontSize={48} />
-      </LoadingOverlay>
       <ErrorAlert error={error} />
     </GameRecordContainer>
   );

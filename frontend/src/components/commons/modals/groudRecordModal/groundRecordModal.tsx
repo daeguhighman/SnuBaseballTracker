@@ -44,6 +44,7 @@ import {
   ModalOverlay,
   NameBadge,
   OutZoneWrapper,
+  OutZoneIcon,
   ReconstructionButtonWrapper,
   ReconstructionTitle,
   ReconstructionWrapper,
@@ -64,6 +65,8 @@ import {
   useRectsCache,
 } from "../../units/gameRecord-v2/gameRecord-v2.container";
 import { unstable_batchedUpdates } from "react-dom";
+import { ScoreToast } from "../../units/gameRecord-v2/gameRecord-v2.style";
+import { DeleteOutlined } from "@ant-design/icons";
 
 // 모달 컨트롤용 핸들러 타입
 export type GroundRecordModalHandle = {
@@ -82,6 +85,7 @@ const GroundRecordModal = forwardRef<
 >(({ onSuccess, updateSnapshot }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scoreToastKey, setScoreToastKey] = useState(0);
   // const router = useRouter();
   const [error, setError] = useState(null);
   // batterid
@@ -278,13 +282,13 @@ const GroundRecordModal = forwardRef<
     const cx = left + width / 2;
     const cy = top + height / 2;
 
-    // 아웃존 바깥 드롭 시: O 처리
+    // 아웃존(쓰레기통) 안에 드롭 시: O 처리
     if (
       zoneRect &&
-      (cx < zoneRect.left ||
-        cx > zoneRect.right ||
-        cy < zoneRect.top ||
-        cy > zoneRect.bottom)
+      cx >= zoneRect.left &&
+      cx <= zoneRect.right &&
+      cy >= zoneRect.top &&
+      cy <= zoneRect.bottom
     ) {
       if (reconstructMode) {
         setOutBadgesVirtual((prev) => {
@@ -359,8 +363,8 @@ const GroundRecordModal = forwardRef<
       );
     };
 
-    const SNAP_PADDING = 8; // 주변 여유
-    const MAX_CENTER_DISTANCE = 40; // 중심 거리 허용치
+    const SNAP_PADDING = 24; // 주변 여유
+    const MAX_CENTER_DISTANCE = 80; // 중심 거리 허용치
 
     const badgeRect = badgeEl.getBoundingClientRect();
     const badgeBox = {
@@ -448,6 +452,13 @@ const GroundRecordModal = forwardRef<
 
     // 홈베이스에 스냅된 경우: H 처리 + 정리
     if (dropBase === "home-base") {
+      if (!homeSnappedBadges.has(badgeId)) {
+        const next = scoreToastKey + 1;
+        setScoreToastKey(next);
+        window.setTimeout(() => {
+          setScoreToastKey((cur) => (cur === next ? 0 : cur));
+        }, 1500);
+      }
       // 1) 홈베이스 완료 배지로 표시해서 endBase="H"로 로그에 남기게
       setHomeSnappedBadgesCurrent((prev) => {
         const next = new Set(prev);
@@ -1179,6 +1190,11 @@ const GroundRecordModal = forwardRef<
       syncRunnersOnBase();
     });
   }, [loadSnapshot, badgeConfigsForModal, syncRunnersOnBase, snap]);
+
+  const handleCancelAndClose = useCallback(() => {
+    resetWhiteBadges();
+    setIsOpen(false);
+  }, [resetWhiteBadges]);
 
   // useEffect(() => {
   //   if (!applyResetSnapshot) return;
@@ -2015,7 +2031,7 @@ const GroundRecordModal = forwardRef<
   }
 
   return (
-    <ModalOverlay>
+    <ModalOverlay onClick={handleCancelAndClose}>
       <ModalContainer onClick={(e) => e.stopPropagation()} ref={containerRef}>
         <DndContext
           id="game-record-dnd" // ← 여기에 고정된 string ID를 넣어줍니다
@@ -2028,7 +2044,7 @@ const GroundRecordModal = forwardRef<
           <CancelButtonWrapper>
             {" "}
             <button
-              onClick={handleClose}
+              onClick={handleCancelAndClose}
               style={{
                 all: "unset",
                 cursor: "pointer",
@@ -2075,7 +2091,14 @@ const GroundRecordModal = forwardRef<
             <HomeBaseWrapper active={isHomeBaseActive} />
             <Ground ref={groundRef} />
 
-            <OutZoneWrapper ref={outZoneRef}></OutZoneWrapper>
+            <OutZoneWrapper ref={outZoneRef}>
+              <OutZoneIcon aria-hidden>
+                <DeleteOutlined />
+              </OutZoneIcon>
+            </OutZoneWrapper>
+            {scoreToastKey > 0 && (
+              <ScoreToast key={scoreToastKey}>득점 +1</ScoreToast>
+            )}
             <CustomBoundaryWrapper
               ref={(el) => {
                 customBoundsRef.current = el; // ★ 이 한 줄 추가

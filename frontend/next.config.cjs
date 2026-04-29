@@ -43,15 +43,15 @@ const nextConfig = {
   },
 
   // ── 여기에만 추가했습니다 ──
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        destination: "/tournament-end.html",
-        permanent: false,
-      },
-    ];
-  },
+  // async redirects() {
+  //   return [
+  //     {
+  //       source: "/:path*",
+  //       destination: "/tournament-end.html",
+  //       permanent: false,
+  //     },
+  //   ];
+  // },
   // ────────────────────────
 
   // API 프록시 설정: /api/* 경로를 환경변수로 지정된 백엔드 주소로 리다이렉트
