@@ -37,6 +37,8 @@ USER nestjs
 # 2‑1. 빌드 결과 받기
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
+# 정적 자산 (admin.html 등)
+COPY --from=builder /app/public ./public
 # Excel 파일을 런타임 스테이지로 복사
 COPY --from=builder /app/*.xlsx ./
 
