@@ -24,6 +24,7 @@ async function bootstrap() {
     'http://10.89.191.32:3001',
     'https://snubaseball.com',
     'https://www.snubaseball.com',
+    'https://api.snubaseball.com',
   ];
   // 모든 *.vercel.app 프리뷰 배포까지 허용
   const vercelPreviewRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
