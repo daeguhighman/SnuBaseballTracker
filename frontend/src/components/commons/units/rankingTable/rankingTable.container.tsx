@@ -53,7 +53,7 @@ export default function RankingTableComponent() {
   const getGroupName = (key: string) => `${key}조`;
 
   // (선택) 고정된 순서로 보여주고 싶다면 여기에 순서를 정의하고, 없으면 API에서 내려준 순서대로
-  const groupOrder = ["A", "B", "C", "D"];
+  const groupOrder = ["A", "B", "C", "D", "E", "F"];
   const entriesToRender = groupOrder
     .filter((g) => groupData[g])
     .map((g) => [g, groupData[g]] as const).length

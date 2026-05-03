@@ -4,16 +4,19 @@ import {
   Body,
   Get,
   Patch,
+  Delete,
   HttpCode,
   UsePipes,
   ValidationPipe,
   Param,
+  ParseIntPipe,
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { join } from 'path';
 import { GameCoreService } from '@games/services/game-core.service';
 import {
+  CreateGameDto,
   ForfeitGameDto,
   UmpireRequestDto,
   UpdateScheduleDto,
@@ -37,6 +40,36 @@ export class AdminController {
   @Get('/page')
   getAdminPage(@Res() res: Response) {
     res.sendFile(join(process.cwd(), 'public', 'admin.html'));
+  }
+
+  @Get('tournaments/:tournamentId/games')
+  @ApiOperation({ summary: '대회 내 모든 경기 조회 (시드 UI)' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async listGames(@Param('tournamentId') tournamentId: number) {
+    return this.gameCoreService.listGamesByTournament(Number(tournamentId));
+  }
+
+  @Post('games')
+  @HttpCode(201)
+  @ApiOperation({ summary: '경기 생성 (시드 UI)' })
+  @ApiResponse({ status: 201, description: '경기 생성 성공' })
+  async createGame(@Body() body: CreateGameDto) {
+    return this.gameCoreService.createGame({
+      tournamentId: body.tournamentId,
+      homeTeamTournamentId: body.homeTeamTournamentId,
+      awayTeamTournamentId: body.awayTeamTournamentId,
+      stage: body.stage,
+      bracketPosition: body.bracketPosition,
+      startTime: body.startTime,
+    });
+  }
+
+  @Delete('games/:gameId')
+  @HttpCode(200)
+  @ApiOperation({ summary: '경기 삭제 (시드 UI)' })
+  @ApiResponse({ status: 200, description: '경기 삭제 성공' })
+  async deleteGame(@Param('gameId', ParseIntPipe) gameId: number) {
+    return this.gameCoreService.deleteGame(gameId);
   }
 
   @Post('assign-umpire')

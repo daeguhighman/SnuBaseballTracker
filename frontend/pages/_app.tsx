@@ -202,10 +202,10 @@ function MyApp({ Component, pageProps }) {
           content="서울대학교 야구 동아리 통합 플랫폼입니다. 실시간 경기 중계, 일정, 선수 정보, 랭킹을 확인하세요."
         />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://snubaseball.site/" />
+        <meta property="og:url" content="https://snubaseball.com/" />
         <meta
           property="og:image"
-          content="https://snubaseball.site/images/og-logo.png"
+          content="https://snubaseball.com/images/og-logo.png"
         />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />

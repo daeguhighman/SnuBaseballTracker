@@ -6,7 +6,7 @@ export const REFRESH_COOKIE = (configService: ConfigService) => {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'lax' as const,
-    domain: isProduction ? 'snubaseball.site' : undefined,
+    domain: isProduction ? '.snubaseball.com' : undefined,
     path: '/auth/refresh',
     maxAge: 14 * 24 * 60 * 60 * 1000,
   };

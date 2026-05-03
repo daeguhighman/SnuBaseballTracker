@@ -12,8 +12,8 @@ export default function Ranking() {
         <link rel="icon" href="/icons/ball.png" />
       </Head> */}
       <div>
-        {/* <RankingTableComponent /> */}
-        <Bracket />
+        <RankingTableComponent />
+        {/* <Bracket /> */}
       </div>
     </>
   );

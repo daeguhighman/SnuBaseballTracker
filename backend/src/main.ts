@@ -22,14 +22,16 @@ async function bootstrap() {
     'http://localhost:3000',
     'http://localhost:3001',
     'http://10.89.191.32:3001',
-    'https://snubaseball.site',
-    'https://www.snubaseball.site',
+    'https://snubaseball.com',
+    'https://www.snubaseball.com',
   ];
+  // 모든 *.vercel.app 프리뷰 배포까지 허용
+  const vercelPreviewRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
   const corsOptions = {
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     origin: (origin, callback) => {
-      if (!origin || whitelist.includes(origin)) {
+      if (!origin || whitelist.includes(origin) || vercelPreviewRegex.test(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

@@ -673,6 +673,106 @@ export class GameCoreService {
     return this.gameRepository.save(game);
   }
 
+  async deleteGame(gameId: number) {
+    const game = await this.gameRepository.findOne({ where: { id: gameId } });
+    if (!game) {
+      throw new BaseException(
+        '경기를 찾을 수 없습니다.',
+        ErrorCodes.GAME_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    await this.gameRepository.delete({ id: gameId });
+    return { id: gameId, deleted: true };
+  }
+
+  async listGamesByTournament(tournamentId: number) {
+    const games = await this.gameRepository.find({
+      where: { tournamentId },
+      relations: ['homeTeam', 'homeTeam.team', 'awayTeam', 'awayTeam.team'],
+      order: { startTime: 'ASC', id: 'ASC' },
+    });
+    return games.map((g) => ({
+      id: g.id,
+      stage: g.stage,
+      bracketPosition: g.bracketPosition,
+      startTime: g.startTime,
+      home: {
+        teamTournamentId: g.homeTeam?.id ?? null,
+        name: g.homeTeam?.team?.name ?? null,
+        groupName: g.homeTeam?.groupName ?? null,
+      },
+      away: {
+        teamTournamentId: g.awayTeam?.id ?? null,
+        name: g.awayTeam?.team?.name ?? null,
+        groupName: g.awayTeam?.groupName ?? null,
+      },
+    }));
+  }
+
+  async createGame(input: {
+    tournamentId: number;
+    homeTeamTournamentId: number;
+    awayTeamTournamentId: number;
+    stage: MatchStage;
+    bracketPosition?: BracketPosition;
+    startTime?: Date;
+  }) {
+    if (input.homeTeamTournamentId === input.awayTeamTournamentId) {
+      throw new BaseException(
+        '홈팀과 어웨이팀은 같을 수 없습니다.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const tournament = await this.tournamentRepository.findOne({
+      where: { id: input.tournamentId },
+    });
+    if (!tournament) {
+      throw new BaseException(
+        '대회를 찾을 수 없습니다.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const ttRepo = this.gameRepository.manager.getRepository(TeamTournament);
+    const [home, away] = await Promise.all([
+      ttRepo.findOne({
+        where: {
+          id: input.homeTeamTournamentId,
+          tournament: { id: input.tournamentId },
+        },
+      }),
+      ttRepo.findOne({
+        where: {
+          id: input.awayTeamTournamentId,
+          tournament: { id: input.tournamentId },
+        },
+      }),
+    ]);
+
+    if (!home || !away) {
+      throw new BaseException(
+        '대회에 속한 팀-대회 연결을 찾을 수 없습니다.',
+        ErrorCodes.TEAM_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const game = this.gameRepository.create({
+      tournament,
+      homeTeam: home,
+      awayTeam: away,
+      stage: input.stage,
+      bracketPosition: input.bracketPosition ?? null,
+      startTime: input.startTime ?? null,
+      status: GameStatus.SCHEDULED,
+    });
+    return this.gameRepository.save(game);
+  }
+
   async updateSchedule(gameId: number, startTime: Date) {
     const game = await this.gameRepository.findOne({
       where: { id: gameId },

@@ -82,10 +82,45 @@
             transition: border-color 0.3s ease;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #fff;
+            transition: border-color 0.3s ease;
+        }
+
+        .games-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .games-table th,
+        .games-table td {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .games-table th {
+            background: #ecf0f1;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .api-section.seed {
+            border-left-color: #27ae60;
         }
 
         .form-row {
@@ -210,6 +245,130 @@
         </div>
 
         <div class="content">
+            <!-- 관리자 로그인 -->
+            <div class="api-section" style="border-left-color:#7f8c8d;">
+                <h2>🔐 관리자 로그인</h2>
+                <div class="api-info">
+                    <p>로그인하면 access token이 메모리에 저장되고 모든 요청에 자동 첨부됩니다. refresh token은 쿠키에 저장되어 만료 시 자동 갱신됩니다.</p>
+                </div>
+
+                <div id="loginForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loginEmail">이메일</label>
+                            <input type="email" id="loginEmail" placeholder="admin@snu.ac.kr">
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">비밀번호</label>
+                            <input type="password" id="loginPassword" placeholder="비밀번호">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="login()">로그인</button>
+                    <div class="loading" id="loginLoading">
+                        <div class="spinner"></div>
+                        <p>로그인 중...</p>
+                    </div>
+                    <div id="loginResponse" class="response" style="display:none;"></div>
+                </div>
+
+                <div id="loginStatus" style="display:none;">
+                    <p style="margin-bottom:10px;">✅ 로그인됨 — <strong id="loginEmailDisplay"></strong></p>
+                    <button class="btn btn-warning" onclick="logout()">로그아웃</button>
+                </div>
+            </div>
+
+            <!-- 경기 등록 (시드) -->
+            <div class="api-section seed">
+                <h2>🗓️ 경기 등록 (시드)</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>POST /admin/games</code></p>
+                    <p><strong>설명:</strong> 시드된 대회/팀을 선택해 경기를 등록합니다.</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seedTournament">대회</label>
+                        <select id="seedTournament">
+                            <option value="">대회를 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 0 0 auto; align-self: flex-end;">
+                        <button type="button" class="btn" onclick="loadTournaments()">새로고침</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seedAway">선공 (어웨이)</label>
+                        <select id="seedAway">
+                            <option value="">팀</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="seedHome">후공 (홈)</label>
+                        <select id="seedHome">
+                            <option value="">팀</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seedStage">경기 단계</label>
+                        <select id="seedStage" onchange="onStageChange()">
+                            <option value="LEAGUE">리그전</option>
+                            <option value="QUARTER_FINAL">8강</option>
+                            <option value="SEMI_FINAL">4강</option>
+                            <option value="THIRD_PLACE">3,4위전</option>
+                            <option value="FINAL">결승</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="seedBracketPosition">브래킷 포지션</label>
+                        <select id="seedBracketPosition" disabled>
+                            <option value="">없음</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seedStartTime">시작 시간 (선택)</label>
+                        <input type="datetime-local" id="seedStartTime">
+                    </div>
+                </div>
+
+                <button class="btn" onclick="createGame()">경기 생성</button>
+                <button type="button" class="btn btn-warning" onclick="loadExistingGames()">
+                    현재 등록된 경기 새로고침
+                </button>
+                <div class="loading" id="seedLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="seedResponse" class="response" style="display: none;"></div>
+
+                <h3 style="margin-top: 20px; color: #2c3e50;">현재 등록된 경기</h3>
+                <table class="games-table" id="seedGamesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>조</th>
+                            <th>선공</th>
+                            <th>후공</th>
+                            <th>단계</th>
+                            <th>브래킷</th>
+                            <th>시작 시간(KST)</th>
+                            <th>삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="seedGamesBody">
+                        <tr><td colspan="8" style="text-align:center; color:#999;">대회를 선택하면 표시됩니다</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
             <!-- 심판 할당 -->
             <div class="api-section">
                 <h2>👨‍⚖️ 심판 할당</h2>
@@ -356,30 +515,117 @@
             responseDiv.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
         }
 
-        async function makeRequest(url, method, data = null) {
-            try {
-                const options = {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                };
+        // ====== 인증 상태 ======
+        let accessToken = sessionStorage.getItem('admin_access_token') || '';
+        let currentEmail = sessionStorage.getItem('admin_email') || '';
 
-                if (data) {
-                    options.body = JSON.stringify(data);
-                }
-
-                const response = await fetch(url, options);
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${result.message || '요청 실패'}`);
-                }
-
-                return result;
-            } catch (error) {
-                throw error;
+        function setAuth(token, email) {
+            accessToken = token || '';
+            currentEmail = email || currentEmail;
+            if (token) {
+                sessionStorage.setItem('admin_access_token', token);
+                if (email) sessionStorage.setItem('admin_email', email);
+            } else {
+                sessionStorage.removeItem('admin_access_token');
+                sessionStorage.removeItem('admin_email');
             }
+            renderLoginStatus();
+        }
+
+        function renderLoginStatus() {
+            const form = document.getElementById('loginForm');
+            const status = document.getElementById('loginStatus');
+            if (accessToken) {
+                form.style.display = 'none';
+                status.style.display = 'block';
+                document.getElementById('loginEmailDisplay').textContent = currentEmail || '(이메일 정보 없음)';
+            } else {
+                form.style.display = 'block';
+                status.style.display = 'none';
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (!email || !password) {
+                return alert('이메일과 비밀번호를 입력해주세요.');
+            }
+
+            showLoading('loginLoading');
+            hideResponse('loginResponse');
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${data.message || '로그인 실패'}`);
+                }
+                setAuth(data.accessToken, email);
+                document.getElementById('loginPassword').value = '';
+                showResponse('loginResponse', '로그인 성공');
+                loadTournaments();
+            } catch (err) {
+                showResponse('loginResponse', err.message, true);
+            } finally {
+                hideLoading('loginLoading');
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: accessToken
+                        ? { 'Authorization': `Bearer ${accessToken}` }
+                        : {},
+                    credentials: 'include',
+                });
+            } catch (e) {
+                // 요청 실패해도 클라 측 토큰은 정리
+            }
+            setAuth('', '');
+        }
+
+        async function tryRefresh() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                });
+                if (!res.ok) return false;
+                const data = await res.json();
+                if (data.accessToken) {
+                    setAuth(data.accessToken, currentEmail);
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        async function rawRequest(url, method, data) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+            const options = { method, headers, credentials: 'include' };
+            if (data) options.body = JSON.stringify(data);
+            return fetch(url, options);
+        }
+
+        async function makeRequest(url, method, data = null) {
+            let response = await rawRequest(url, method, data);
+            if (response.status === 401 && (await tryRefresh())) {
+                response = await rawRequest(url, method, data);
+            }
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${result.message || '요청 실패'}`);
+            }
+            return result;
         }
 
         // 심판 할당
@@ -512,11 +758,182 @@
             document.getElementById(responseId).style.display = 'none';
         }
 
-        // 페이지 로드 시 현재 시간을 기본값으로 설정
+        // ====== 경기 등록 (시드) ======
+        const BRACKET_OPTIONS = {
+            LEAGUE: [],
+            QUARTER_FINAL: ['QF_1', 'QF_2', 'QF_3', 'QF_4'],
+            SEMI_FINAL: ['SF_1', 'SF_2'],
+            THIRD_PLACE: ['THIRD_PLACE'],
+            FINAL: ['F'],
+        };
+
+        let teamsByGroup = {};
+
+        async function loadTournaments() {
+            const select = document.getElementById('seedTournament');
+            const prev = select.value;
+            select.innerHTML = '<option value="">대회를 선택하세요</option>';
+            try {
+                const res = await makeRequest(`${API_BASE_URL}/tournaments`, 'GET');
+                for (const t of res.tournaments || []) {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = `${t.name} ${t.year} (ID: ${t.id})`;
+                    select.appendChild(opt);
+                }
+                if (prev) select.value = prev;
+            } catch (e) {
+                showResponse('seedResponse', `대회 목록 로드 실패: ${e.message}`, true);
+            }
+        }
+
+        async function loadTeamsForTournament() {
+            const tournamentId = document.getElementById('seedTournament').value;
+            const awaySel = document.getElementById('seedAway');
+            const homeSel = document.getElementById('seedHome');
+            awaySel.innerHTML = '<option value="">팀</option>';
+            homeSel.innerHTML = '<option value="">팀</option>';
+            teamsByGroup = {};
+            if (!tournamentId) return;
+            try {
+                const res = await makeRequest(
+                    `${API_BASE_URL}/tournaments/${tournamentId}/teams/grouped`,
+                    'GET'
+                );
+                for (const group of Object.keys(res).sort()) {
+                    teamsByGroup[group] = res[group];
+                    for (const team of res[group]) {
+                        const label = `[${group}] ${team.name}`;
+                        for (const sel of [awaySel, homeSel]) {
+                            const opt = document.createElement('option');
+                            opt.value = team.id; // teamTournamentId
+                            opt.textContent = label;
+                            sel.appendChild(opt);
+                        }
+                    }
+                }
+                await loadExistingGames();
+            } catch (e) {
+                showResponse('seedResponse', `팀 목록 로드 실패: ${e.message}`, true);
+            }
+        }
+
+        function onStageChange() {
+            const stage = document.getElementById('seedStage').value;
+            const bpSel = document.getElementById('seedBracketPosition');
+            const opts = BRACKET_OPTIONS[stage] || [];
+            bpSel.innerHTML = '<option value="">없음</option>';
+            for (const v of opts) {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                bpSel.appendChild(opt);
+            }
+            bpSel.disabled = opts.length === 0;
+        }
+
+        async function createGame() {
+            const tournamentId = document.getElementById('seedTournament').value;
+            const homeId = document.getElementById('seedHome').value;
+            const awayId = document.getElementById('seedAway').value;
+            const stage = document.getElementById('seedStage').value;
+            const bracketPosition = document.getElementById('seedBracketPosition').value;
+            const startTimeRaw = document.getElementById('seedStartTime').value;
+
+            if (!tournamentId) return alert('대회를 선택해주세요.');
+            if (!homeId || !awayId) return alert('홈팀과 어웨이팀을 모두 선택해주세요.');
+            if (homeId === awayId) return alert('홈팀과 어웨이팀이 같을 수 없습니다.');
+
+            const payload = {
+                tournamentId: parseInt(tournamentId),
+                homeTeamTournamentId: parseInt(homeId),
+                awayTeamTournamentId: parseInt(awayId),
+                stage,
+            };
+            if (bracketPosition) payload.bracketPosition = bracketPosition;
+            if (startTimeRaw) payload.startTime = new Date(startTimeRaw).toISOString();
+
+            showLoading('seedLoading');
+            hideResponse('seedResponse');
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/games`, 'POST', payload);
+                showResponse('seedResponse', { created: result });
+                await loadExistingGames();
+            } catch (error) {
+                showResponse('seedResponse', error.message, true);
+            } finally {
+                hideLoading('seedLoading');
+            }
+        }
+
+        async function loadExistingGames() {
+            const tournamentId = document.getElementById('seedTournament').value;
+            const tbody = document.getElementById('seedGamesBody');
+            if (!tournamentId) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999;">대회를 선택하면 표시됩니다</td></tr>';
+                return;
+            }
+            try {
+                const games = await makeRequest(
+                    `${API_BASE_URL}/admin/tournaments/${tournamentId}/games`,
+                    'GET'
+                );
+                if (!games.length) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999;">등록된 경기가 없습니다</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = games.map((g) => {
+                    const group = g.away.groupName || g.home.groupName || '-';
+                    const time = g.startTime
+                        ? new Date(g.startTime).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+                        : '미정';
+                    const matchLabel = `${g.away.name ?? '-'} @ ${g.home.name ?? '-'}`;
+                    return `<tr>
+                        <td>${g.id}</td>
+                        <td>${group}</td>
+                        <td>${g.away.name ?? '-'}</td>
+                        <td>${g.home.name ?? '-'}</td>
+                        <td>${g.stage}</td>
+                        <td>${g.bracketPosition ?? '-'}</td>
+                        <td>${time}</td>
+                        <td><button class="btn btn-danger" style="padding:6px 12px; font-size:13px; margin:0;" onclick="deleteGame(${g.id}, ${JSON.stringify(matchLabel)})">삭제</button></td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" style="color:#c0392b;">로드 실패: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function deleteGame(gameId, label) {
+            if (!confirm(`경기 #${gameId} (${label}) 를 삭제하시겠습니까?`)) return;
+            showLoading('seedLoading');
+            hideResponse('seedResponse');
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/games/${gameId}`, 'DELETE');
+                showResponse('seedResponse', { deleted: result });
+                await loadExistingGames();
+            } catch (error) {
+                showResponse('seedResponse', error.message, true);
+            } finally {
+                hideLoading('seedLoading');
+            }
+        }
+
+        // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('startTime').value = now.toISOString().slice(0, 16);
+
+            renderLoginStatus();
+            // 페이지 진입 시 refresh로 자동 로그인 시도 (refresh_token 쿠키가 있을 때)
+            if (!accessToken) {
+                tryRefresh().finally(loadTournaments);
+            } else {
+                loadTournaments();
+            }
+            onStageChange();
+            document.getElementById('seedTournament').addEventListener('change', loadTeamsForTournament);
         });
     </script>
 </body>

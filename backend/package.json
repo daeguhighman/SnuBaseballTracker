@@ -39,6 +39,7 @@
     "seed:games": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-games.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-admin.ts",
     "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed/dummy/seed-dummy-all-play.ts",
+    "seed:all-real": "ts-node -r tsconfig-paths/register src/scripts/seed/real/seed-all.ts",
     "seed:stats": "ts-node -r tsconfig-paths/register src/scripts/seed-real-stats-complete.ts",
     "truncate:all": "ts-node -r tsconfig-paths/register src/scripts/truncate-all.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org daeguhighman --project node-nestjs ./dist && sentry-cli sourcemaps upload --org daeguhighman --project node-nestjs ./dist",

@@ -65,7 +65,10 @@ export default function ShowAlert({
   const [visible, setVisible] = useState(true);
   if (!error || !visible) return null;
 
-  const code = error.response?.data?.code || error.code;
+  const code =
+    error.response?.data?.errorCode ||
+    error.response?.data?.code ||
+    error.code;
   const message =
     code && ERROR_MESSAGE_MAP[code]
       ? ERROR_MESSAGE_MAP[code]
