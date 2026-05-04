@@ -153,11 +153,16 @@ export default function SignUpPage() {
       // ② 추가: 발송 성공 후 상태 업데이트
       setIsVerificationSent(true);
     } catch (error) {
-      alert("오류발생");
+      let msg = "인증번호 발송 중 알 수 없는 오류가 발생했습니다.";
+      if (axios.isAxiosError(error)) {
+        msg = error.response?.data?.message ?? error.message;
+      }
+      alert(msg);
       setError(error);
-      const errorCode = error?.response?.data?.errorCode; // 에러코드 추출
-      console.error(error, "errorCode:", errorCode);
-      console.error("이메일 인증번호 발송 오류:", error);
+      const errorCode = axios.isAxiosError(error)
+        ? error.response?.data?.errorCode
+        : undefined;
+      console.error("이메일 인증번호 발송 오류:", error, "errorCode:", errorCode);
     } finally {
       // 컴포넌트가 아직 마운트된 상태에서만 상태 갱신
 
