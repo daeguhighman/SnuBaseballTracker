@@ -66,7 +66,7 @@ export class AuthService {
     );
     this.frontendUrl =
       this.configService.get('NODE_ENV') === 'production'
-        ? 'https://www.snubaseball.site'
+        ? 'https://www.snubaseball.com'
         : 'http://localhost:3001';
   }
 
