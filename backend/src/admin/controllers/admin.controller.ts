@@ -18,9 +18,11 @@ import { GameCoreService } from '@games/services/game-core.service';
 import {
   CreateGameDto,
   ForfeitGameDto,
+  RegisterPlayerDto,
   UmpireRequestDto,
   UpdateScheduleDto,
 } from '@admin/dtos/admin.dto';
+import { AdminPlayersService } from '@admin/services/admin-players.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '@/common/decorators/public.decorator';
 
@@ -28,7 +30,10 @@ import { Public } from '@/common/decorators/public.decorator';
 @Controller('admin')
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class AdminController {
-  constructor(private readonly gameCoreService: GameCoreService) {}
+  constructor(
+    private readonly gameCoreService: GameCoreService,
+    private readonly adminPlayersService: AdminPlayersService,
+  ) {}
 
   @Public()
   @Get('/debug-sentry')
@@ -125,5 +130,25 @@ export class AdminController {
   })
   async changePhase(@Param('tournamentId') tournamentId: number) {
     return this.gameCoreService.changePhase(tournamentId);
+  }
+
+  @Get('colleges')
+  @ApiOperation({ summary: '대학 목록 조회 (선수 등록 UI)' })
+  async listColleges() {
+    return this.adminPlayersService.listColleges();
+  }
+
+  @Get('departments')
+  @ApiOperation({ summary: '학과 목록 조회 (선수 등록 UI)' })
+  async listDepartments() {
+    return this.adminPlayersService.listDepartments();
+  }
+
+  @Post('players')
+  @HttpCode(201)
+  @ApiOperation({ summary: '선수 등록 (선수 등록 UI)' })
+  @ApiResponse({ status: 201, description: '선수 등록 성공' })
+  async registerPlayer(@Body() body: RegisterPlayerDto) {
+    return this.adminPlayersService.registerPlayer(body);
   }
 }

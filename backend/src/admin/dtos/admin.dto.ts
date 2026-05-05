@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsEnum,
   IsString,
+  IsBoolean,
+  Length,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -115,4 +117,45 @@ export class ForfeitGameDto {
   })
   @IsInt()
   winnerTeamId: number;
+}
+
+export class RegisterPlayerDto {
+  @ApiProperty({ description: '대회 ID', example: 1 })
+  @IsInt()
+  tournamentId: number;
+
+  @ApiProperty({
+    description: '팀-대회 ID (대회 내 팀 식별자)',
+    example: 12,
+  })
+  @IsInt()
+  teamTournamentId: number;
+
+  @ApiProperty({ description: '대학 ID', example: 3 })
+  @IsInt()
+  collegeId: number;
+
+  @ApiProperty({ description: '학과 ID', example: 7 })
+  @IsInt()
+  departmentId: number;
+
+  @ApiProperty({ description: '선수 이름', example: '박시우' })
+  @IsString()
+  @Length(1, 50)
+  name: string;
+
+  @ApiProperty({ description: '학번', example: '2026-21021' })
+  @IsString()
+  @Length(1, 50)
+  studentId: string;
+
+  @ApiProperty({ description: '와일드카드 여부', required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isWildcard?: boolean;
+
+  @ApiProperty({ description: '엘리트 여부', required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isElite?: boolean;
 }

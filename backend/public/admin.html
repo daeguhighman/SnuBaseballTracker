@@ -369,6 +369,79 @@
                 </table>
             </div>
 
+            <!-- 선수 등록 -->
+            <div class="api-section seed">
+                <h2>👤 선수 등록</h2>
+                <div class="api-info">
+                    <h3>API 정보</h3>
+                    <p><strong>엔드포인트:</strong> <code>POST /admin/players</code></p>
+                    <p><strong>설명:</strong> 대회/팀에 새 선수를 등록합니다. 기존에 같은 이름·학번 선수가 있으면 재사용합니다.</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerTournament">대회</label>
+                        <select id="playerTournament">
+                            <option value="">대회를 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="playerTeam">팀</label>
+                        <select id="playerTeam">
+                            <option value="">대회를 먼저 선택하세요</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerName">이름</label>
+                        <input type="text" id="playerName" placeholder="예: 박시우">
+                    </div>
+                    <div class="form-group">
+                        <label for="playerStudentId">학번</label>
+                        <input type="text" id="playerStudentId" placeholder="예: 2026-21021">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playerCollege">대학</label>
+                        <select id="playerCollege">
+                            <option value="">대학을 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="playerDepartment">학과</label>
+                        <select id="playerDepartment">
+                            <option value="">학과를 선택하세요</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px; font-weight:600;">
+                            <input type="checkbox" id="playerIsWildcard" style="width:auto;">
+                            와일드카드 (isWildcard)
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px; font-weight:600;">
+                            <input type="checkbox" id="playerIsElite" style="width:auto;">
+                            엘리트 (isElite)
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="registerPlayer()">선수 등록</button>
+                <div class="loading" id="playerLoading">
+                    <div class="spinner"></div>
+                    <p>처리 중...</p>
+                </div>
+                <div id="playerResponse" class="response" style="display: none;"></div>
+            </div>
+
             <!-- 심판 할당 -->
             <div class="api-section">
                 <h2>👨‍⚖️ 심판 할당</h2>
@@ -919,6 +992,131 @@
             }
         }
 
+        // ====== 선수 등록 ======
+        async function loadPlayerTournaments() {
+            const select = document.getElementById('playerTournament');
+            const prev = select.value;
+            select.innerHTML = '<option value="">대회를 선택하세요</option>';
+            try {
+                const res = await makeRequest(`${API_BASE_URL}/tournaments`, 'GET');
+                for (const t of res.tournaments || []) {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = `${t.name} ${t.year} (ID: ${t.id})`;
+                    select.appendChild(opt);
+                }
+                if (prev) select.value = prev;
+            } catch (e) {
+                showResponse('playerResponse', `대회 목록 로드 실패: ${e.message}`, true);
+            }
+        }
+
+        async function loadPlayerTeams() {
+            const tournamentId = document.getElementById('playerTournament').value;
+            const teamSel = document.getElementById('playerTeam');
+            teamSel.innerHTML = '<option value="">팀을 선택하세요</option>';
+            if (!tournamentId) {
+                teamSel.innerHTML = '<option value="">대회를 먼저 선택하세요</option>';
+                return;
+            }
+            try {
+                const res = await makeRequest(
+                    `${API_BASE_URL}/tournaments/${tournamentId}/teams/grouped`,
+                    'GET'
+                );
+                for (const group of Object.keys(res).sort()) {
+                    for (const team of res[group]) {
+                        const opt = document.createElement('option');
+                        opt.value = team.id; // team_tournament_id
+                        opt.textContent = `[${group}] ${team.name}`;
+                        teamSel.appendChild(opt);
+                    }
+                }
+            } catch (e) {
+                showResponse('playerResponse', `팀 목록 로드 실패: ${e.message}`, true);
+            }
+        }
+
+        async function loadColleges() {
+            const select = document.getElementById('playerCollege');
+            const prev = select.value;
+            select.innerHTML = '<option value="">대학을 선택하세요</option>';
+            try {
+                const colleges = await makeRequest(`${API_BASE_URL}/admin/colleges`, 'GET');
+                for (const c of colleges) {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                }
+                if (prev) select.value = prev;
+            } catch (e) {
+                showResponse('playerResponse', `대학 목록 로드 실패: ${e.message}`, true);
+            }
+        }
+
+        async function loadDepartments() {
+            const deptSel = document.getElementById('playerDepartment');
+            const prev = deptSel.value;
+            deptSel.innerHTML = '<option value="">학과를 선택하세요</option>';
+            try {
+                const depts = await makeRequest(`${API_BASE_URL}/admin/departments`, 'GET');
+                for (const d of depts) {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    deptSel.appendChild(opt);
+                }
+                if (prev) deptSel.value = prev;
+            } catch (e) {
+                showResponse('playerResponse', `학과 목록 로드 실패: ${e.message}`, true);
+            }
+        }
+
+        async function registerPlayer() {
+            const tournamentId = document.getElementById('playerTournament').value;
+            const teamTournamentId = document.getElementById('playerTeam').value;
+            const name = document.getElementById('playerName').value.trim();
+            const studentId = document.getElementById('playerStudentId').value.trim();
+            const collegeId = document.getElementById('playerCollege').value;
+            const departmentId = document.getElementById('playerDepartment').value;
+            const isWildcard = document.getElementById('playerIsWildcard').checked;
+            const isElite = document.getElementById('playerIsElite').checked;
+
+            if (!tournamentId) return alert('대회를 선택해주세요.');
+            if (!teamTournamentId) return alert('팀을 선택해주세요.');
+            if (!name) return alert('이름을 입력해주세요.');
+            if (!studentId) return alert('학번을 입력해주세요.');
+            if (!collegeId) return alert('대학을 선택해주세요.');
+            if (!departmentId) return alert('학과를 선택해주세요.');
+
+            const payload = {
+                tournamentId: parseInt(tournamentId),
+                teamTournamentId: parseInt(teamTournamentId),
+                collegeId: parseInt(collegeId),
+                departmentId: parseInt(departmentId),
+                name,
+                studentId,
+                isWildcard,
+                isElite,
+            };
+
+            showLoading('playerLoading');
+            hideResponse('playerResponse');
+            try {
+                const result = await makeRequest(`${API_BASE_URL}/admin/players`, 'POST', payload);
+                showResponse('playerResponse', { created: result });
+                document.getElementById('playerName').value = '';
+                document.getElementById('playerStudentId').value = '';
+                document.getElementById('playerIsWildcard').checked = false;
+                document.getElementById('playerIsElite').checked = false;
+            } catch (error) {
+                showResponse('playerResponse', error.message, true);
+            } finally {
+                hideLoading('playerLoading');
+            }
+        }
+
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             const now = new Date();
@@ -927,13 +1125,20 @@
 
             renderLoginStatus();
             // 페이지 진입 시 refresh로 자동 로그인 시도 (refresh_token 쿠키가 있을 때)
-            if (!accessToken) {
-                tryRefresh().finally(loadTournaments);
-            } else {
+            const initLists = () => {
                 loadTournaments();
+                loadPlayerTournaments();
+                loadColleges();
+                loadDepartments();
+            };
+            if (!accessToken) {
+                tryRefresh().finally(initLists);
+            } else {
+                initLists();
             }
             onStageChange();
             document.getElementById('seedTournament').addEventListener('change', loadTeamsForTournament);
+            document.getElementById('playerTournament').addEventListener('change', loadPlayerTeams);
         });
     </script>
 </body>
