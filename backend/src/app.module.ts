@@ -24,6 +24,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { ProfileModule } from './profiles/profiles.module';
 import { PlaysModule } from './plays/plays.module';
+import { HealthController } from './health.controller';
 
 const imports = [
   /* 1️⃣  설정 */
@@ -74,6 +75,7 @@ const imports = [
 
 @Module({
   imports,
+  controllers: [HealthController],
   providers: [
     LoggingInterceptor,
     {

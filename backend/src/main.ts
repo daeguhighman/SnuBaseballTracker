@@ -67,6 +67,6 @@ async function bootstrap() {
   app.use(cookieParser()); //클라이언트가 보낸 쿠키를 파싱해서 req.cookies 객체로 사용할 수 있도록 해주는 미들웨어
   const configService = app.get(ConfigService);
   const env = configService.get('env');
-  await app.listen(3000);
+  await app.listen(Number(process.env.PORT) || 3000);
 }
 bootstrap();
