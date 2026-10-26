@@ -11,6 +11,7 @@ import { useRecoilState } from "recoil";
 import { pitcherStatsState } from "../../../../commons/stores";
 import { ArrowIconNone } from "../playerStats/playerStats.style";
 import API from "../../../../commons/apis/api";
+import { getCurrentTournament } from "../../../../commons/apis/currentTournament";
 import {
   SearchContainer,
   SearchInput,
@@ -28,7 +29,7 @@ export default function StatsPagePitcherDetail() {
   useEffect(() => {
     const fetchPitchers = async () => {
       try {
-        const res = await API.get("/tournaments/1/records/pitchers");
+        const res = await API.get(`/tournaments/${(await getCurrentTournament()).id}/records/pitchers`);
         const sorted = res.data.pitchers.sort((a, b) => b.K - a.K);
         setPitcherData(sorted);
       } catch (e) {

@@ -2,6 +2,7 @@
 import React, { useEffect } from "react";
 import styled from "@emotion/styled";
 import API from "../../../../commons/apis/api";
+import { getCurrentTournament } from "../../../../commons/apis/currentTournament";
 
 // ─── 컨테이너 ───────────────────────────────────────
 export const BracketContainer = styled.div`
@@ -312,7 +313,14 @@ function EndMarkerTPF({
 
 export default function Bracket() {
   const [games, setGames] = React.useState<any[]>([]);
+  const [title, setTitle] = React.useState("");
   const lineColor = "black";
+
+  useEffect(() => {
+    getCurrentTournament()
+      .then((t) => setTitle(`${t.year} ${t.name} 대진표`))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     API.get("/games/bracket-schedule")
@@ -684,7 +692,7 @@ export default function Bracket() {
 
   return (
     <BracketContainer>
-      <LargeTitle>2025 종합체육대회 대진표</LargeTitle>
+      <LargeTitle>{title}</LargeTitle>
       <BrackGroundContainer>
         <svg
           viewBox="0 0 233 396"

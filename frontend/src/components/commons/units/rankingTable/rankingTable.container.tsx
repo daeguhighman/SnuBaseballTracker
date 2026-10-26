@@ -8,6 +8,7 @@ import {
 } from "./rankingTable.style";
 
 import API from "../../../../commons/apis/api"; // api.ts에서 axios 인스턴스 가져옴
+import { getCurrentTournament } from "../../../../commons/apis/currentTournament";
 import ErrorAlert from "../../../../commons/libraries/showErrorCode";
 
 type Team = {
@@ -22,8 +23,6 @@ type Team = {
 };
 
 type GroupedTeams = Record<string, Team[]>;
-// 여기만 바꾸면 어떤 tournamentId로 가져올지 제어됨
-const TOURNAMENT_ID = "1";
 
 export default function RankingTableComponent() {
   const [groupData, setGroupData] = useState<GroupedTeams>({});
@@ -37,7 +36,8 @@ export default function RankingTableComponent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchGroupedTeams(TOURNAMENT_ID);
+        const { id } = await getCurrentTournament();
+        const data = await fetchGroupedTeams(String(id));
         setGroupData(data);
       } catch (err: any) {
         setError(err);

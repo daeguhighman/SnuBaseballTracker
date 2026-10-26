@@ -16,6 +16,7 @@ import {
   pitcherStatsState,
 } from "../../../../commons/stores";
 import API from "../../../../commons/apis/api";
+import { getCurrentTournament } from "../../../../commons/apis/currentTournament";
 import ErrorAlert from "../../../../commons/libraries/showErrorCode";
 
 export default function StatsPage() {
@@ -37,7 +38,7 @@ export default function StatsPage() {
   useEffect(() => {
     const fetchBatters = async () => {
       try {
-        const res = await API.get("/tournaments/1/records/batters");
+        const res = await API.get(`/tournaments/${(await getCurrentTournament()).id}/records/batters`);
         // console.log(API.defaults.baseURL);
         // console.log("responseURL:", (res.request as any).responseURL);
         console.log(res.data);
@@ -56,7 +57,7 @@ export default function StatsPage() {
   useEffect(() => {
     const fetchPitchers = async () => {
       try {
-        const res = await API.get("/tournaments/1/records/pitchers");
+        const res = await API.get(`/tournaments/${(await getCurrentTournament()).id}/records/pitchers`);
         // console.log(res.data.batters);
         const sorted = res.data.pitchers.sort((a, b) => b.K - a.K);
         setPitcherData(sorted);
