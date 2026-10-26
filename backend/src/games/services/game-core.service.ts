@@ -158,8 +158,10 @@ export class GameCoreService {
   }
 
   async getTournamentSchedule(): Promise<TournamentScheduleResponseDto> {
+    // 가장 최근 대회 (TournamentsService.getAllTournaments 정렬과 동일)
     const tournament = await this.tournamentRepository.findOne({
-      where: { id: 1 },
+      where: {},
+      order: { year: 'DESC', createdAt: 'DESC' },
     });
     if (!tournament) {
       throw new BaseException(
@@ -170,7 +172,7 @@ export class GameCoreService {
     }
 
     const games = await this.gameRepository.find({
-      where: { tournamentId: 1, bracketPosition: Not(IsNull()) },
+      where: { tournamentId: tournament.id, bracketPosition: Not(IsNull()) },
       relations: [
         'homeTeam',
         'awayTeam',

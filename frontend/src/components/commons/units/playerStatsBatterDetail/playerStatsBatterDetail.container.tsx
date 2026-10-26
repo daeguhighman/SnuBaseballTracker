@@ -13,6 +13,7 @@ import { hitterStatsState } from "../../../../commons/stores";
 import { HitterStat } from "../../../../commons/stores";
 import { ArrowIconNone } from "../playerStats/playerStats.style";
 import API from "../../../../commons/apis/api";
+import { getCurrentTournament } from "../../../../commons/apis/currentTournament";
 
 export default function StatsPageBatterDetail() {
   const getArrow = (currentKey: string, columnKey: string) =>
@@ -1569,7 +1570,7 @@ export default function StatsPageBatterDetail() {
   useEffect(() => {
     const fetchBatters = async () => {
       try {
-        const res = await API.get("/tournaments/1/records/batters");
+        const res = await API.get(`/tournaments/${(await getCurrentTournament()).id}/records/batters`);
         console.log(res.data);
         const sorted = res.data.batters.sort((a, b) => b.H - a.H);
         setHitterData(sorted);
