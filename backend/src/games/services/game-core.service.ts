@@ -142,12 +142,12 @@ export class GameCoreService {
       inning: game.gameStat?.inning ?? null,
       inningHalf: game.gameStat?.inningHalf ?? null,
       homeTeam: {
-        id: game.homeTeam?.team.id ?? null,
+        id: game.homeTeam?.id ?? null,
         name: game.homeTeam?.team.name ?? null,
         score: game.gameStat?.homeScore ?? null,
       },
       awayTeam: {
-        id: game.awayTeam?.team.id ?? null,
+        id: game.awayTeam?.id ?? null,
         name: game.awayTeam?.team.name ?? null,
         score: game.gameStat?.awayScore ?? null,
       },
@@ -196,14 +196,14 @@ export class GameCoreService {
     return {
       gameId: game.id,
       bracketPosition: game.bracketPosition,
-      winnerTeamId: game.winnerTeam?.team.id ?? null,
+      winnerTeamId: game.winnerTeam?.id ?? null,
       homeTeam: {
-        id: game.homeTeam?.team.id ?? null,
+        id: game.homeTeam?.id ?? null,
         name: game.homeTeam?.team.name ?? null,
         score: game.gameStat?.homeScore ?? null,
       },
       awayTeam: {
-        id: game.awayTeam?.team.id ?? null,
+        id: game.awayTeam?.id ?? null,
         name: game.awayTeam?.team.name ?? null,
         score: game.gameStat?.awayScore ?? null,
       },
@@ -479,7 +479,7 @@ export class GameCoreService {
       // 홈팀 승리
       homeTeamTournament.wins += 1;
       awayTeamTournament.losses += 1;
-      winnerTeamId = game.homeTeam.team.id;
+      winnerTeamId = homeTeamTournament.id;
       this.logger.debug(
         `Home team win: ${game.homeTeam.team.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.team.name} (${game.gameStat.awayScore})`,
       );
@@ -487,7 +487,7 @@ export class GameCoreService {
       // 원정팀 승리
       homeTeamTournament.losses += 1;
       awayTeamTournament.wins += 1;
-      winnerTeamId = game.awayTeam.team.id;
+      winnerTeamId = awayTeamTournament.id;
       this.logger.debug(
         `Away team win: ${game.homeTeam.team.name} (${game.gameStat.homeScore}) vs ${game.awayTeam.team.name} (${game.gameStat.awayScore})`,
       );
@@ -528,16 +528,16 @@ export class GameCoreService {
     const { homeScore, awayScore } = game.gameStat;
     const winnerTeamId =
       homeScore > awayScore
-        ? game.homeTeam.team.id
+        ? game.homeTeam.id
         : homeScore < awayScore
-          ? game.awayTeam.team.id
+          ? game.awayTeam.id
           : null;
 
     const loserTeamId =
       homeScore !== awayScore
         ? homeScore > awayScore
-          ? game.awayTeam.team.id
-          : game.homeTeam.team.id
+          ? game.awayTeam.id
+          : game.homeTeam.id
         : null;
 
     // 2) 현재 게임에 승자 업데이트

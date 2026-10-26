@@ -148,7 +148,7 @@ export class GameLineupService {
     const activeBatters = await this.batterGameParticipationRepository.find({
       where: {
         game: { id: gameId },
-        teamTournament: { id: teamTournament.team.id },
+        teamTournament: { id: teamTournament.id },
         isActive: true,
       },
       relations: ['playerTournament', 'playerTournament.player'],
@@ -160,7 +160,7 @@ export class GameLineupService {
       {
         where: {
           game: { id: gameId },
-          teamTournament: { id: teamTournament.team.id },
+          teamTournament: { id: teamTournament.id },
           isActive: true,
         },
         relations: ['playerTournament', 'playerTournament.player'],
