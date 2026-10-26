@@ -1230,13 +1230,13 @@ export class GameStatsService {
 
     response.teamSummary = {
       home: {
-        id: game.homeTeam.team.id,
+        id: game.homeTeam.id,
         name: game.homeTeam.team.name,
         runs: gameStat?.homeScore ?? 0,
         hits: gameStat?.homeHits ?? 0,
       },
       away: {
-        id: game.awayTeam.team.id,
+        id: game.awayTeam.id,
         name: game.awayTeam.team.name,
         runs: gameStat?.awayScore ?? 0,
         hits: gameStat?.awayHits ?? 0,
