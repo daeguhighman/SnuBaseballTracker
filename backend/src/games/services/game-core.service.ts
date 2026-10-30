@@ -218,6 +218,14 @@ export class GameCoreService {
     return this.dataSource.transaction(async (m) => {
       const game = await this.findGameWithTeams(gameId, m);
 
+      if (game.status === GameStatus.CANCELLED) {
+        throw new BaseException(
+          '노게임 처리된 경기는 시작할 수 없습니다.',
+          ErrorCodes.INVALID_INPUT,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       // 1) 선발 batter/pitcher 조회 & 검증
       const [homeBat, awayBat] = await Promise.all([
         this.getStartingBatter(gameId, game.homeTeam.id, m),
@@ -800,6 +808,39 @@ export class GameCoreService {
 
     game.startTime = startTime;
     return this.gameRepository.save(game);
+  }
+
+  /**
+   * 노게임 처리. 경기 기록·순위·선수 누적 기록은 경기 확정(finalizeGame) 시점에만
+   * 반영되므로, 확정 전 경기는 상태만 CANCELLED로 바꾸면 어디에도 집계되지 않는다.
+   * 진행 중 기록(plays 등)은 지우지 않고 남겨 둔다.
+   */
+  async declareNoGame(gameId: number) {
+    const game = await this.gameRepository.findOne({ where: { id: gameId } });
+    if (!game) {
+      throw new BaseException(
+        '게임을 찾을 수 없습니다.',
+        ErrorCodes.GAME_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (
+      game.status !== GameStatus.SCHEDULED &&
+      game.status !== GameStatus.IN_PROGRESS
+    ) {
+      throw new BaseException(
+        `예정되었거나 진행 중인 경기만 노게임 처리할 수 있습니다. 현재 상태: ${game.status}`,
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.gameRepository.update(gameId, {
+      status: GameStatus.CANCELLED,
+    });
+    this.closeSnapshotStream(gameId);
+
+    return { success: true, message: '노게임 처리되었습니다.' };
   }
 
   /**

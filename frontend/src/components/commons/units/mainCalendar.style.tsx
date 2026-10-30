@@ -289,6 +289,8 @@ export const StatusBox = styled.div<{ status: string }>`
       ? "#000000"
       : status === "IN_PROGRESS" // 진행중
       ? "#37DC21"
+      : status === "CANCELLED" // 노게임
+      ? "#9E9E9E"
       : "#37DC21"};
   color: #ffffff;
   font-size: 12px;

@@ -1,72 +1,50 @@
 import { useRouter } from "next/router";
-import { useState } from "react";
-import {
-  ModalButton,
-  ModalCancleButton,
-  ModalContainer,
-  ModalOverlay,
-  ModalTitle,
-  ModalTitleSmall,
-} from "./modal.style";
-import API from "../../../commons/apis/api";
-import { useModalBack } from "../../../commons/hooks/useModalBack";
-import {
-  LoadingIcon,
-  LoadingOverlay,
-} from "../../../commons/libraries/loadingOverlay";
+import GameAdminModal, { AdminAction, AdminGame } from "./gameAdminModal";
 
 interface IModalProps {
   setIsGameEndModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   inningScore: number;
 }
 
+// 일정 화면에서 경기에 들어올 때 저장한 경기 정보 (팀 이름·ID)
+const readSelectedMatch = (gameId: number): AdminGame | null => {
+  try {
+    const match = JSON.parse(localStorage.getItem("selectedMatch") ?? "null");
+    if (!match || Number(match.gameId) !== gameId) return null;
+    return {
+      id: gameId,
+      status: "IN_PROGRESS",
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+    };
+  } catch {
+    return null;
+  }
+};
+
+/** 기록 화면의 경기종료: 정상 종료 / 몰수승 / 노게임 중에서 고른다. */
 export default function GameOverModal(props: IModalProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const gameId = Number(router.query.recordId);
+  const game: AdminGame = readSelectedMatch(gameId) ?? {
+    // 팀 정보가 없으면 몰수승 선택지는 숨겨진다
+    id: gameId,
+    status: "IN_PROGRESS",
+    homeTeam: { id: 0, name: "" },
+    awayTeam: { id: 0, name: "" },
+  };
 
-  const handleTypeSelect = async (type: string) => {
-    if (isSubmitting) return;
-    if (type === "예") {
-      setIsSubmitting(true);
-      try {
-        const requestBody = { runs: props.inningScore };
-        console.log("경기종료 요청 바디:", requestBody);
-        const response = await API.post(
-          `/games/${router.query.recordId}/result`,
-          requestBody
-        );
-        console.log(
-          `/games/${router.query.recordId}/result`,
-          "응답 상태:",
-          response.status
-        );
-        props.setIsGameEndModalOpen(false);
-        router.push(`/matches/${router.query.recordId}/result`);
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
-      props.setIsGameEndModalOpen(false);
-    }
+  const onDone = (action: AdminAction) => {
+    props.setIsGameEndModalOpen(false);
+    router.push(action === "finalize" ? `/matches/${gameId}/result` : "/");
   };
 
   return (
-    <ModalOverlay>
-      <ModalContainer>
-        <ModalTitleSmall>경기를 종료하시겠습니까?</ModalTitleSmall>
-        <ModalButton
-          onClick={() => handleTypeSelect("예")}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "전송 중…" : "예"}
-        </ModalButton>
-        <ModalCancleButton onClick={() => handleTypeSelect("아니오")}>
-          아니오
-        </ModalCancleButton>
-      </ModalContainer>
-      <LoadingOverlay visible={isSubmitting}>
-        <LoadingIcon spin fontSize={48} />
-      </LoadingOverlay>
-    </ModalOverlay>
+    <GameAdminModal
+      game={game}
+      finalize={{ inningScore: props.inningScore }}
+      onClose={() => props.setIsGameEndModalOpen(false)}
+      onDone={onDone}
+    />
   );
 }

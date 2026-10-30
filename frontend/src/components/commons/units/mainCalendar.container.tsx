@@ -427,6 +427,7 @@ export default function MainCalendarPage() {
                 away: false,
               };
 
+              const isNoGame = match.status === "CANCELLED";
               const showRecordButton =
                 !match.isForfeit && // isForfeit가 true면 버튼 숨김
                 (match.status === "SCHEDULED"
@@ -528,7 +529,9 @@ export default function MainCalendarPage() {
                         gameStatus={match.status}
                         isForfeit={awayScoreDisplay === "몰수승"}
                       >
-                        {match.status === "SCHEDULED" ? "-" : awayScoreDisplay}
+                        {match.status === "SCHEDULED" || isNoGame
+                          ? "-"
+                          : awayScoreDisplay}
                       </TeamScore>
                     </Team>
                     <div
@@ -552,6 +555,8 @@ export default function MainCalendarPage() {
                             }`
                           : match.status === "EDITING"
                           ? "경기종료"
+                          : isNoGame
+                          ? "노게임"
                           : ""}
                       </StatusBox>
                       <VsText>vs</VsText>
@@ -564,7 +569,9 @@ export default function MainCalendarPage() {
                         gameStatus={match.status}
                         isForfeit={homeScoreDisplay === "몰수승"}
                       >
-                        {match.status === "SCHEDULED" ? "-" : homeScoreDisplay}
+                        {match.status === "SCHEDULED" || isNoGame
+                          ? "-"
+                          : homeScoreDisplay}
                       </TeamScore>
                     </Team>
                   </TeamsContainer>
