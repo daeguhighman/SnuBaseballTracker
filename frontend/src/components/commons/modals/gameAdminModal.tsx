@@ -63,14 +63,15 @@ const Notice = styled.p`
 
 const ScheduleInputs = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 8px;
   width: 80%;
   margin-bottom: 20px;
 
   input {
-    flex: 1;
-    min-width: 0;
-    height: 40px;
+    width: 100%;
+    box-sizing: border-box;
+    height: 44px;
     padding: 0 8px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
