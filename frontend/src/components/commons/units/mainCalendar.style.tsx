@@ -507,15 +507,3 @@ export const DatePickWrapper = styled.div`
 `;
 
 export const StyledDatePicker = styled(DatePicker)``;
-
-export const AdminButton = styled.button`
-  font-family: "KBO-Dia-Gothic_light";
-  background: none;
-  border: none;
-  padding: 0;
-  margin-top: 2px;
-  color: #9e9e9e;
-  font-size: 10px;
-  text-decoration: underline;
-  cursor: pointer;
-`;

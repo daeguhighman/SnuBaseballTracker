@@ -16,6 +16,7 @@ const SHOW_NAV = [
   "/playerStats/playerStatsPitcherDetail",
   "/refreeRegistration",
   "/mypage",
+  "/admin",
   "/login/findPassword/resetPassword",
   "/matches/[recordId]/view",
 ];

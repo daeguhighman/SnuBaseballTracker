@@ -17,7 +17,6 @@ import {
   MatchCard,
   MatchCardsContainer,
   MatchTimeLabel,
-  AdminButton,
   RecordButton,
   RecordButtonPlaceholder,
   StatusBox,
@@ -44,7 +43,6 @@ import { ko } from "date-fns/locale";
 import ErrorAlert from "../../../commons/libraries/showErrorCode";
 import API2 from "../../../commons/apis/api2";
 import ShowAlert from "../../../commons/libraries/showAlertModal";
-import GameAdminModal from "../modals/gameAdminModal";
 
 // 새 객체 구조에 맞춘 인터페이스 정의 (matchId → gameId)
 interface RawMatch {
@@ -109,7 +107,6 @@ export default function MainCalendarPage() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
 
   const [accessToken] = useRecoilState(accessTokenState); // authInfo 대신 accessToken 사용
   // 캘린더 영역 외부 클릭 감지를 위한 ref
@@ -163,10 +160,7 @@ export default function MainCalendarPage() {
     return () => {
       isMounted = false;
     };
-  }, [fromDate, toDate, router, authChecked, accessToken, reloadKey]); // authInfo 대신 accessToken 의존성
-
-  // 관리자(admin 계정) 경기 처리 모달 대상
-  const [adminTarget, setAdminTarget] = useState<Game | null>(null);
+  }, [fromDate, toDate, router, authChecked, accessToken]); // authInfo 대신 accessToken 의존성
 
   console.log("allMatchData", allMatchData);
   useEffect(() => {
@@ -567,13 +561,6 @@ export default function MainCalendarPage() {
                       </StatusBox>
                       <VsText>vs</VsText>
                       <BraketText>{stageLabel}</BraketText>
-                      {apiCanRecord &&
-                        (match.status === "SCHEDULED" ||
-                          match.status === "IN_PROGRESS") && (
-                          <AdminButton onClick={() => setAdminTarget(match)}>
-                            관리
-                          </AdminButton>
-                        )}
                     </div>
                     <Team>
                       <TeamName>{homeTeamNameDisplay}</TeamName>
@@ -695,19 +682,6 @@ export default function MainCalendarPage() {
           </p>
         )}
       </MatchCardsContainer>
-      {adminTarget && (
-        <GameAdminModal
-          game={{
-            ...adminTarget,
-            date: selectedDate ? formatDateToYMD(selectedDate) : undefined,
-          }}
-          onClose={() => setAdminTarget(null)}
-          onDone={() => {
-            setAdminTarget(null);
-            setReloadKey((k) => k + 1);
-          }}
-        />
-      )}
       <ErrorAlert error={error} />
     </Container>
   );

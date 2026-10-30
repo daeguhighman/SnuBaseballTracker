@@ -19,6 +19,7 @@ interface User {
   nickname: string;
   photoUrl: string;
   email: string;
+  role?: string;
 }
 
 export default function MypageComponent() {
@@ -73,6 +74,23 @@ export default function MypageComponent() {
             {user.nickname}
           </ValueWrapper>
         </InfoRowWrapper>
+
+        {user.role === "ADMIN" && (
+          <InfoRowWrapper>
+            <Link href="/admin" passHref>
+              <a
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+              >
+                <LabelWrapper>관리 페이지</LabelWrapper>
+                <ValueWrapper>›</ValueWrapper>
+              </a>
+            </Link>
+          </InfoRowWrapper>
+        )}
 
         {/* <ActionWrapper>
           <Link href="/changePassword" passHref>

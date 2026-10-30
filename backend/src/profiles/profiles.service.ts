@@ -23,6 +23,7 @@ export class ProfileService {
       id: profile.id,
       email: profile.user.email,
       nickname: profile.nickname,
+      role: profile.user.role,
     };
   }
 
