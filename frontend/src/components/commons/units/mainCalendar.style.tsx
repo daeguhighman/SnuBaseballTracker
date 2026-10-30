@@ -508,7 +508,7 @@ export const DatePickWrapper = styled.div`
 
 export const StyledDatePicker = styled(DatePicker)``;
 
-export const NoGameButton = styled.button`
+export const AdminButton = styled.button`
   font-family: "KBO-Dia-Gothic_light";
   background: none;
   border: none;

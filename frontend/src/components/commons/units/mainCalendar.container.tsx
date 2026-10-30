@@ -17,7 +17,7 @@ import {
   MatchCard,
   MatchCardsContainer,
   MatchTimeLabel,
-  NoGameButton,
+  AdminButton,
   RecordButton,
   RecordButtonPlaceholder,
   StatusBox,
@@ -44,6 +44,7 @@ import { ko } from "date-fns/locale";
 import ErrorAlert from "../../../commons/libraries/showErrorCode";
 import API2 from "../../../commons/apis/api2";
 import ShowAlert from "../../../commons/libraries/showAlertModal";
+import GameAdminModal from "../modals/gameAdminModal";
 
 // 새 객체 구조에 맞춘 인터페이스 정의 (matchId → gameId)
 interface RawMatch {
@@ -164,18 +165,8 @@ export default function MainCalendarPage() {
     };
   }, [fromDate, toDate, router, authChecked, accessToken, reloadKey]); // authInfo 대신 accessToken 의존성
 
-  const declareNoGame = async (match: Game) => {
-    const ok = window.confirm(
-      `${match.awayTeam.name} vs ${match.homeTeam.name} 경기를 노게임 처리할까요?\n진행 중인 기록은 순위와 개인 기록에 반영되지 않습니다.`
-    );
-    if (!ok) return;
-    try {
-      await API.post(`/games/${match.id}/no-game`);
-      setReloadKey((k) => k + 1);
-    } catch (err) {
-      setError(err);
-    }
-  };
+  // 관리자(admin 계정) 경기 처리 모달 대상
+  const [adminTarget, setAdminTarget] = useState<Game | null>(null);
 
   console.log("allMatchData", allMatchData);
   useEffect(() => {
@@ -576,10 +567,10 @@ export default function MainCalendarPage() {
                       </StatusBox>
                       <VsText>vs</VsText>
                       <BraketText>{stageLabel}</BraketText>
-                      {apiCanRecord && match.status === "SCHEDULED" && (
-                        <NoGameButton onClick={() => declareNoGame(match)}>
-                          노게임 처리
-                        </NoGameButton>
+                      {apiCanRecord && (
+                        <AdminButton onClick={() => setAdminTarget(match)}>
+                          관리
+                        </AdminButton>
                       )}
                     </div>
                     <Team>
@@ -702,6 +693,19 @@ export default function MainCalendarPage() {
           </p>
         )}
       </MatchCardsContainer>
+      {adminTarget && (
+        <GameAdminModal
+          game={{
+            ...adminTarget,
+            date: selectedDate ? formatDateToYMD(selectedDate) : undefined,
+          }}
+          onClose={() => setAdminTarget(null)}
+          onDone={() => {
+            setAdminTarget(null);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
       <ErrorAlert error={error} />
     </Container>
   );
