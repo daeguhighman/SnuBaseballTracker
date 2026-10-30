@@ -85,7 +85,6 @@ import {
   InningBoard,
   LittleScoreBoardWrapper,
   ControlButtonWhite,
-  EndButtonsGroup,
   VsText,
   LeftArrow,
   RightArrow,
@@ -104,7 +103,6 @@ import OutModal from "../../modals/recordModal/outModal";
 import EtcModal from "../../modals/recordModal/etcModal";
 import DefenseChangeModal from "../../modals/defenseChange";
 import GameOverModal from "../../modals/gameOverModal";
-import NoGameModal from "../../modals/noGameModal";
 import ScorePatchModal from "../../modals/scorePatchModal";
 import {
   awayBatterNumberState,
@@ -805,7 +803,6 @@ export default function GameRecordPageV2() {
   const [isEtcModalOpen, setIsEtcModalOpen] = useState(false);
 
   const [isGameEndModalOpen, setIsGameEndModalOpen] = useState(false);
-  const [isNoGameModalOpen, setIsNoGameModalOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
 
   // 에러 상태
@@ -2956,14 +2953,9 @@ export default function GameRecordPageV2() {
           <ControlButtonWhite onClick={handleSubmit}>
             저장하기
           </ControlButtonWhite>
-          <EndButtonsGroup>
-            <ControlButtonWhite onClick={() => setIsNoGameModalOpen(true)}>
-              노게임
-            </ControlButtonWhite>
-            <ControlButton onClick={() => setIsGameEndModalOpen(true)}>
-              경기종료
-            </ControlButton>
-          </EndButtonsGroup>
+          <ControlButton onClick={() => setIsGameEndModalOpen(true)}>
+            경기종료
+          </ControlButton>
         </ControlButtonsWrapper>
       </ControlButtonsRow>
 
@@ -3272,10 +3264,6 @@ export default function GameRecordPageV2() {
           // 🔑 여기만 바꿔줍니다
           onTypeSelect={() => groundModalRef.current?.open()}
         />
-      )}
-
-      {isNoGameModalOpen && (
-        <NoGameModal setIsNoGameModalOpen={setIsNoGameModalOpen} />
       )}
 
       {isGameEndModalOpen && (
