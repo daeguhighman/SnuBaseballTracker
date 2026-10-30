@@ -567,11 +567,13 @@ export default function MainCalendarPage() {
                       </StatusBox>
                       <VsText>vs</VsText>
                       <BraketText>{stageLabel}</BraketText>
-                      {apiCanRecord && (
-                        <AdminButton onClick={() => setAdminTarget(match)}>
-                          관리
-                        </AdminButton>
-                      )}
+                      {apiCanRecord &&
+                        (match.status === "SCHEDULED" ||
+                          match.status === "IN_PROGRESS") && (
+                          <AdminButton onClick={() => setAdminTarget(match)}>
+                            관리
+                          </AdminButton>
+                        )}
                     </div>
                     <Team>
                       <TeamName>{homeTeamNameDisplay}</TeamName>
