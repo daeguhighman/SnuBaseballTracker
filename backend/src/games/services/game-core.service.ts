@@ -545,6 +545,16 @@ export class GameCoreService {
       winnerTeamTournamentId: winnerTeamId,
     });
 
+    await this.advanceBracket(game, winnerTeamId, loserTeamId, manager);
+  }
+
+  /** 대진표 경기의 승자(와 준결승 패자)를 다음 경기 슬롯에 배치한다. */
+  private async advanceBracket(
+    game: Game,
+    winnerTeamId: number | null,
+    loserTeamId: number | null,
+    manager: EntityManager,
+  ) {
     // 3) 다음 경기 매핑 (QF→SF, SF→F)
     type Slot = 'homeTeamTournamentId' | 'awayTeamTournamentId';
     const transitionMap: Partial<
@@ -792,8 +802,12 @@ export class GameCoreService {
     return this.gameRepository.save(game);
   }
 
+  /**
+   * 몰수승 처리. winnerTeamId는 대회별 팀(TeamTournament) ID다.
+   * 예정·진행 중 경기만 가능하며, 리그 경기는 승패를, 대진표 경기는 다음 라운드 진출을 반영한다.
+   */
   async forfeitGame(gameId: number, winnerTeamId: number) {
-    await this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const game = await manager.findOne(Game, {
         where: { id: gameId },
         relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],
@@ -807,66 +821,59 @@ export class GameCoreService {
         );
       }
       if (
-        winnerTeamId !== game.homeTeam.team.id &&
-        winnerTeamId !== game.awayTeam.team.id
+        game.status !== GameStatus.SCHEDULED &&
+        game.status !== GameStatus.IN_PROGRESS
       ) {
         throw new BaseException(
-          '유효하지 않은 승자 팀 ID입니다.',
+          `예정되었거나 진행 중인 경기만 몰수승 처리할 수 있습니다. 현재 상태: ${game.status}`,
           ErrorCodes.INVALID_INPUT,
           HttpStatus.BAD_REQUEST,
         );
       }
-      game.status = GameStatus.FINALIZED;
-      game.winnerTeamTournamentId = winnerTeamId;
-      game.isForfeit = true;
-
-      const [homeTeamTournament, awayTeamTournament] = await Promise.all([
-        manager.findOne(TeamTournament, {
-          where: {
-            team: { id: game.homeTeam.team.id },
-            tournament: { id: game.tournamentId },
-          },
-        }),
-        manager.findOne(TeamTournament, {
-          where: {
-            team: { id: game.awayTeam.team.id },
-            tournament: { id: game.tournamentId },
-          },
-        }),
-      ]);
-
-      if (!homeTeamTournament || !awayTeamTournament) {
+      if (!game.homeTeam || !game.awayTeam) {
         throw new BaseException(
-          `토너먼트 참가 정보를 찾을 수 없습니다.`,
-          ErrorCodes.TEAM_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
+          '양 팀이 정해지지 않은 경기입니다.',
+          ErrorCodes.INVALID_INPUT,
+          HttpStatus.BAD_REQUEST,
         );
       }
 
-      // 5. 승/패 업데이트
-      homeTeamTournament.games += 1;
-      awayTeamTournament.games += 1;
-
-      if (winnerTeamId === game.homeTeam.team.id) {
-        homeTeamTournament.wins += 1;
-        awayTeamTournament.losses += 1;
-      } else {
-        homeTeamTournament.losses += 1;
-        awayTeamTournament.wins += 1;
+      const homeWins = winnerTeamId === game.homeTeam.id;
+      if (!homeWins && winnerTeamId !== game.awayTeam.id) {
+        throw new BaseException(
+          '유효하지 않은 승자 팀 ID입니다. 이 경기의 대회별 팀 ID를 입력하세요.',
+          ErrorCodes.INVALID_INPUT,
+          HttpStatus.BAD_REQUEST,
+        );
       }
+      const [winner, loser] = homeWins
+        ? [game.homeTeam, game.awayTeam]
+        : [game.awayTeam, game.homeTeam];
 
-      // 6. 변경사항 저장
-      await Promise.all([
-        manager.save(Game, game),
-        manager.save(TeamTournament, homeTeamTournament),
-        manager.save(TeamTournament, awayTeamTournament),
-      ]);
+      await manager.update(Game, gameId, {
+        status: GameStatus.FINALIZED,
+        winnerTeamTournamentId: winner.id,
+        isForfeit: true,
+      });
+
+      if (game.stage === MatchStage.LEAGUE) {
+        winner.games += 1;
+        winner.wins += 1;
+        loser.games += 1;
+        loser.losses += 1;
+        await manager.save(TeamTournament, [winner, loser]);
+      } else {
+        await this.advanceBracket(game, winner.id, loser.id, manager);
+      }
 
       return {
         success: true,
-        message: `게임 ${gameId}이(가) 몰수승으로 처리되었습니다. 승리팀: ${winnerTeamId}`,
+        message: `${winner.team.name} 몰수승 처리되었습니다.`,
       };
     });
+
+    this.closeSnapshotStream(gameId);
+    return result;
   }
 
   async changePhase(tournamentId: number) {

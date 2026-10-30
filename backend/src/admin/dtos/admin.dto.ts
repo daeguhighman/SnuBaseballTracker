@@ -9,10 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  BracketPosition,
-  MatchStage,
-} from '@common/enums/match-stage.enum';
+import { BracketPosition, MatchStage } from '@common/enums/match-stage.enum';
 
 export class UmpireRequestDto {
   @ApiProperty({
@@ -112,8 +109,8 @@ export class ForfeitGameDto {
   gameId: number;
 
   @ApiProperty({
-    description: '팀 ID',
-    example: 1,
+    description: '승리 팀의 대회별 팀(TeamTournament) ID',
+    example: 13,
   })
   @IsInt()
   winnerTeamId: number;
@@ -149,7 +146,11 @@ export class RegisterPlayerDto {
   @Length(1, 50)
   studentId: string;
 
-  @ApiProperty({ description: '와일드카드 여부', required: false, default: false })
+  @ApiProperty({
+    description: '와일드카드 여부',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   isWildcard?: boolean;
