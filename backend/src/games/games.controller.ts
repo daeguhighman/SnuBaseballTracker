@@ -196,6 +196,15 @@ export class GamesController {
   }
 
   @UseGuards(AdminOrUmpireAuthGuard)
+  @Post(':gameId/no-game')
+  @HttpCode(HttpStatus.OK)
+  async declareNoGame(
+    @Param('gameId', ParseIntPipe) gameId: number,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.gameCoreService.declareNoGame(gameId);
+  }
+
+  @UseGuards(AdminOrUmpireAuthGuard)
   @Patch(':gameId/result/batters/:batterGameStatsId')
   async updateBatterStats(
     @Param('gameId', ParseIntPipe) gameId: number,

@@ -17,6 +17,7 @@ import {
   MatchCard,
   MatchCardsContainer,
   MatchTimeLabel,
+  NoGameButton,
   RecordButton,
   RecordButtonPlaceholder,
   StatusBox,
@@ -107,6 +108,7 @@ export default function MainCalendarPage() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [accessToken] = useRecoilState(accessTokenState); // authInfo 대신 accessToken 사용
   // 캘린더 영역 외부 클릭 감지를 위한 ref
@@ -160,7 +162,20 @@ export default function MainCalendarPage() {
     return () => {
       isMounted = false;
     };
-  }, [fromDate, toDate, router, authChecked, accessToken]); // authInfo 대신 accessToken 의존성
+  }, [fromDate, toDate, router, authChecked, accessToken, reloadKey]); // authInfo 대신 accessToken 의존성
+
+  const declareNoGame = async (match: Game) => {
+    const ok = window.confirm(
+      `${match.awayTeam.name} vs ${match.homeTeam.name} 경기를 노게임 처리할까요?\n진행 중인 기록은 순위와 개인 기록에 반영되지 않습니다.`
+    );
+    if (!ok) return;
+    try {
+      await API.post(`/games/${match.id}/no-game`);
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      setError(err);
+    }
+  };
 
   console.log("allMatchData", allMatchData);
   useEffect(() => {
@@ -427,6 +442,7 @@ export default function MainCalendarPage() {
                 away: false,
               };
 
+              const isNoGame = match.status === "CANCELLED";
               const showRecordButton =
                 !match.isForfeit && // isForfeit가 true면 버튼 숨김
                 (match.status === "SCHEDULED"
@@ -528,7 +544,9 @@ export default function MainCalendarPage() {
                         gameStatus={match.status}
                         isForfeit={awayScoreDisplay === "몰수승"}
                       >
-                        {match.status === "SCHEDULED" ? "-" : awayScoreDisplay}
+                        {match.status === "SCHEDULED" || isNoGame
+                          ? "-"
+                          : awayScoreDisplay}
                       </TeamScore>
                     </Team>
                     <div
@@ -552,10 +570,17 @@ export default function MainCalendarPage() {
                             }`
                           : match.status === "EDITING"
                           ? "경기종료"
+                          : isNoGame
+                          ? "노게임"
                           : ""}
                       </StatusBox>
                       <VsText>vs</VsText>
                       <BraketText>{stageLabel}</BraketText>
+                      {apiCanRecord && match.status === "SCHEDULED" && (
+                        <NoGameButton onClick={() => declareNoGame(match)}>
+                          노게임 처리
+                        </NoGameButton>
+                      )}
                     </div>
                     <Team>
                       <TeamName>{homeTeamNameDisplay}</TeamName>
@@ -564,7 +589,9 @@ export default function MainCalendarPage() {
                         gameStatus={match.status}
                         isForfeit={homeScoreDisplay === "몰수승"}
                       >
-                        {match.status === "SCHEDULED" ? "-" : homeScoreDisplay}
+                        {match.status === "SCHEDULED" || isNoGame
+                          ? "-"
+                          : homeScoreDisplay}
                       </TeamScore>
                     </Team>
                   </TeamsContainer>

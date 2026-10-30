@@ -167,6 +167,11 @@ export const ControlButtonsWrapper = styled.div`
   /* padding-top: 2vh; */
 `;
 
+export const EndButtonsGroup = styled.div`
+  display: flex;
+  gap: 2vw;
+`;
+
 export const ControlButton = styled.button`
   background-color: #000000;
   width: 19vw;

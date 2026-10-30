@@ -289,6 +289,8 @@ export const StatusBox = styled.div<{ status: string }>`
       ? "#000000"
       : status === "IN_PROGRESS" // 진행중
       ? "#37DC21"
+      : status === "CANCELLED" // 노게임
+      ? "#9E9E9E"
       : "#37DC21"};
   color: #ffffff;
   font-size: 12px;
@@ -505,3 +507,15 @@ export const DatePickWrapper = styled.div`
 `;
 
 export const StyledDatePicker = styled(DatePicker)``;
+
+export const NoGameButton = styled.button`
+  font-family: "KBO-Dia-Gothic_light";
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 2px;
+  color: #9e9e9e;
+  font-size: 10px;
+  text-decoration: underline;
+  cursor: pointer;
+`;
