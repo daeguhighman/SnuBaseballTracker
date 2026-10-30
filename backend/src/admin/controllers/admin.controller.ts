@@ -11,6 +11,7 @@ import {
   Param,
   ParseIntPipe,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { join } from 'path';
@@ -25,9 +26,11 @@ import {
 import { AdminPlayersService } from '@admin/services/admin-players.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '@/common/decorators/public.decorator';
+import { AdminAuthGuard } from '@/auth/guards/admin-auth.guard';
 
 @ApiTags('admin')
 @Controller('admin')
+@UseGuards(AdminAuthGuard)
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class AdminController {
   constructor(

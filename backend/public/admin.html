@@ -526,16 +526,16 @@
                 <div class="api-info">
                     <h3>API 정보</h3>
                     <p><strong>엔드포인트:</strong> <code>PATCH /admin/forfeit-game</code></p>
-                    <p><strong>설명:</strong> 경기를 몰수승으로 처리합니다.</p>
+                    <p><strong>설명:</strong> 예정·진행 중 경기를 몰수승으로 처리합니다. 위 "경기 등록"에서 대회를 선택해 경기 목록을 불러온 뒤, 경기 ID를 입력하면 승리 팀을 고를 수 있습니다.</p>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="forfeitGameId">경기 ID</label>
-                        <input type="number" id="forfeitGameId" placeholder="예: 1">
+                        <input type="number" id="forfeitGameId" placeholder="예: 1" oninput="fillForfeitTeams()">
                     </div>
                     <div class="form-group">
-                        <label for="winnerTeamId">승리 팀 ID</label>
-                        <input type="number" id="winnerTeamId" placeholder="예: 1">
+                        <label for="winnerTeamId">승리 팀</label>
+                        <select id="winnerTeamId"><option value="">경기 ID를 먼저 입력하세요</option></select>
                     </div>
                 </div>
                 <button class="btn btn-danger" onclick="forfeitGame()">몰수승 처리</button>
@@ -785,9 +785,11 @@
             const winnerTeamId = document.getElementById('winnerTeamId').value;
 
             if (!gameId || !winnerTeamId) {
-                alert('경기 ID와 승리 팀 ID를 모두 입력해주세요.');
+                alert('경기 ID와 승리 팀을 모두 선택해주세요.');
                 return;
             }
+            const winnerName = document.getElementById('winnerTeamId').selectedOptions[0].text;
+            if (!confirm(`경기 #${gameId}를 ${winnerName} 몰수승으로 처리할까요? 되돌릴 수 없습니다.`)) return;
 
             showLoading('forfeitLoading');
             hideResponse('forfeitResponse');
@@ -939,6 +941,24 @@
             }
         }
 
+        // 몰수승 승리 팀 선택용 (loadExistingGames가 채움)
+        let loadedGames = [];
+
+        function fillForfeitTeams() {
+            const gameId = parseInt(document.getElementById('forfeitGameId').value);
+            const select = document.getElementById('winnerTeamId');
+            const game = loadedGames.find((g) => g.id === gameId);
+            if (!game) {
+                select.innerHTML = `<option value="">${loadedGames.length ? '목록에 없는 경기 ID입니다' : '경기 등록에서 대회를 먼저 선택하세요'}</option>`;
+                return;
+            }
+            select.innerHTML = '<option value="">승리 팀 선택</option>' +
+                [game.away, game.home]
+                    .filter((t) => t.teamTournamentId)
+                    .map((t) => `<option value="${t.teamTournamentId}">${t.name}</option>`)
+                    .join('');
+        }
+
         async function loadExistingGames() {
             const tournamentId = document.getElementById('seedTournament').value;
             const tbody = document.getElementById('seedGamesBody');
@@ -951,6 +971,8 @@
                     `${API_BASE_URL}/admin/tournaments/${tournamentId}/games`,
                     'GET'
                 );
+                loadedGames = games;
+                fillForfeitTeams();
                 if (!games.length) {
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999;">등록된 경기가 없습니다</td></tr>';
                     return;

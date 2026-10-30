@@ -2,6 +2,7 @@ import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { AppRole } from '@/users/entities/user.entity';
+import { IS_PUBLIC_KEY } from '@common/decorators/public.decorator';
 
 @Injectable()
 export class AdminAuthGuard extends AuthGuard('jwt') {
@@ -12,6 +13,11 @@ export class AdminAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: any) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
     return super.canActivate(context);
   }
 
