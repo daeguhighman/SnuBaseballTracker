@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Game } from '../entities/game.entity';
+import { GameStatus } from '@common/enums/game-status.enum';
 import { Repository, DataSource, In, EntityManager } from 'typeorm';
 import {
   LineupResponseDto,
@@ -280,7 +281,18 @@ export class GameLineupService {
         },
       });
 
-      if (existingLineup) {
+      if (existingLineup && game.status === GameStatus.SCHEDULED) {
+        // 경기 시작 전 재제출(새로고침·중복 클릭 등)은 기존 라인업을 지우고 새로 등록한다
+        await manager.delete(BatterGameParticipation, {
+          gameId,
+          teamTournamentId,
+        });
+        await manager.delete(PitcherGameParticipation, {
+          gameId,
+          teamTournamentId,
+        });
+        await manager.delete(GameRoaster, { gameId, teamTournamentId });
+      } else if (existingLineup) {
         throw new BaseException(
           '이미 라인업이 제출되었습니다.',
           ErrorCodes.LINEUP_ALREADY_SUBMITTED,
