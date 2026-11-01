@@ -936,47 +936,39 @@ export const ReconstructionSwitch = styled(Switch)`
   }
 `;
 
-export const OutZoneWrapper = styled.div`
+export const OutZoneWrapper = styled.div<{ active?: boolean }>`
   position: absolute;
-  /* 홈 진입 경로에서 분리: 좌측 하단 쓰레기통 */
+  /* 홈 진입 경로에서 분리: 좌측 하단 */
   top: 85%;
   left: 12%;
 
   width: 14%;
   aspect-ratio: 1 / 1;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%)
+    scale(${({ active }) => (active ? 1.3 : 1)});
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
 
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.04) 100%
-  );
-  backdrop-filter: blur(2px);
   border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: #c62828;
+  /* 주자를 위로 끌고 오면 원이 커지고 테두리가 밝아진다 */
+  box-shadow: 0 0 0 ${({ active }) => (active ? "4px" : "2px")}
+      ${({ active }) => (active ? "#ffcdd2" : "rgba(255, 255, 255, 0.6)")},
+    0 4px 12px rgba(0, 0, 0, 0.35);
 
   display: flex;
   justify-content: center;
   align-items: center;
 
-  color: rgba(255, 255, 255, 0.92);
-
   z-index: 6;
   pointer-events: none;
 `;
 
-export const OutZoneIcon = styled.span`
-  font-size: clamp(20px, 3.2vh, 30px);
-  line-height: 1;
-  display: inline-flex;
-  color: #ff7875;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
-`;
-
 export const OutZoneLabel = styled.span`
-  display: none;
+  color: #fff;
+  font-family: "Pretendard";
+  font-weight: 800;
+  font-size: clamp(13px, 2vh, 18px);
+  letter-spacing: 0.5px;
 `;
 
 const scoreToastAnim = keyframes`

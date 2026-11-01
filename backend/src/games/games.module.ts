@@ -19,6 +19,7 @@ import { GameAuthService } from '@games/services/game-auth.service';
 import { GameRoaster } from '@games/entities/game-roaster.entity';
 import { GameUndoSnapshot } from '@games/entities/game-undo-snapshot.entity';
 import { GameUndoService } from '@games/services/game-undo.service';
+import { GameCorrectionService } from '@games/services/game-correction.service';
 import { UmpiresModule } from '@umpires/umpires.module';
 import { TournamentsModule } from '@tournaments/tournaments.module';
 import { PlaysModule } from '@/plays/plays.module';
@@ -52,6 +53,7 @@ import { AdminOrUmpireAuthGuard } from '@/auth/guards/admin-or-umpire-auth.guard
     GameScoreboardService,
     GameAuthService,
     GameUndoService,
+    GameCorrectionService,
     AdminOrUmpireAuthGuard,
   ],
   exports: [

@@ -71,7 +71,6 @@ import {
   WildCardBoxNone,
   OnDeckWrapper,
   OutZoneWrapper,
-  OutZoneIcon,
   OutZoneLabel,
   ScoreToast,
   CustomBoundaryWrapper,
@@ -135,7 +134,6 @@ import LeftPolygon from "../../../../commons/libraries/leftPolygon";
 import { unstable_batchedUpdates } from "react-dom";
 import PortalSwitch from "./reconstructionSwitch";
 import { message } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
 
 // 1) 먼저 BaseId / BASE_IDS를 선언
 export const BASE_IDS = [
@@ -1289,7 +1287,24 @@ export default function GameRecordPageV2() {
     );
   };
 
+  // 주자를 OUT 원 위로 끌고 왔는지 (원이 커지며 놓을 곳을 알려 줌)
+  const [isOverOutZone, setIsOverOutZone] = useState(false);
+  const handleDragMove = (e: DragMoveEvent) => {
+    const rect = e.active.rect.current.translated;
+    const zone = zoneRectRef.current;
+    if (!rect || !zone || String(e.active.id).startsWith("black-badge")) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const over =
+      cx >= zone.left && cx <= zone.right && cy >= zone.top && cy <= zone.bottom;
+    setIsOverOutZone((prev) => {
+      if (over && !prev) navigator.vibrate?.(30);
+      return over;
+    });
+  };
+
   const onAnyDragEnd = (e: DragEndEvent) => {
+    setIsOverOutZone(false);
     handleDrop(e);
     // 드래그가 끝날 때 (항상) Ground 강조 해제
     groundRef.current?.classList.remove("out-zone-active");
@@ -2792,15 +2807,17 @@ export default function GameRecordPageV2() {
 
   // 타자 주자 위치 업데이트
 
-  const deriveOuts = (v: any): boolean[] => {
-    const outCnt: number = v?.inningStats?.actual?.outs ?? 0;
+  // 저장 전이라도 OUT 원에 넣은 주자만큼 아웃카운트 불을 켠다
+  const deriveOuts = (v: any, pendingOuts: number): boolean[] => {
+    const outCnt: number =
+      (v?.inningStats?.actual?.outs ?? 0) + pendingOuts;
     return Array(3)
       .fill(false)
       .map((_, i) => i < outCnt);
   };
   useEffect(() => {
-    setOuts(deriveOuts(snap));
-  }, [snap?.inningStats?.actual?.outs]);
+    setOuts(deriveOuts(snap, outBadgesActual.size));
+  }, [snap?.inningStats?.actual?.outs, outBadgesActual]);
 
   useEffect(() => {
     const snap = (snapshotData as any)?.snapshot ?? snapshotData;
@@ -3010,6 +3027,7 @@ export default function GameRecordPageV2() {
         //   },
         // }}
         onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={onAnyDragEnd}
       >
         <GraphicWrapper ref={wrapperRef}>
@@ -3018,10 +3036,7 @@ export default function GameRecordPageV2() {
           <HomeBaseWrapper active={isHomeBaseActive} />
           <Ground ref={groundRef} />
 
-          <OutZoneWrapper ref={outZoneRef}>
-            <OutZoneIcon aria-hidden>
-              <DeleteOutlined />
-            </OutZoneIcon>
+          <OutZoneWrapper ref={outZoneRef} active={isOverOutZone}>
             <OutZoneLabel>OUT</OutZoneLabel>
           </OutZoneWrapper>
           {scoreToastKey > 0 && (
