@@ -103,6 +103,7 @@ import OutModal from "../../modals/recordModal/outModal";
 import EtcModal from "../../modals/recordModal/etcModal";
 import DefenseChangeModal from "../../modals/defenseChange";
 import GameOverModal from "../../modals/gameOverModal";
+import UndoModal from "../../modals/undoModal";
 import ScorePatchModal from "../../modals/scorePatchModal";
 import {
   awayBatterNumberState,
@@ -803,6 +804,7 @@ export default function GameRecordPageV2() {
   const [isEtcModalOpen, setIsEtcModalOpen] = useState(false);
 
   const [isGameEndModalOpen, setIsGameEndModalOpen] = useState(false);
+  const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
 
   // 에러 상태
@@ -2953,6 +2955,9 @@ export default function GameRecordPageV2() {
           <ControlButtonWhite onClick={handleSubmit}>
             저장하기
           </ControlButtonWhite>
+          <ControlButtonWhite onClick={() => setIsUndoModalOpen(true)}>
+            되돌리기
+          </ControlButtonWhite>
           <ControlButton onClick={() => setIsGameEndModalOpen(true)}>
             경기종료
           </ControlButton>
@@ -3263,6 +3268,18 @@ export default function GameRecordPageV2() {
           onSuccess={afterRecord}
           // 🔑 여기만 바꿔줍니다
           onTypeSelect={() => groundModalRef.current?.open()}
+        />
+      )}
+
+      {isUndoModalOpen && (
+        <UndoModal
+          gameId={Number(router.query.recordId)}
+          onClose={() => setIsUndoModalOpen(false)}
+          onDone={(snapshot) => {
+            // 화면 곳곳이 localStorage의 snapshot을 읽으므로 저장 후 새로 그린다
+            if (snapshot) updateSnapshot(snapshot);
+            window.location.reload();
+          }}
         />
       )}
 

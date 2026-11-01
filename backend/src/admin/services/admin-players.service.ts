@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
 
 import { Player } from '@players/entities/player.entity';
 import { PlayerTournament } from '@players/entities/player-tournament.entity';
@@ -39,22 +39,76 @@ export class AdminPlayersService {
   }
 
   async listDepartments() {
-    return this.departmentRepo.find({
-      select: ['id', 'name'],
+    const departments = await this.departmentRepo.find({
+      relations: ['college'],
       order: { name: 'ASC' },
     });
+    return departments.map((d) => ({
+      id: d.id,
+      name: d.name,
+      collegeId: d.college?.id ?? null,
+    }));
+  }
+
+  /** 이름으로 기존 선수 찾기 (이전 대회 선수를 다시 등록할 때) */
+  async searchPlayers(name: string) {
+    const keyword = name?.trim();
+    if (!keyword) return [];
+    const players = await this.playerRepo.find({
+      where: { name: Like(`%${keyword}%`) },
+      relations: [
+        'college',
+        'department',
+        'playerTournaments',
+        'playerTournaments.teamTournament',
+        'playerTournaments.teamTournament.team',
+        'playerTournaments.teamTournament.tournament',
+      ],
+      order: { name: 'ASC' },
+      take: 20,
+    });
+    return players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      studentId: p.studentId,
+      college: p.college ? { id: p.college.id, name: p.college.name } : null,
+      department: p.department
+        ? { id: p.department.id, name: p.department.name }
+        : null,
+      teams: (p.playerTournaments ?? []).map((pt) => ({
+        teamTournamentId: pt.teamTournament?.id,
+        tournamentId: pt.teamTournament?.tournament?.id,
+        label: `${pt.teamTournament?.tournament?.name ?? ''} ${
+          pt.teamTournament?.team?.name ?? ''
+        }`.trim(),
+      })),
+    }));
   }
 
   async registerPlayer(dto: RegisterPlayerDto) {
     return this.dataSource.transaction(async (manager) => {
-      const college = await manager.findOne(College, {
-        where: { id: dto.collegeId },
-      });
+      const existingPlayer = dto.playerId
+        ? await manager.findOne(Player, {
+            where: { id: dto.playerId },
+            relations: ['college', 'department'],
+          })
+        : null;
+      if (dto.playerId && !existingPlayer) {
+        throw new NotFoundException('선수를 찾을 수 없습니다.');
+      }
+
+      const college =
+        existingPlayer?.college ??
+        (await manager.findOne(College, {
+          where: { id: dto.collegeId },
+        }));
       if (!college) throw new NotFoundException('대학을 찾을 수 없습니다.');
 
-      const department = await manager.findOne(Department, {
-        where: { id: dto.departmentId },
-      });
+      const department =
+        existingPlayer?.department ??
+        (await manager.findOne(Department, {
+          where: { id: dto.departmentId },
+        }));
       if (!department) throw new NotFoundException('학과를 찾을 수 없습니다.');
 
       const teamTournament = await manager.findOne(TeamTournament, {
@@ -68,9 +122,11 @@ export class AdminPlayersService {
         throw new BadRequestException('해당 대회 소속의 팀이 아닙니다.');
       }
 
-      let player = await manager.findOne(Player, {
-        where: { name: dto.name, studentId: dto.studentId },
-      });
+      let player =
+        existingPlayer ??
+        (await manager.findOne(Player, {
+          where: { name: dto.name, studentId: dto.studentId },
+        }));
       if (!player) {
         player = manager.create(Player, {
           name: dto.name,

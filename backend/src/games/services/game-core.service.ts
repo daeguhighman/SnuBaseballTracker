@@ -225,6 +225,13 @@ export class GameCoreService {
           HttpStatus.BAD_REQUEST,
         );
       }
+      if (game.status !== GameStatus.SCHEDULED) {
+        throw new BaseException(
+          '이미 시작했거나 끝난 경기입니다.',
+          ErrorCodes.INVALID_INPUT,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
       // 1) 선발 batter/pitcher 조회 & 검증
       const [homeBat, awayBat] = await Promise.all([

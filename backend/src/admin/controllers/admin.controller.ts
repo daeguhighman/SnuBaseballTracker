@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   Res,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { join } from 'path';
@@ -145,6 +146,12 @@ export class AdminController {
   @ApiOperation({ summary: '학과 목록 조회 (선수 등록 UI)' })
   async listDepartments() {
     return this.adminPlayersService.listDepartments();
+  }
+
+  @Get('players/search')
+  @ApiOperation({ summary: '이름으로 기존 선수 검색 (선수 등록 UI)' })
+  async searchPlayers(@Query('name') name: string) {
+    return this.adminPlayersService.searchPlayers(name);
   }
 
   @Post('players')

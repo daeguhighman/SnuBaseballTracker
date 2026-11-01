@@ -40,6 +40,7 @@ import {
   UpdatePitcherStatsDto,
 } from '@games/dtos/game-result.dto';
 import { GameLineupService } from '@games/services/game-lineup.service';
+import { GameUndoService } from '@games/services/game-undo.service';
 import { GameScoreboardService } from '@games/services/game-scoreboard.service';
 import { GameStatsService } from '@games/services/game-stats.service';
 import { GameCoreService } from '@games/services/game-core.service';
@@ -66,6 +67,7 @@ export class GamesController {
     private readonly gameScoreboardService: GameScoreboardService,
     private readonly gameStatsService: GameStatsService,
     private readonly gameCoreService: GameCoreService,
+    private readonly gameUndoService: GameUndoService,
   ) {}
 
   @Get()
@@ -193,6 +195,20 @@ export class GamesController {
     @Param('gameId', ParseIntPipe) gameId: number,
   ): Promise<{ success: boolean; message: string }> {
     return this.gameCoreService.finalizeGame(gameId);
+  }
+
+  @UseGuards(AdminOrUmpireAuthGuard)
+  @Get(':gameId/undo')
+  async getUndoStatus(@Param('gameId', ParseIntPipe) gameId: number) {
+    return this.gameUndoService.getStatus(gameId);
+  }
+
+  /** 직전 기록 취소 */
+  @UseGuards(AdminOrUmpireAuthGuard)
+  @Post(':gameId/undo')
+  @HttpCode(HttpStatus.OK)
+  async undo(@Param('gameId', ParseIntPipe) gameId: number) {
+    return this.gameUndoService.undo(gameId);
   }
 
   @UseGuards(AdminOrUmpireAuthGuard)

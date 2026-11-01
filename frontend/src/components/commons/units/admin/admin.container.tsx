@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import moment from "moment-timezone";
 import API from "../../../../commons/apis/api";
+import { getCurrentTournament } from "../../../../commons/apis/currentTournament";
 import GameAdminModal, { AdminGame } from "../../modals/gameAdminModal";
+import CreateGameModal, {
+  AdminTeamOption,
+} from "../../modals/createGameModal";
+import AddPlayerModal from "../../modals/addPlayerModal";
 import {
+  AddButton,
   Chevron,
   DateNav,
   Empty,
@@ -12,9 +18,13 @@ import {
   Hint,
   Notice,
   PageWrapper,
+  PlayerMeta,
+  PlayerName,
+  PlayerRow,
   StatusBadge,
   Tab,
   Tabs,
+  TeamSelect,
 } from "./admin.style";
 
 interface ScheduleGame {
@@ -25,6 +35,16 @@ interface ScheduleGame {
   homeTeam: { id: number; name: string; score: number | null };
   awayTeam: { id: number; name: string; score: number | null };
 }
+
+interface RosterPlayer {
+  id: number;
+  name: string;
+  department: string | null;
+  isElite: boolean;
+  isWc: boolean;
+}
+
+type TabKey = "games" | "players";
 
 const statusLabel = (game: ScheduleGame) => {
   if (game.isForfeit) return "몰수승";
@@ -43,19 +63,79 @@ const statusLabel = (game: ScheduleGame) => {
 const isOpenGame = (game: ScheduleGame) =>
   game.status === "SCHEDULED" || game.status === "IN_PROGRESS";
 
-/** admin 계정 전용 관리 페이지. 지금은 경기 관리 탭만 있고, 대진표 탭은 자리만 잡아 둔다. */
+/** admin 계정 전용 관리 페이지: 경기 관리, 선수 관리. 대진표 탭은 자리만 잡아 둔다. */
 export default function AdminPageComponent() {
   const [role, setRole] = useState<string | null>(null);
-  const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
-  const [games, setGames] = useState<ScheduleGame[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [target, setTarget] = useState<AdminGame | null>(null);
+  const [tab, setTab] = useState<TabKey>("games");
+  const [tournamentId, setTournamentId] = useState<number | null>(null);
+  const [teams, setTeams] = useState<AdminTeamOption[]>([]);
 
   useEffect(() => {
     API.get("/profile/me")
       .then((res) => setRole(res.data.role ?? ""))
       .catch(() => setRole(""));
   }, []);
+
+  useEffect(() => {
+    if (role !== "ADMIN") return;
+    getCurrentTournament()
+      .then(async ({ id }) => {
+        setTournamentId(id);
+        const res = await API.get(`/tournaments/${id}/teams/grouped`);
+        const grouped: Record<string, { id: number; name: string }[]> =
+          res.data;
+        setTeams(
+          Object.entries(grouped).flatMap(([group, list]) =>
+            list.map((team) => ({ id: team.id, name: team.name, group }))
+          )
+        );
+      })
+      .catch(() => setTeams([]));
+  }, [role]);
+
+  if (role === null) return <PageWrapper />;
+  if (role !== "ADMIN") {
+    return (
+      <PageWrapper>
+        <Notice>관리자 계정만 이용할 수 있습니다.</Notice>
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <PageWrapper>
+      <Tabs>
+        <Tab active={tab === "games"} onClick={() => setTab("games")}>
+          경기 관리
+        </Tab>
+        <Tab active={tab === "players"} onClick={() => setTab("players")}>
+          선수
+        </Tab>
+        <Tab active={false} disabled>
+          대진표 (준비 중)
+        </Tab>
+      </Tabs>
+
+      {tab === "games" ? (
+        <GamesTab tournamentId={tournamentId} teams={teams} />
+      ) : (
+        <PlayersTab tournamentId={tournamentId} teams={teams} />
+      )}
+    </PageWrapper>
+  );
+}
+
+interface ITabProps {
+  tournamentId: number | null;
+  teams: AdminTeamOption[];
+}
+
+function GamesTab({ tournamentId, teams }: ITabProps) {
+  const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
+  const [games, setGames] = useState<ScheduleGame[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [target, setTarget] = useState<AdminGame | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const loadGames = useCallback(async () => {
     setIsLoading(true);
@@ -70,30 +150,14 @@ export default function AdminPageComponent() {
   }, [date]);
 
   useEffect(() => {
-    if (role === "ADMIN") loadGames();
-  }, [role, loadGames]);
+    loadGames();
+  }, [loadGames]);
 
   const moveDate = (days: number) =>
     setDate(moment(date).add(days, "day").format("YYYY-MM-DD"));
 
-  if (role === null) return <PageWrapper />;
-  if (role !== "ADMIN") {
-    return (
-      <PageWrapper>
-        <Notice>관리자 계정만 이용할 수 있습니다.</Notice>
-      </PageWrapper>
-    );
-  }
-
   return (
-    <PageWrapper>
-      <Tabs>
-        <Tab active>경기 관리</Tab>
-        <Tab active={false} disabled>
-          대진표 (준비 중)
-        </Tab>
-      </Tabs>
-
+    <>
       <DateNav>
         <button onClick={() => moveDate(-1)} aria-label="이전 날짜">
           &lt;
@@ -144,6 +208,13 @@ export default function AdminPageComponent() {
         ))
       )}
 
+      <AddButton
+        onClick={() => setIsCreating(true)}
+        disabled={!tournamentId || teams.length === 0}
+      >
+        + 경기 등록
+      </AddButton>
+
       {target && (
         <GameAdminModal
           game={target}
@@ -154,6 +225,95 @@ export default function AdminPageComponent() {
           }}
         />
       )}
-    </PageWrapper>
+      {isCreating && tournamentId && (
+        <CreateGameModal
+          tournamentId={tournamentId}
+          teams={teams}
+          defaultDate={date}
+          onClose={() => setIsCreating(false)}
+          onDone={() => {
+            setIsCreating(false);
+            loadGames();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function PlayersTab({ tournamentId, teams }: ITabProps) {
+  const [teamId, setTeamId] = useState("");
+  const [players, setPlayers] = useState<RosterPlayer[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const team = teams.find((t) => String(t.id) === teamId);
+
+  const loadPlayers = useCallback(async () => {
+    if (!tournamentId || !teamId) return;
+    setIsLoading(true);
+    try {
+      const res = await API.get(
+        `/tournaments/${tournamentId}/teams/${teamId}/players`
+      );
+      setPlayers(res.data.players ?? []);
+    } catch {
+      setPlayers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tournamentId, teamId]);
+
+  useEffect(() => {
+    loadPlayers();
+  }, [loadPlayers]);
+
+  return (
+    <>
+      <TeamSelect value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+        <option value="">팀 선택</option>
+        {teams.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.group ? `${t.group}조 ` : ""}
+            {t.name}
+          </option>
+        ))}
+      </TeamSelect>
+
+      {!team ? (
+        <Empty>팀을 고르면 등록된 선수가 보입니다.</Empty>
+      ) : (
+        <>
+          <Hint>{`${team.name} · ${players.length}명`}</Hint>
+          {isLoading ? (
+            <Empty>불러오는 중…</Empty>
+          ) : (
+            players.map((p) => (
+              <PlayerRow key={p.id}>
+                <PlayerName>{p.name}</PlayerName>
+                <PlayerMeta>
+                  {[p.department, p.isElite && "선출", p.isWc && "WC"]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </PlayerMeta>
+              </PlayerRow>
+            ))
+          )}
+          <AddButton onClick={() => setIsAdding(true)}>+ 선수 추가</AddButton>
+        </>
+      )}
+
+      {isAdding && team && tournamentId && (
+        <AddPlayerModal
+          tournamentId={tournamentId}
+          team={team}
+          onClose={() => setIsAdding(false)}
+          onDone={() => {
+            setIsAdding(false);
+            loadPlayers();
+          }}
+        />
+      )}
+    </>
   );
 }

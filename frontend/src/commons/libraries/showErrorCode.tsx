@@ -53,6 +53,7 @@ const ERROR_MESSAGE_MAP = {
   GAME_NOT_IN_PROGRESS: "현재 진행 중인 경기가 아닙니다.",
   GAME_INNING_STAT_ALREADY_EXISTS: "이닝 통계가 이미 존재합니다.",
   GAME_NOT_EDITABLE: "경기를 수정할 수 없습니다.",
+  NOTHING_TO_UNDO: "되돌릴 기록이 없습니다.",
 };
 
 export default function ErrorAlert({
