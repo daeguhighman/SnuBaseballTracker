@@ -667,10 +667,14 @@ export const Rotator = styled(OverlaySvg)`
   top: 2vh;
 `;
 
-export const ResetDot = styled.div`
+export const ResetDot = styled.div<{ dirty?: boolean }>`
   position: absolute;
   width: 2.5rem;
   height: 2.5rem;
+  border-radius: 50%;
+  /* 저장 전 이동이 있으면 노란 테두리: 누르면 배치만 초기화 */
+  box-shadow: ${({ dirty }) => (dirty ? "0 0 0 3px #fac775" : "none")};
+  transition: box-shadow 0.15s;
   background-image: url("/images/reset.png");
   background-size: 150% auto;
   background-repeat: no-repeat;

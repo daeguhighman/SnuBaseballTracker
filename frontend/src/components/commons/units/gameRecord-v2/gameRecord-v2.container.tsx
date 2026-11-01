@@ -1916,6 +1916,42 @@ export default function GameRecordPageV2() {
     });
   }, [loadSnapshot, badgeConfigs, syncRunnersOnBase]);
 
+  // 저장 전에 주자를 옮겨 놓았는지 (되돌리기 버튼이 배치 초기화로 동작)
+  const hasUnsavedMoves = useCallback(
+    () =>
+      badgeConfigs.some(
+        ({ id }) =>
+          (badgeSnapsRef.current[id]?.base ?? null) !==
+          (initialSnapsRef.current[id]?.base ?? null)
+      ) ||
+      outBadgesActual.size > 0 ||
+      homeSnappedBadgesActual.size > 0 ||
+      finishedBadgesActual.size > 0,
+    [
+      badgeConfigs,
+      outBadgesActual,
+      homeSnappedBadgesActual,
+      finishedBadgesActual,
+    ]
+  );
+  const [isFieldDirty, setIsFieldDirty] = useState(false);
+  useEffect(() => {
+    // initialSnapsRef는 rAF 안에서 갱신되므로 한 프레임 뒤에 비교한다
+    const frame = requestAnimationFrame(() =>
+      setIsFieldDirty(hasUnsavedMoves())
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [badgeSnaps, hasUnsavedMoves]);
+
+  // 되돌리기: 저장 전 이동이 있으면 배치만 초기화, 없으면 직전 기록 취소
+  const handleUndoTap = () => {
+    if (hasUnsavedMoves()) {
+      resetWhiteBadges();
+      return;
+    }
+    setIsUndoModalOpen(true);
+  };
+
   useEffect(() => {
     // 두 번의 requestAnimationFrame을 써서 setState → 커밋 → 렌더 → 다음 paint 이후에 정확히 측정
     requestAnimationFrame(() => {
@@ -2955,9 +2991,6 @@ export default function GameRecordPageV2() {
           <ControlButtonWhite onClick={handleSubmit}>
             저장하기
           </ControlButtonWhite>
-          <ControlButtonWhite onClick={() => setIsUndoModalOpen(true)}>
-            되돌리기
-          </ControlButtonWhite>
           <ControlButton onClick={() => setIsGameEndModalOpen(true)}>
             경기종료
           </ControlButton>
@@ -3126,7 +3159,10 @@ export default function GameRecordPageV2() {
           </LeftSideWrapper>
           <ResetDot
             style={{ left: "75vw", top: "2vh" }}
-            onClick={resetWhiteBadges}
+            dirty={isFieldDirty}
+            role="button"
+            aria-label={isFieldDirty ? "주자 배치 초기화" : "직전 기록 되돌리기"}
+            onClick={handleUndoTap}
           />
           {blackBadgeConfigs.map((cfg) => (
             <BlackDraggableBadge
