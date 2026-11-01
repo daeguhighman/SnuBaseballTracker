@@ -39,6 +39,7 @@ import { Play } from '@/plays/entities/play.entity';
 import { PlayStatus } from '@/plays/entities/play.entity';
 import { GameCoreService } from './game-core.service';
 import { GameStatsService } from './game-stats.service';
+import { GameUndoService } from './game-undo.service';
 import { Runner } from '@/plays/entities/runner.entity';
 
 @Injectable()
@@ -65,6 +66,7 @@ export class GameLineupService {
     private readonly playerTournamentRepository: Repository<PlayerTournament>,
     private readonly gameCoreService: GameCoreService,
     private readonly gameStatsService: GameStatsService,
+    private readonly gameUndoService: GameUndoService,
   ) {}
 
   async getPlayers(
@@ -268,6 +270,17 @@ export class GameLineupService {
           `팀-토너먼트 ID ${teamTournamentId}를 찾을 수 없습니다.`,
           ErrorCodes.TEAM_NOT_FOUND,
           HttpStatus.NOT_FOUND,
+        );
+      }
+
+      if (
+        game.status === GameStatus.FINALIZED ||
+        game.status === GameStatus.CANCELLED
+      ) {
+        throw new BaseException(
+          '끝났거나 노게임 처리된 경기입니다.',
+          ErrorCodes.INVALID_INPUT,
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -624,6 +637,10 @@ export class GameLineupService {
         submitLineupDto,
         teamTournamentId: teamTournament.id,
       });
+
+      if (game.status === GameStatus.IN_PROGRESS) {
+        await this.gameUndoService.capture(manager, gameId, '선수 교체');
+      }
 
       // 1) 기존 라인업 조회
       const [existingBatters, existingPitcher] = await Promise.all([

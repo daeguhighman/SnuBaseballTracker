@@ -33,6 +33,7 @@ import { useRouter } from "next/router";
 import ResultSubmitModal from "../../modals/submitModal/resultSubmitModal";
 import API from "../../../../commons/apis/api";
 import ScorePatchModal from "../../modals/scorePatchModal";
+import ScoreCorrectionModal from "../../modals/scoreCorrectionModal";
 import { authMe, errorGlobal, gameId } from "../../../../commons/stores";
 import { useRecoilState } from "recoil";
 import {
@@ -163,6 +164,13 @@ export default function FinalGameRecordPage() {
   // (B) 모달에서 띄울 알림 메시지 (타자/투수)
   const [alertMessage, setAlertMessage] = useState<string>("");
 
+  // 점수·안타 정정 대상 칸
+  const [correction, setCorrection] = useState<{
+    team: "A" | "B";
+    idx: number;
+    value: number;
+  } | null>(null);
+
   // 마지막 이닝 정보 보관(ref)
   const lastEntryRef = useRef<{ inning: number; inningHalf: string } | null>(
     null
@@ -284,6 +292,29 @@ export default function FinalGameRecordPage() {
   // };
   const [selectedStatId, setSelectedStatId] = useState<number | null>(null);
 
+  // 이닝 점수(0~6)·안타(8) 칸만 정정할 수 있다. 득점(R)은 이닝 점수의 합이다
+  const isCorrectableCell = (score: string, idx: number) =>
+    canRecord && score !== "" && score !== "-" && (idx < 7 || idx === 8);
+
+  const saveCorrection = async (value: number) => {
+    if (!correction) return;
+    const { team, idx } = correction;
+    if (idx === 8) {
+      await API.patch(`/games/${recordId}/result/hits`, {
+        team: team === "A" ? "away" : "home",
+        hits: value,
+      });
+    } else {
+      await API.patch(`/games/${recordId}/result/innings`, {
+        inning: idx + 1,
+        inningHalf: team === "A" ? "TOP" : "BOT",
+        runs: value,
+      });
+    }
+    setCorrection(null);
+    await fetchResults();
+  };
+
   // (2) 타자 칸 클릭 → 모달 열기 (mode="batter")
   const handleBatterClick = (player: any) => {
     if (!canRecord) return;
@@ -386,11 +417,15 @@ export default function FinalGameRecordPage() {
             <TeamScoreCell
               key={idx}
               className="score-cell"
-              // onClick={
-              //   isFinalized
-              //     ? undefined
-              //     : () => handleScoreCellClick(score, "A", idx)
-              // }
+              onClick={
+                isCorrectableCell(score, idx)
+                  ? () =>
+                      setCorrection({ team: "A", idx, value: Number(score) })
+                  : undefined
+              }
+              style={{
+                cursor: isCorrectableCell(score, idx) ? "pointer" : undefined,
+              }}
             >
               <EditableInputScore
                 type={score === "-" ? "text" : "number"}
@@ -408,11 +443,15 @@ export default function FinalGameRecordPage() {
             <TeamScoreCell
               key={idx}
               className="score-cell"
-              // onClick={
-              //   isFinalized
-              //     ? undefined
-              //     : () => handleScoreCellClick(score, "B", idx)
-              // }
+              onClick={
+                isCorrectableCell(score, idx)
+                  ? () =>
+                      setCorrection({ team: "B", idx, value: Number(score) })
+                  : undefined
+              }
+              style={{
+                cursor: isCorrectableCell(score, idx) ? "pointer" : undefined,
+              }}
             >
               <EditableInputScore
                 type={score === "-" ? "text" : "number"}
@@ -885,6 +924,24 @@ export default function FinalGameRecordPage() {
         )} */}
 
       {/* // 권한 제공 이후 모달 오픈 여부 바꾸기 */}
+
+      {correction && (
+        <ScoreCorrectionModal
+          title={`${correction.team === "A" ? teamAName : teamBName} ${
+            correction.idx === 8
+              ? "안타"
+              : `${correction.idx + 1}회${correction.team === "A" ? "초" : "말"} 점수`
+          }`}
+          notice={
+            correction.idx === 8
+              ? undefined
+              : "총점과 승패, 순위표가 함께 바뀝니다."
+          }
+          initialValue={correction.value}
+          onSave={saveCorrection}
+          onClose={() => setCorrection(null)}
+        />
+      )}
 
       {isScorePatchModalOpen && selectedCell && (
         <ScorePatchModal

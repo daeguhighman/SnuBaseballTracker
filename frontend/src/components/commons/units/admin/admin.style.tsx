@@ -118,3 +118,53 @@ export const Empty = styled.p`
   text-align: center;
   color: #9e9e9e;
 `;
+
+export const AddButton = styled.button`
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 0;
+  border: 1px dashed #bdbdbd;
+  border-radius: 12px;
+  background: #fafafa;
+  color: #0f0f70;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+
+  &:disabled {
+    color: #bdbdbd;
+    cursor: default;
+  }
+`;
+
+export const TeamSelect = styled.select`
+  width: 100%;
+  height: 44px;
+  margin-bottom: 12px;
+  padding: 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  font-family: inherit;
+  font-size: 15px;
+`;
+
+export const PlayerRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid #e8e8e8;
+`;
+
+export const PlayerName = styled.span`
+  min-width: 64px;
+  font-size: 15px;
+`;
+
+export const PlayerMeta = styled.span`
+  color: #757575;
+  font-size: 12px;
+`;

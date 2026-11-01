@@ -28,6 +28,7 @@ import { PasswordResetToken } from '@/mail/entities/password-reset-token.entity'
 import { Play } from '@/plays/entities/play.entity';
 import { RunnerEvent } from '@/plays/entities/runner-event.entity';
 import { Runner } from '@/plays/entities/runner.entity';
+import { GameUndoSnapshot } from '@/games/entities/game-undo-snapshot.entity';
 
 export default registerAs('database', () => {
   return {
@@ -68,6 +69,7 @@ export default registerAs('database', () => {
       Play,
       RunnerEvent,
       Runner,
+      GameUndoSnapshot,
     ],
     charset: 'utf8mb4',
   };

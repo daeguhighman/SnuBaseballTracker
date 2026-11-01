@@ -20,6 +20,7 @@ import { UpdatePlayDto } from './dtos/update-play.dto';
 import { RunnerEvent } from './entities/runner-event.entity';
 import { GameInningStat } from '@/games/entities/game-inning-stat.entity';
 import { Runner } from './entities/runner.entity';
+import { GameUndoService } from '@/games/services/game-undo.service';
 
 @Injectable()
 export class PlayService {
@@ -28,6 +29,7 @@ export class PlayService {
     private readonly dataSource: DataSource,
     private readonly gameStatsService: GameStatsService,
     private readonly gameCoreService: GameCoreService,
+    private readonly gameUndoService: GameUndoService,
   ) {}
 
   async updatePlay(playId: number, body: UpdatePlayDto) {
@@ -44,6 +46,7 @@ export class PlayService {
           message: '이미 완료된 플레이입니다.',
         };
       }
+      await this.gameUndoService.capture(em, play.gameId, '타석 결과');
       play.resultCode = body.resultCode;
       await em.save(play);
 
@@ -83,6 +86,11 @@ export class PlayService {
         relations: ['gameInningStat', 'game', 'game.gameStat'],
       });
       if (!play) throw new NotFoundException('Play not found');
+
+      // 타석 결과 뒤에 오는 주자 이동은 같은 기록이므로 타석 결과 직전 상태만 남긴다
+      if (!play.resultCode) {
+        await this.gameUndoService.capture(em, play.gameId, '주자 이동');
+      }
 
       // 2. 검증 로직 실행
       this.validateResultCode(play, dto);

@@ -71,7 +71,6 @@ import {
   WildCardBoxNone,
   OnDeckWrapper,
   OutZoneWrapper,
-  OutZoneIcon,
   OutZoneLabel,
   ScoreToast,
   CustomBoundaryWrapper,
@@ -103,6 +102,7 @@ import OutModal from "../../modals/recordModal/outModal";
 import EtcModal from "../../modals/recordModal/etcModal";
 import DefenseChangeModal from "../../modals/defenseChange";
 import GameOverModal from "../../modals/gameOverModal";
+import UndoModal from "../../modals/undoModal";
 import ScorePatchModal from "../../modals/scorePatchModal";
 import {
   awayBatterNumberState,
@@ -134,7 +134,6 @@ import LeftPolygon from "../../../../commons/libraries/leftPolygon";
 import { unstable_batchedUpdates } from "react-dom";
 import PortalSwitch from "./reconstructionSwitch";
 import { message } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
 
 // 1) 먼저 BaseId / BASE_IDS를 선언
 export const BASE_IDS = [
@@ -803,6 +802,7 @@ export default function GameRecordPageV2() {
   const [isEtcModalOpen, setIsEtcModalOpen] = useState(false);
 
   const [isGameEndModalOpen, setIsGameEndModalOpen] = useState(false);
+  const [isUndoModalOpen, setIsUndoModalOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
 
   // 에러 상태
@@ -1287,7 +1287,24 @@ export default function GameRecordPageV2() {
     );
   };
 
+  // 주자를 OUT 원 위로 끌고 왔는지 (원이 커지며 놓을 곳을 알려 줌)
+  const [isOverOutZone, setIsOverOutZone] = useState(false);
+  const handleDragMove = (e: DragMoveEvent) => {
+    const rect = e.active.rect.current.translated;
+    const zone = zoneRectRef.current;
+    if (!rect || !zone || String(e.active.id).startsWith("black-badge")) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const over =
+      cx >= zone.left && cx <= zone.right && cy >= zone.top && cy <= zone.bottom;
+    setIsOverOutZone((prev) => {
+      if (over && !prev) navigator.vibrate?.(30);
+      return over;
+    });
+  };
+
   const onAnyDragEnd = (e: DragEndEvent) => {
+    setIsOverOutZone(false);
     handleDrop(e);
     // 드래그가 끝날 때 (항상) Ground 강조 해제
     groundRef.current?.classList.remove("out-zone-active");
@@ -1913,6 +1930,42 @@ export default function GameRecordPageV2() {
       });
     });
   }, [loadSnapshot, badgeConfigs, syncRunnersOnBase]);
+
+  // 저장 전에 주자를 옮겨 놓았는지 (되돌리기 버튼이 배치 초기화로 동작)
+  const hasUnsavedMoves = useCallback(
+    () =>
+      badgeConfigs.some(
+        ({ id }) =>
+          (badgeSnapsRef.current[id]?.base ?? null) !==
+          (initialSnapsRef.current[id]?.base ?? null)
+      ) ||
+      outBadgesActual.size > 0 ||
+      homeSnappedBadgesActual.size > 0 ||
+      finishedBadgesActual.size > 0,
+    [
+      badgeConfigs,
+      outBadgesActual,
+      homeSnappedBadgesActual,
+      finishedBadgesActual,
+    ]
+  );
+  const [isFieldDirty, setIsFieldDirty] = useState(false);
+  useEffect(() => {
+    // initialSnapsRef는 rAF 안에서 갱신되므로 한 프레임 뒤에 비교한다
+    const frame = requestAnimationFrame(() =>
+      setIsFieldDirty(hasUnsavedMoves())
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [badgeSnaps, hasUnsavedMoves]);
+
+  // 되돌리기: 저장 전 이동이 있으면 배치만 초기화, 없으면 직전 기록 취소
+  const handleUndoTap = () => {
+    if (hasUnsavedMoves()) {
+      resetWhiteBadges();
+      return;
+    }
+    setIsUndoModalOpen(true);
+  };
 
   useEffect(() => {
     // 두 번의 requestAnimationFrame을 써서 setState → 커밋 → 렌더 → 다음 paint 이후에 정확히 측정
@@ -2754,15 +2807,17 @@ export default function GameRecordPageV2() {
 
   // 타자 주자 위치 업데이트
 
-  const deriveOuts = (v: any): boolean[] => {
-    const outCnt: number = v?.inningStats?.actual?.outs ?? 0;
+  // 저장 전이라도 OUT 원에 넣은 주자만큼 아웃카운트 불을 켠다
+  const deriveOuts = (v: any, pendingOuts: number): boolean[] => {
+    const outCnt: number =
+      (v?.inningStats?.actual?.outs ?? 0) + pendingOuts;
     return Array(3)
       .fill(false)
       .map((_, i) => i < outCnt);
   };
   useEffect(() => {
-    setOuts(deriveOuts(snap));
-  }, [snap?.inningStats?.actual?.outs]);
+    setOuts(deriveOuts(snap, outBadgesActual.size));
+  }, [snap?.inningStats?.actual?.outs, outBadgesActual]);
 
   useEffect(() => {
     const snap = (snapshotData as any)?.snapshot ?? snapshotData;
@@ -2972,6 +3027,7 @@ export default function GameRecordPageV2() {
         //   },
         // }}
         onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={onAnyDragEnd}
       >
         <GraphicWrapper ref={wrapperRef}>
@@ -2980,10 +3036,7 @@ export default function GameRecordPageV2() {
           <HomeBaseWrapper active={isHomeBaseActive} />
           <Ground ref={groundRef} />
 
-          <OutZoneWrapper ref={outZoneRef}>
-            <OutZoneIcon aria-hidden>
-              <DeleteOutlined />
-            </OutZoneIcon>
+          <OutZoneWrapper ref={outZoneRef} active={isOverOutZone}>
             <OutZoneLabel>OUT</OutZoneLabel>
           </OutZoneWrapper>
           {scoreToastKey > 0 && (
@@ -3121,7 +3174,10 @@ export default function GameRecordPageV2() {
           </LeftSideWrapper>
           <ResetDot
             style={{ left: "75vw", top: "2vh" }}
-            onClick={resetWhiteBadges}
+            dirty={isFieldDirty}
+            role="button"
+            aria-label={isFieldDirty ? "주자 배치 초기화" : "직전 기록 되돌리기"}
+            onClick={handleUndoTap}
           />
           {blackBadgeConfigs.map((cfg) => (
             <BlackDraggableBadge
@@ -3263,6 +3319,18 @@ export default function GameRecordPageV2() {
           onSuccess={afterRecord}
           // 🔑 여기만 바꿔줍니다
           onTypeSelect={() => groundModalRef.current?.open()}
+        />
+      )}
+
+      {isUndoModalOpen && (
+        <UndoModal
+          gameId={Number(router.query.recordId)}
+          onClose={() => setIsUndoModalOpen(false)}
+          onDone={(snapshot) => {
+            // 화면 곳곳이 localStorage의 snapshot을 읽으므로 저장 후 새로 그린다
+            if (snapshot) updateSnapshot(snapshot);
+            window.location.reload();
+          }}
         />
       )}
 

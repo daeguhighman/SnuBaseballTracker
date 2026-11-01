@@ -6,6 +6,7 @@ import {
   IsString,
   IsBoolean,
   Length,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -128,20 +129,32 @@ export class RegisterPlayerDto {
   @IsInt()
   teamTournamentId: number;
 
+  @ApiProperty({
+    description: '기존 선수 ID. 주면 대학·학과·이름·학번 대신 이 선수를 등록한다',
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  playerId?: number;
+
   @ApiProperty({ description: '대학 ID', example: 3 })
+  @ValidateIf((o) => !o.playerId)
   @IsInt()
   collegeId: number;
 
   @ApiProperty({ description: '학과 ID', example: 7 })
+  @ValidateIf((o) => !o.playerId)
   @IsInt()
   departmentId: number;
 
   @ApiProperty({ description: '선수 이름', example: '박시우' })
+  @ValidateIf((o) => !o.playerId)
   @IsString()
   @Length(1, 50)
   name: string;
 
   @ApiProperty({ description: '학번', example: '2026-21021' })
+  @ValidateIf((o) => !o.playerId)
   @IsString()
   @Length(1, 50)
   studentId: string;
