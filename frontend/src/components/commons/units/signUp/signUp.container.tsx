@@ -66,7 +66,11 @@ const schema = yup.object().shape({
       "비밀번호에는 하나 이상의 대문자를 포함해야 합니다."
     )
     .matches(
-      /(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/,
+      /(?=.*[a-z])/,
+      "비밀번호에는 하나 이상의 소문자를 포함해야 합니다."
+    )
+    .matches(
+      /(?=.*[^A-Za-z0-9])/,
       "비밀번호에는 특수문자가 하나 이상 포함되어야 합니다."
     )
     .required("비밀번호는 필수 입력 항목입니다."),
@@ -248,7 +252,15 @@ export default function SignUpPage() {
       console.log(error);
       if (isMounted.current) {
         setError(error);
-        setAlertInfo({ message: "회원가입 중 오류가 발생했습니다." });
+        // 서버 검증 메시지(문자열 또는 배열)를 그대로 보여 준다
+        const serverMsg = axios.isAxiosError(error)
+          ? error.response?.data?.message
+          : undefined;
+        setAlertInfo({
+          message:
+            (Array.isArray(serverMsg) ? serverMsg[0] : serverMsg) ??
+            "회원가입 중 오류가 발생했습니다.",
+        });
       }
       // ErrorAlert(errorCode); // 혹은 alert(errorCode)
     } finally {
