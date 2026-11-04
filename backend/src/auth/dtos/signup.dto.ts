@@ -15,7 +15,7 @@ export class SignupDto {
   @Matches(/[A-Z]/, { message: '하나 이상의 대문자를 포함해야 합니다.' })
   @Matches(/[a-z]/, { message: '하나 이상의 소문자를 포함해야 합니다.' })
   @Matches(/[0-9]/, { message: '하나 이상의 숫자를 포함해야 합니다.' })
-  @Matches(/[@$!%*?&]/, {
+  @Matches(/[^A-Za-z0-9]/, {
     message: '하나 이상의 특수문자를 포함해야 합니다.',
   })
   password: string;
