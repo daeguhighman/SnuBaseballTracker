@@ -15,6 +15,9 @@ import { Department } from '@/profiles/entities/department.entity';
 
 import { RegisterPlayerDto } from '@admin/dtos/admin.dto';
 
+/** 대회 규정: 와일드카드 선수는 팀 엔트리 최대 7명 */
+const MAX_WILDCARDS_IN_ENTRY = 7;
+
 @Injectable()
 export class AdminPlayersService {
   constructor(
@@ -147,6 +150,17 @@ export class AdminPlayersService {
         throw new ConflictException(
           '이미 해당 팀-대회에 등록된 선수입니다.',
         );
+      }
+
+      if (dto.isWildcard) {
+        const wildcardCount = await manager.count(PlayerTournament, {
+          where: { teamTournamentId: teamTournament.id, isWildcard: true },
+        });
+        if (wildcardCount >= MAX_WILDCARDS_IN_ENTRY) {
+          throw new BadRequestException(
+            `와일드카드 선수는 팀당 ${MAX_WILDCARDS_IN_ENTRY}명까지 등록할 수 있습니다. (현재 ${wildcardCount}명)`,
+          );
+        }
       }
 
       const playerTournament = manager.create(PlayerTournament, {
