@@ -48,6 +48,7 @@ import {
   ModalTitleSmall,
   ModalTitleSmaller,
 } from "../../modals/modal.style";
+import { MAX_WILDCARDS_IN_LINEUP } from "../../../../commons/libraries/lineupRules";
 
 interface PlayerInfo {
   battingOrder: number | string;
@@ -411,8 +412,10 @@ export default function TeamRegistrationPageComponent(props: IProps) {
     );
     const wildcardCount = uniqueWildcardNames.size;
     console.log(wildcardCount);
-    if (wildcardCount > 3) {
-      alert(`와일드카드 제한을 초과했습니다\n (현재 ${wildcardCount}명)`);
+    if (wildcardCount > MAX_WILDCARDS_IN_LINEUP) {
+      alert(
+        `와일드카드는 라인업에 ${MAX_WILDCARDS_IN_LINEUP}명까지 등록할 수 있습니다\n (현재 ${wildcardCount}명)`
+      );
       return;
     }
 

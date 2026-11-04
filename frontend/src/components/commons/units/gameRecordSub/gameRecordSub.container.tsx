@@ -49,6 +49,7 @@ import {
   ModalTitleSmaller,
 } from "../../modals/modal.style";
 import SubReturnModal from "../../modals/subReturnModal";
+import { MAX_WILDCARDS_IN_LINEUP } from "../../../../commons/libraries/lineupRules";
 
 // 선수 정보를 나타내는 인터페이스
 interface PlayerInfo {
@@ -788,9 +789,9 @@ export default function TeamRegistrationPageComponent() {
     console.log("wildCardCount", wildCardCount);
 
     // 7) 최종 검증 (기존과 동일하게 wildCardCount 사용)
-    if (wildCardCount > 3) {
+    if (wildCardCount > MAX_WILDCARDS_IN_LINEUP) {
       alert(
-        `WC 조건을 만족하는 선수가 3명을 초과합니다. 현재 ${wildCardCount} 명`
+        `와일드카드는 라인업에 ${MAX_WILDCARDS_IN_LINEUP}명까지 등록할 수 있습니다. 현재 ${wildCardCount}명`
       );
       return;
     }
