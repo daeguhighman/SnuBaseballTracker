@@ -16,7 +16,7 @@ import { Department } from '../../../profiles/entities/department.entity';
 import { College } from '../../../profiles/entities/college.entity';
 import { AdminSeeder } from './seed-admin';
 
-interface BracketTeam {
+export interface BracketTeam {
   name: string;
   groupName: string;
 }
@@ -126,7 +126,7 @@ async function promptInputs(): Promise<{
   }
 }
 
-class SeedAllRunner {
+export class SeedAllRunner {
   private tournamentRepo: Repository<Tournament>;
   private teamRepo: Repository<Team>;
   private teamTournamentRepo: Repository<TeamTournament>;
@@ -163,13 +163,16 @@ class SeedAllRunner {
     return tournament;
   }
 
-  async seedTeams(tournament: Tournament): Promise<Map<string, TeamTournament>> {
+  async seedTeams(
+    tournament: Tournament,
+    teams: BracketTeam[] = BRACKET_TEAMS,
+  ): Promise<Map<string, TeamTournament>> {
     console.log('\n--- 팀 시딩 ---');
     const map = new Map<string, TeamTournament>();
     let created = 0;
     let skipped = 0;
 
-    for (const data of BRACKET_TEAMS) {
+    for (const data of teams) {
       let team = await this.teamRepo.findOne({ where: { name: data.name } });
       if (!team) {
         team = await this.teamRepo.save(
