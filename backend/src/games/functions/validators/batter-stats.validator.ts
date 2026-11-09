@@ -149,6 +149,7 @@ export class BatterStatsValidator {
     if (updateDto['2B'] !== undefined) result.doubles = updateDto['2B'];
     if (updateDto['3B'] !== undefined) result.triples = updateDto['3B'];
     if (updateDto.HR !== undefined) result.homeRuns = updateDto.HR;
+    if (updateDto.R !== undefined) result.runs = updateDto.R;
     if (updateDto.BB !== undefined) result.walks = updateDto.BB;
     if (updateDto.SH !== undefined) result.sacrificeFlies = updateDto.SH;
     if (updateDto.SF !== undefined) result.sacrificeBunts = updateDto.SF;
