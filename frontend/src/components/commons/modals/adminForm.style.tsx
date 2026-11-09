@@ -80,6 +80,11 @@ export const ResultItem = styled.li`
     cursor: pointer;
   }
 
+  button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
   strong {
     display: block;
     font-size: 15px;
@@ -90,6 +95,10 @@ export const ResultItem = styled.li`
   span {
     font-size: 12px;
     color: #757575;
+  }
+
+  span + span {
+    display: block;
   }
 `;
 
