@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppRole } from '@/users/entities/user.entity';
 import { Game } from '@/games/entities/game.entity';
+import { Play } from '@/plays/entities/play.entity';
 
 @Injectable()
 export class AdminOrUmpireAuthGuard extends AuthGuard('jwt') {
@@ -37,7 +38,10 @@ export class AdminOrUmpireAuthGuard extends AuthGuard('jwt') {
     }
 
     // For non-admin users, check if they are the assigned umpire for this game
-    const gameId = request.params.gameId;
+    // 기록 API(/plays/:playId/...)는 경로에 gameId가 없으므로 플레이에서 찾는다
+    const gameId =
+      request.params.gameId ??
+      (await this.findGameIdOfPlay(request.params.playId));
     if (!gameId) {
       this.logger.warn(
         `AdminOrUmpire Auth Guard - No gameId found in request params`,
@@ -68,6 +72,15 @@ export class AdminOrUmpireAuthGuard extends AuthGuard('jwt') {
       `AdminOrUmpire Auth Guard - Umpire access granted for user: ${user.userId} on game: ${gameId}`,
     );
     return true;
+  }
+
+  private async findGameIdOfPlay(playId?: string) {
+    if (!playId) return undefined;
+    const play = await this.gameRepository.manager.findOne(Play, {
+      select: ['id', 'gameId'],
+      where: { id: Number(playId) },
+    });
+    return play?.gameId;
   }
 
   handleRequest(err: any, user: any, info: any, context: any) {

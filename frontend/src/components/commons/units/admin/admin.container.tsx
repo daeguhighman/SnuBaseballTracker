@@ -118,7 +118,8 @@ export default function AdminPageComponent() {
   useEffect(() => {
     API.get("/profile/me")
       .then((res) => setRole(res.data.role ?? ""))
-      .catch(() => setRole(""));
+      // 서버가 응답했으면 권한 없음, 응답이 없으면 네트워크 문제
+      .catch((err) => setRole(err?.response ? "" : "ERROR"));
   }, []);
 
   useEffect(() => {
@@ -135,10 +136,20 @@ export default function AdminPageComponent() {
           )
         );
       })
-      .catch(() => setTeams([]));
+      .catch(() => {
+        setTeams([]);
+        alert("팀 목록을 불러오지 못했습니다. 새로고침해 주세요.");
+      });
   }, [role]);
 
   if (role === null) return <PageWrapper />;
+  if (role === "ERROR") {
+    return (
+      <PageWrapper>
+        <Notice>계정 정보를 불러오지 못했습니다. 새로고침해 주세요.</Notice>
+      </PageWrapper>
+    );
+  }
   if (role !== "ADMIN") {
     return (
       <PageWrapper>
@@ -181,16 +192,19 @@ function GamesTab({ tournamentId, teams }: ITabProps) {
   const [date, setDate] = useState(moment().format("YYYY-MM-DD"));
   const [games, setGames] = useState<ScheduleGame[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [target, setTarget] = useState<AdminGame | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const loadGames = useCallback(async () => {
     setIsLoading(true);
+    setLoadFailed(false);
     try {
       const res = await API.get(`/games?from=${date}&to=${date}`);
       setGames(res.data.days?.[0]?.games ?? []);
     } catch {
       setGames([]);
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
@@ -224,6 +238,8 @@ function GamesTab({ tournamentId, teams }: ITabProps) {
 
       {isLoading ? (
         <Empty>불러오는 중…</Empty>
+      ) : loadFailed ? (
+        <Empty>경기 목록을 불러오지 못했습니다.</Empty>
       ) : games.length === 0 ? (
         <Empty>이 날짜에는 경기가 없습니다.</Empty>
       ) : (
@@ -245,7 +261,7 @@ function GamesTab({ tournamentId, teams }: ITabProps) {
           >
             <GameTime>{game.time}</GameTime>
             <GameTeams>
-              {game.awayTeam.name} vs {game.homeTeam.name}
+              {game.awayTeam.name ?? "미정"} vs {game.homeTeam.name ?? "미정"}
             </GameTeams>
             <StatusBadge status={game.isForfeit ? "FINALIZED" : game.status}>
               {statusLabel(game)}

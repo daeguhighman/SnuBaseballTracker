@@ -99,6 +99,12 @@ export class GameCorrectionService {
   }
 
   private async loadFinalizedGame(manager: EntityManager, gameId: number) {
+    // 같은 경기 정정이 동시에 들어와 순위표에 두 번 반영되지 않게 경기 행을 잠근다
+    await manager.findOne(Game, {
+      select: ['id'],
+      where: { id: gameId },
+      lock: { mode: 'pessimistic_write' },
+    });
     const game = await manager.findOne(Game, {
       where: { id: gameId },
       relations: ['gameStat'],
