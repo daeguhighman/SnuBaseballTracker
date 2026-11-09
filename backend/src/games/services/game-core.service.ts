@@ -1,4 +1,11 @@
-import { Repository, DataSource, EntityManager, Not, IsNull } from 'typeorm';
+import {
+  Repository,
+  DataSource,
+  EntityManager,
+  In,
+  Not,
+  IsNull,
+} from 'typeorm';
 import { Game } from '../entities/game.entity';
 import { GameStatus } from '@common/enums/game-status.enum';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -375,6 +382,7 @@ export class GameCoreService {
     gameId: number,
   ): Promise<{ success: boolean; message: string }> {
     await this.dataSource.transaction(async (manager) => {
+      await this.lockGame(manager, gameId);
       // 1. 게임 정보 로드 (필요한 관계 모두 포함)
       const game = await manager.findOne(Game, {
         where: { id: gameId },
@@ -666,6 +674,18 @@ export class GameCoreService {
     }
   }
 
+  /**
+   * 경기 행을 잠가, 정상 종료·몰수승·노게임이 동시에 들어와도 하나만 처리되게 한다.
+   * 상태 확인은 잠근 뒤에 다시 읽은 값으로 한다.
+   */
+  private async lockGame(manager: EntityManager, gameId: number) {
+    await manager.findOne(Game, {
+      select: ['id'],
+      where: { id: gameId },
+      lock: { mode: 'pessimistic_write' },
+    });
+  }
+
   /** 다음 라운드 경기가 아직 없으면(빈 대진을 만들지 않았으면) 팀·일정 없이 만든다 */
   private async findOrCreateBracketGame(
     manager: EntityManager,
@@ -757,7 +777,25 @@ export class GameCoreService {
         HttpStatus.NOT_FOUND,
       );
     }
-    await this.gameRepository.delete({ id: gameId });
+    // 확정·진행 중 경기를 지우면 순위표·대진에 반영된 결과가 남으므로 시작 전·노게임 경기만 지운다
+    if (
+      game.status !== GameStatus.SCHEDULED &&
+      game.status !== GameStatus.CANCELLED
+    ) {
+      throw new BaseException(
+        `시작 전이거나 노게임 처리된 경기만 삭제할 수 있습니다. 현재 상태: ${game.status}`,
+        ErrorCodes.GAME_NOT_EDITABLE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    // 라인업 등 경기에 딸린 기록이 FK로 막지 않게 먼저 지운다
+    await this.dataSource.transaction(async (manager) => {
+      await withoutForeignKeyChecks(manager, () =>
+        deleteGameRecords(manager, gameId),
+      );
+      await manager.delete(GameUndoSnapshot, { gameId });
+      await manager.delete(Game, { id: gameId });
+    });
     return { id: gameId, deleted: true };
   }
 
@@ -1021,6 +1059,18 @@ export class GameCoreService {
       );
     }
 
+    // 화면과 같은 기준: 끝났거나 노게임 처리된 경기는 일정을 바꾸지 않는다
+    if (
+      game.status !== GameStatus.SCHEDULED &&
+      game.status !== GameStatus.IN_PROGRESS
+    ) {
+      throw new BaseException(
+        `예정되었거나 진행 중인 경기만 일정을 바꿀 수 있습니다. 현재 상태: ${game.status}`,
+        ErrorCodes.GAME_NOT_EDITABLE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     game.startTime = startTime;
     return this.gameRepository.save(game);
   }
@@ -1050,9 +1100,21 @@ export class GameCoreService {
       );
     }
 
-    await this.gameRepository.update(gameId, {
-      status: GameStatus.CANCELLED,
-    });
+    // 확인한 뒤 그 사이에 종료·몰수승 처리됐으면 덮어쓰지 않는다
+    const { affected } = await this.gameRepository.update(
+      {
+        id: gameId,
+        status: In([GameStatus.SCHEDULED, GameStatus.IN_PROGRESS]),
+      },
+      { status: GameStatus.CANCELLED },
+    );
+    if (!affected) {
+      throw new BaseException(
+        '그 사이 경기 상태가 바뀌었습니다. 새로고침 후 다시 확인해 주세요.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.CONFLICT,
+      );
+    }
     this.closeSnapshotStream(gameId);
 
     return { success: true, message: '노게임 처리되었습니다.' };
@@ -1064,6 +1126,7 @@ export class GameCoreService {
    */
   async forfeitGame(gameId: number, winnerTeamId: number) {
     const result = await this.dataSource.transaction(async (manager) => {
+      await this.lockGame(manager, gameId);
       const game = await manager.findOne(Game, {
         where: { id: gameId },
         relations: ['homeTeam', 'awayTeam', 'homeTeam.team', 'awayTeam.team'],

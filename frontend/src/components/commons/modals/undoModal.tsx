@@ -25,12 +25,13 @@ export default function UndoModal({ gameId, onClose, onDone }: IProps) {
     count: number;
     lastLabel: string | null;
   } | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     API.get(`/games/${gameId}/undo`)
       .then((res) => setStatus(res.data))
-      .catch(() => setStatus({ count: 0, lastLabel: null }));
+      .catch(() => setLoadFailed(true));
   }, [gameId]);
 
   const undo = async () => {
@@ -51,7 +52,14 @@ export default function UndoModal({ gameId, onClose, onDone }: IProps) {
   return (
     <ModalOverlay>
       <ModalContainer>
-        {status === null ? (
+        {loadFailed ? (
+          <>
+            <ModalTitleSmall>
+              {"되돌릴 기록을 확인하지 못했습니다.\n잠시 후 다시 시도해 주세요."}
+            </ModalTitleSmall>
+            <ModalCancleButton onClick={onClose}>닫기</ModalCancleButton>
+          </>
+        ) : status === null ? (
           <ModalTitleSmall>확인 중…</ModalTitleSmall>
         ) : status.count === 0 ? (
           <>

@@ -47,11 +47,35 @@ export class PlayService {
         };
       }
       // 주자 이동 저장이 실패해 결과를 다시 보내는 경우, 처음 결과 직전 상태가 이미 남아 있다
-      if (!play.resultCode) {
+      const previousResult = play.resultCode;
+      if (!previousResult) {
         await this.gameUndoService.capture(em, play.gameId, '타석 결과');
       }
       play.resultCode = body.resultCode;
       await em.save(play);
+
+      const gameStat = await em.findOne(GameStat, {
+        where: { gameId: play.gameId },
+      });
+      if (!gameStat) throw new NotFoundException('GameStat not found');
+      const isTopInning = gameStat.inningHalf === InningHalf.TOP;
+      const addTeamHit = (sign: 1 | -1) => {
+        if (isTopInning) gameStat.awayHits += sign;
+        else gameStat.homeHits += sign;
+      };
+
+      // 앞서 보낸 결과가 이미 반영돼 있으면 먼저 뺀다 (두 번 더해지지 않게)
+      if (previousResult) {
+        const previous = { resultCode: previousResult };
+        const wasHit = await this.updateBatterStats(
+          em,
+          play.batterGpId,
+          previous,
+          -1,
+        );
+        await this.updatePitcherStats(em, play.pitcherGpId, previous, -1);
+        if (wasHit) addTeamHit(-1);
+      }
 
       // 2. BatterGameStat 업데이트
       const isHit = await this.updateBatterStats(em, play.batterGpId, body);
@@ -60,15 +84,7 @@ export class PlayService {
       await this.updatePitcherStats(em, play.pitcherGpId, body);
 
       // 4. GameStat 업데이트
-      const gameStat = await em.findOne(GameStat, {
-        where: { gameId: play.gameId },
-      });
-      if (!gameStat) throw new NotFoundException('GameStat not found');
-
-      const isTopInning = gameStat.inningHalf === InningHalf.TOP;
-      if (isHit) {
-        isTopInning ? gameStat.awayHits++ : gameStat.homeHits++;
-      }
+      if (isHit) addTeamHit(1);
       await em.save(gameStat);
 
       return {
@@ -571,6 +587,7 @@ export class PlayService {
     em: EntityManager,
     batterParticipationId,
     body: UpdatePlayDto,
+    sign: 1 | -1 = 1, // -1이면 이 결과를 반영했던 만큼 뺀다
   ): Promise<boolean> {
     // BatterGameParticipation, BatterGameStat 조회
     const batterParticipation = await em.findOne(BatterGameParticipation, {
@@ -586,54 +603,54 @@ export class PlayService {
 
     let isHit = false;
     const resultCode = body.resultCode;
-    batterGameStat.plateAppearances++;
+    batterGameStat.plateAppearances += sign;
     switch (resultCode) {
       case PlateAppearanceResult.SINGLE:
-        batterGameStat.atBats++;
-        batterGameStat.singles++;
-        batterGameStat.hits++;
+        batterGameStat.atBats += sign;
+        batterGameStat.singles += sign;
+        batterGameStat.hits += sign;
 
         isHit = true;
         break;
       case PlateAppearanceResult.DOUBLE:
-        batterGameStat.atBats++;
-        batterGameStat.doubles++;
-        batterGameStat.hits++;
+        batterGameStat.atBats += sign;
+        batterGameStat.doubles += sign;
+        batterGameStat.hits += sign;
         isHit = true;
         break;
       case PlateAppearanceResult.TRIPLE:
-        batterGameStat.atBats++;
-        batterGameStat.triples++;
-        batterGameStat.hits++;
+        batterGameStat.atBats += sign;
+        batterGameStat.triples += sign;
+        batterGameStat.hits += sign;
         isHit = true;
         break;
       case PlateAppearanceResult.HOMERUN:
-        batterGameStat.atBats++;
-        batterGameStat.homeRuns++;
-        batterGameStat.hits++;
+        batterGameStat.atBats += sign;
+        batterGameStat.homeRuns += sign;
+        batterGameStat.hits += sign;
         isHit = true;
         break;
       case PlateAppearanceResult.WALK:
-        batterGameStat.walks++;
+        batterGameStat.walks += sign;
         break;
       case PlateAppearanceResult.SACRIFICE_FLY:
-        batterGameStat.sacrificeFlies++;
+        batterGameStat.sacrificeFlies += sign;
         break;
       case PlateAppearanceResult.SACRIFICE_BUNT:
-        batterGameStat.sacrificeBunts++;
+        batterGameStat.sacrificeBunts += sign;
         break;
       case PlateAppearanceResult.STRIKEOUT:
-        batterGameStat.atBats++;
-        batterGameStat.strikeouts++;
+        batterGameStat.atBats += sign;
+        batterGameStat.strikeouts += sign;
         break;
       case PlateAppearanceResult.STRIKEOUT_DROP:
-        batterGameStat.atBats++;
-        batterGameStat.strikeouts++;
+        batterGameStat.atBats += sign;
+        batterGameStat.strikeouts += sign;
         break;
       case PlateAppearanceResult.FIELDERS_CHOICE:
       case PlateAppearanceResult.OUT:
       case PlateAppearanceResult.ERROR:
-        batterGameStat.atBats++;
+        batterGameStat.atBats += sign;
         break;
     }
     await em.save(batterGameStat);
@@ -645,6 +662,7 @@ export class PlayService {
     em: EntityManager,
     pitcherParticipationId,
     body: UpdatePlayDto,
+    sign: 1 | -1 = 1, // -1이면 이 결과를 반영했던 만큼 뺀다
   ) {
     // PitcherGameParticipation, PitcherGameStat 조회
     const pitcherParticipation = await em.findOne(PitcherGameParticipation, {
@@ -661,19 +679,19 @@ export class PlayService {
     const resultCode = body.resultCode;
     switch (resultCode) {
       case PlateAppearanceResult.STRIKEOUT:
-        pitcherGameStat.strikeouts++;
+        pitcherGameStat.strikeouts += sign;
         break;
       case PlateAppearanceResult.STRIKEOUT_DROP:
-        pitcherGameStat.strikeouts++;
+        pitcherGameStat.strikeouts += sign;
         break;
       case PlateAppearanceResult.SINGLE:
       case PlateAppearanceResult.DOUBLE:
       case PlateAppearanceResult.TRIPLE:
       case PlateAppearanceResult.HOMERUN:
-        pitcherGameStat.allowedHits++;
+        pitcherGameStat.allowedHits += sign;
         break;
       case PlateAppearanceResult.WALK:
-        pitcherGameStat.walks++;
+        pitcherGameStat.walks += sign;
         break;
     }
     await em.save(pitcherGameStat);
