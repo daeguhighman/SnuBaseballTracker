@@ -138,6 +138,56 @@ export const AddButton = styled.button`
   }
 `;
 
+export const RoundTitle = styled.h3`
+  margin: 20px 0 8px;
+  color: #0f0f70;
+  font-size: 15px;
+  font-weight: normal;
+`;
+
+export const SlotCard = styled.button<{ disabled?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  color: #000;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
+`;
+
+export const EmptySlot = styled.div`
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border: 1px dashed #bdbdbd;
+  border-radius: 12px;
+  color: #9e9e9e;
+  font-size: 13px;
+`;
+
+export const SlotHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #757575;
+`;
+
+export const SlotTeams = styled.span<{ muted?: boolean }>`
+  font-size: 15px;
+  color: ${({ muted }) => (muted ? "#9e9e9e" : "#000")};
+`;
+
+export const SlotMeta = styled.span`
+  font-size: 12px;
+  color: #9e9e9e;
+`;
+
 export const TeamSelect = styled.select`
   width: 100%;
   height: 44px;
