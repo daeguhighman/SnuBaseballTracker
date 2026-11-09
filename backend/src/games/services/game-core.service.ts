@@ -724,6 +724,7 @@ export class GameCoreService {
       stage: g.stage,
       bracketPosition: g.bracketPosition,
       startTime: g.startTime,
+      status: g.status,
       home: {
         teamTournamentId: g.homeTeam?.id ?? null,
         name: g.homeTeam?.team?.name ?? null,
@@ -788,6 +789,13 @@ export class GameCoreService {
       );
     }
 
+    if (input.bracketPosition) {
+      await this.assertBracketSlotFree(
+        input.tournamentId,
+        input.bracketPosition,
+      );
+    }
+
     const game = this.gameRepository.create({
       tournament,
       homeTeam: home,
@@ -797,6 +805,150 @@ export class GameCoreService {
       startTime: input.startTime ?? null,
       status: GameStatus.SCHEDULED,
     });
+    return this.gameRepository.save(game);
+  }
+
+  /** 한 대회에서 대진 위치마다 경기는 하나뿐이다. 승자 배치(advanceBracket)가 위치로 다음 경기를 찾기 때문. */
+  private async assertBracketSlotFree(
+    tournamentId: number,
+    bracketPosition: BracketPosition,
+  ) {
+    const exists = await this.gameRepository.exists({
+      where: { tournamentId, bracketPosition },
+    });
+    if (exists) {
+      throw new BaseException(
+        '이미 이 대진 위치에 경기가 있습니다.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.CONFLICT,
+      );
+    }
+  }
+
+  /**
+   * 대진표의 빈 자리(8강 4경기, 4강 2경기, 3·4위전, 결승)를 팀·일정 없이 만든다.
+   * 4강 이후 경기는 앞 경기가 확정될 때 advanceBracket이 팀을 채우므로 미리 있어야 한다.
+   * 이미 있는 위치는 건드리지 않는다.
+   */
+  async createBracketSlots(tournamentId: number) {
+    const tournament = await this.tournamentRepository.findOne({
+      where: { id: tournamentId },
+    });
+    if (!tournament) {
+      throw new BaseException(
+        '대회를 찾을 수 없습니다.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const stageByPosition: Record<BracketPosition, MatchStage> = {
+      [BracketPosition.QF_1]: MatchStage.QF,
+      [BracketPosition.QF_2]: MatchStage.QF,
+      [BracketPosition.QF_3]: MatchStage.QF,
+      [BracketPosition.QF_4]: MatchStage.QF,
+      [BracketPosition.SF_1]: MatchStage.SF,
+      [BracketPosition.SF_2]: MatchStage.SF,
+      [BracketPosition.THIRD_PLACE]: MatchStage.THIRD_PLACE,
+      [BracketPosition.F]: MatchStage.FINAL,
+    };
+
+    const existing = await this.gameRepository.find({
+      where: { tournamentId, bracketPosition: Not(IsNull()) },
+      select: ['id', 'bracketPosition'],
+    });
+    const taken = new Set(existing.map((g) => g.bracketPosition));
+
+    const created = await this.gameRepository.save(
+      Object.values(BracketPosition)
+        .filter((position) => !taken.has(position))
+        .map((position) =>
+          this.gameRepository.create({
+            tournament,
+            stage: stageByPosition[position],
+            bracketPosition: position,
+            startTime: null,
+            status: GameStatus.SCHEDULED,
+          }),
+        ),
+    );
+    return { created: created.map((g) => g.bracketPosition) };
+  }
+
+  /**
+   * 시작 전 대진표 경기의 팀·일정을 바꾼다. 넘긴 값만 바꾸고, null은 '미정'으로 비운다.
+   */
+  async updateBracketGame(
+    gameId: number,
+    input: {
+      homeTeamTournamentId?: number | null;
+      awayTeamTournamentId?: number | null;
+      startTime?: Date | null;
+    },
+  ) {
+    const game = await this.gameRepository.findOne({ where: { id: gameId } });
+    if (!game) {
+      throw new BaseException(
+        '게임을 찾을 수 없습니다.',
+        ErrorCodes.GAME_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!game.bracketPosition) {
+      throw new BaseException(
+        '대진표 경기가 아닙니다.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (game.status !== GameStatus.SCHEDULED) {
+      throw new BaseException(
+        '시작했거나 끝난 경기는 대진을 바꿀 수 없습니다.',
+        ErrorCodes.GAME_NOT_EDITABLE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const home =
+      input.homeTeamTournamentId !== undefined
+        ? input.homeTeamTournamentId
+        : game.homeTeamTournamentId;
+    const away =
+      input.awayTeamTournamentId !== undefined
+        ? input.awayTeamTournamentId
+        : game.awayTeamTournamentId;
+
+    if (home != null && home === away) {
+      throw new BaseException(
+        '홈팀과 어웨이팀은 같을 수 없습니다.',
+        ErrorCodes.INVALID_INPUT,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const teamIds = [home, away].filter((id): id is number => id != null);
+    if (teamIds.length > 0) {
+      const count = await this.gameRepository.manager
+        .getRepository(TeamTournament)
+        .count({
+          where: teamIds.map((id) => ({
+            id,
+            tournament: { id: game.tournamentId },
+          })),
+        });
+      if (count !== new Set(teamIds).size) {
+        throw new BaseException(
+          '대회에 속한 팀-대회 연결을 찾을 수 없습니다.',
+          ErrorCodes.TEAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    // 관계 객체가 로드돼 있지 않으므로 FK 컬럼만 바꾸면 그대로 저장된다
+    game.homeTeamTournamentId = home ?? null;
+    game.awayTeamTournamentId = away ?? null;
+    if (input.startTime !== undefined) game.startTime = input.startTime;
     return this.gameRepository.save(game);
   }
 

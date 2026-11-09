@@ -101,6 +101,37 @@ export class CreateGameDto {
   startTime?: Date;
 }
 
+export class UpdateBracketGameDto {
+  @ApiProperty({
+    description: '홈팀(후공) team-tournament ID. null이면 미정으로 비운다',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  homeTeamTournamentId?: number | null;
+
+  @ApiProperty({
+    description: '어웨이팀(선공) team-tournament ID. null이면 미정으로 비운다',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  awayTeamTournamentId?: number | null;
+
+  @ApiProperty({
+    description: '경기 시작 시간 (ISO 문자열). null이면 일정 미정',
+    example: '2026-05-10T19:00:00+09:00',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  startTime?: Date | null;
+}
+
 export class ForfeitGameDto {
   @ApiProperty({
     description: '경기 ID',

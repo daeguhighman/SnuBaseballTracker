@@ -22,6 +22,7 @@ import {
   ForfeitGameDto,
   RegisterPlayerDto,
   UmpireRequestDto,
+  UpdateBracketGameDto,
   UpdateScheduleDto,
 } from '@admin/dtos/admin.dto';
 import { AdminPlayersService } from '@admin/services/admin-players.service';
@@ -71,6 +72,27 @@ export class AdminController {
       bracketPosition: body.bracketPosition,
       startTime: body.startTime,
     });
+  }
+
+  @Post('tournaments/:tournamentId/bracket')
+  @HttpCode(201)
+  @ApiOperation({ summary: '대진표 빈 자리 만들기 (8강~결승, 없는 위치만)' })
+  @ApiResponse({ status: 201, description: '만든 대진 위치 목록' })
+  async createBracketSlots(
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
+  ) {
+    return this.gameCoreService.createBracketSlots(tournamentId);
+  }
+
+  @Patch('games/:gameId/bracket')
+  @HttpCode(200)
+  @ApiOperation({ summary: '시작 전 대진표 경기의 팀·일정 수정' })
+  @ApiResponse({ status: 200, description: '수정 성공' })
+  async updateBracketGame(
+    @Param('gameId', ParseIntPipe) gameId: number,
+    @Body() body: UpdateBracketGameDto,
+  ) {
+    return this.gameCoreService.updateBracketGame(gameId, body);
   }
 
   @Delete('games/:gameId')
