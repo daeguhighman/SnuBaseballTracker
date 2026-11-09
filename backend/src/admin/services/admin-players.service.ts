@@ -140,15 +140,16 @@ export class AdminPlayersService {
         player = await manager.save(player);
       }
 
+      // 한 선수는 한 대회에서 한 팀에만 등록할 수 있다
       const existing = await manager.findOne(PlayerTournament, {
-        where: {
-          playerId: player.id,
-          teamTournamentId: teamTournament.id,
-        },
+        where: { playerId: player.id, tournamentId: dto.tournamentId },
+        relations: ['teamTournament', 'teamTournament.team'],
       });
       if (existing) {
         throw new ConflictException(
-          '이미 해당 팀-대회에 등록된 선수입니다.',
+          existing.teamTournamentId === teamTournament.id
+            ? '이미 이 팀에 등록된 선수입니다.'
+            : `이미 이 대회의 ${existing.teamTournament?.team?.name ?? '다른 팀'}에 등록된 선수입니다.`,
         );
       }
 

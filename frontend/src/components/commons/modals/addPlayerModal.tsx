@@ -176,25 +176,35 @@ export default function AddPlayerModal({
                   <Hint>등록된 적 없는 선수입니다.</Hint>
                 ) : (
                   <ResultList>
-                    {results.map((p) => (
-                      <ResultItem key={p.id}>
-                        <button
-                          onClick={() => {
-                            setPicked(p);
-                            setStep("existing");
-                          }}
-                        >
-                          <strong>{p.name}</strong>
-                          <span>
-                            {[p.department?.name, p.studentId]
-                              .filter(Boolean)
-                              .join(" · ")}
-                            {p.teams.length > 0 &&
-                              ` · ${p.teams.map((t) => t.label).join(", ")}`}
-                          </span>
-                        </button>
-                      </ResultItem>
-                    ))}
+                    {results.map((p) => {
+                      // 한 대회에서는 한 팀에만 등록할 수 있다
+                      const registered = p.teams.find(
+                        (t) => t.tournamentId === tournamentId
+                      );
+                      return (
+                        <ResultItem key={p.id}>
+                          <button
+                            disabled={Boolean(registered)}
+                            onClick={() => {
+                              setPicked(p);
+                              setStep("existing");
+                            }}
+                          >
+                            <strong>{p.name}</strong>
+                            <span>
+                              {[p.department?.name, p.studentId]
+                                .filter(Boolean)
+                                .join(" · ")}
+                              {p.teams.length > 0 &&
+                                ` · ${p.teams.map((t) => t.label).join(", ")}`}
+                            </span>
+                            {registered && (
+                              <span>이 대회에 이미 등록된 선수입니다</span>
+                            )}
+                          </button>
+                        </ResultItem>
+                      );
+                    })}
                   </ResultList>
                 )}
                 <SubmitButton
