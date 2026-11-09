@@ -275,7 +275,7 @@ function GamesTab({ tournamentId, teams }: ITabProps) {
         onClick={() => setIsCreating(true)}
         disabled={!tournamentId || teams.length === 0}
       >
-        + 경기 등록
+        + 리그 경기 등록
       </AddButton>
 
       {target && (

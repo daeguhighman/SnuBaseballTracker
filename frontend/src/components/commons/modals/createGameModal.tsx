@@ -9,6 +9,7 @@ import {
   Field,
   FormFields,
   FormModalContainer,
+  Hint,
   SubmitButton,
 } from "./adminForm.style";
 
@@ -19,18 +20,6 @@ export interface AdminTeamOption {
   group: string;
 }
 
-const STAGES: { value: string; label: string; positions: string[] }[] = [
-  { value: "LEAGUE", label: "리그", positions: [] },
-  {
-    value: "QUARTER_FINAL",
-    label: "8강",
-    positions: ["QF_1", "QF_2", "QF_3", "QF_4"],
-  },
-  { value: "SEMI_FINAL", label: "4강", positions: ["SF_1", "SF_2"] },
-  { value: "THIRD_PLACE", label: "3·4위전", positions: ["THIRD_PLACE"] },
-  { value: "FINAL", label: "결승", positions: ["F"] },
-];
-
 interface IProps {
   tournamentId: number;
   teams: AdminTeamOption[];
@@ -40,7 +29,10 @@ interface IProps {
   onDone: () => void;
 }
 
-/** 관리 페이지의 경기 신규 등록 */
+/**
+ * 관리 페이지의 리그 경기 신규 등록.
+ * 8강 이후 경기는 대진표 탭에서 만든다. 승자 배치가 대진 자리 전체를 전제로 하기 때문.
+ */
 export default function CreateGameModal({
   tournamentId,
   teams,
@@ -52,13 +44,7 @@ export default function CreateGameModal({
   const [time, setTime] = useState("");
   const [awayId, setAwayId] = useState("");
   const [homeId, setHomeId] = useState("");
-  const [stage, setStage] = useState("LEAGUE");
-  const [position, setPosition] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const positions = STAGES.find((s) => s.value === stage)?.positions ?? [];
-  // 3·4위전·결승은 위치가 하나뿐이라 고르지 않는다
-  const bracketPosition = positions.length === 1 ? positions[0] : position;
 
   const submit = async () => {
     if (!date || !time || !awayId || !homeId) {
@@ -69,18 +55,13 @@ export default function CreateGameModal({
       alert("같은 팀끼리는 경기를 등록할 수 없습니다.");
       return;
     }
-    if (positions.length > 0 && !bracketPosition) {
-      alert("대진 위치를 골라 주세요.");
-      return;
-    }
     setIsSubmitting(true);
     try {
       await API.post("/admin/games", {
         tournamentId,
         awayTeamTournamentId: Number(awayId),
         homeTeamTournamentId: Number(homeId),
-        stage,
-        ...(bracketPosition ? { bracketPosition } : {}),
+        stage: "LEAGUE",
         startTime: `${date}T${time}:00+09:00`,
       });
       onDone();
@@ -108,7 +89,7 @@ export default function CreateGameModal({
   return (
     <ModalOverlay>
       <FormModalContainer>
-        <ModalTitleSmall>경기 등록</ModalTitleSmall>
+        <ModalTitleSmall>리그 경기 등록</ModalTitleSmall>
         <FormFields>
           <Field>
             날짜
@@ -138,39 +119,8 @@ export default function CreateGameModal({
               {teamOptions}
             </select>
           </Field>
-          <Field>
-            단계
-            <select
-              value={stage}
-              onChange={(e) => {
-                setStage(e.target.value);
-                setPosition("");
-              }}
-            >
-              {STAGES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          {positions.length > 1 && (
-            <Field>
-              대진 위치
-              <select
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-              >
-                <option value="">선택</option>
-                {positions.map((p) => (
-                  <option key={p} value={p}>
-                    {p.replace("_", " ")}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          )}
         </FormFields>
+        <Hint>8강 이후 경기는 대진표 탭에서 만듭니다.</Hint>
         <SubmitButton onClick={submit} disabled={isSubmitting}>
           {isSubmitting ? "등록 중…" : "등록하기"}
         </SubmitButton>
