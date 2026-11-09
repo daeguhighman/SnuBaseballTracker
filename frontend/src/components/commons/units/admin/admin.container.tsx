@@ -448,7 +448,9 @@ function BracketTab({ tournamentId, teams }: ITabProps) {
                 </EmptySlot>
               );
             }
-            const editable = game.status === "SCHEDULED";
+            // 노게임 경기는 재경기 일정을 잡을 수 있다
+            const editable =
+              game.status === "SCHEDULED" || game.status === "CANCELLED";
             const hasTeams = game.away.name || game.home.name;
             return (
               <SlotCard

@@ -10,6 +10,7 @@ import {
   Field,
   FormFields,
   FormModalContainer,
+  Hint,
   SubmitButton,
 } from "./adminForm.style";
 import { AdminTeamOption } from "./createGameModal";
@@ -33,7 +34,7 @@ interface IProps {
   onDone: () => void;
 }
 
-/** 관리 페이지 대진표 탭: 시작 전 대진 경기의 팀·일정을 정한다. 비워 두면 '미정'. */
+/** 관리 페이지 대진표 탭: 시작 전(또는 노게임) 대진 경기의 팀·일정을 정한다. 비워 두면 '미정'. */
 export default function BracketGameModal({
   game,
   label,
@@ -51,6 +52,7 @@ export default function BracketGameModal({
     game.home.teamTournamentId ? String(game.home.teamTournamentId) : ""
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isNoGame = game.status === "CANCELLED";
 
   const submit = async () => {
     if (Boolean(date) !== Boolean(time)) {
@@ -94,6 +96,12 @@ export default function BracketGameModal({
     <ModalOverlay>
       <FormModalContainer>
         <ModalTitleSmall>{label}</ModalTitleSmall>
+        {isNoGame && (
+          <Hint>
+            노게임 처리된 경기입니다. 저장하면 예정 경기로 돌아가고, 남아 있던
+            라인업·기록은 지워집니다.
+          </Hint>
+        )}
         <FormFields>
           <Field>
             원정팀 (선공)

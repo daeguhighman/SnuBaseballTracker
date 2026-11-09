@@ -46,7 +46,10 @@ export class PlayService {
           message: '이미 완료된 플레이입니다.',
         };
       }
-      await this.gameUndoService.capture(em, play.gameId, '타석 결과');
+      // 주자 이동 저장이 실패해 결과를 다시 보내는 경우, 처음 결과 직전 상태가 이미 남아 있다
+      if (!play.resultCode) {
+        await this.gameUndoService.capture(em, play.gameId, '타석 결과');
+      }
       play.resultCode = body.resultCode;
       await em.save(play);
 

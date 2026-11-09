@@ -9,6 +9,7 @@ import { InningHalf } from '@common/enums/inning-half.enum';
 import { BracketPosition, MatchStage } from '@common/enums/match-stage.enum';
 import { BaseException } from '@/common/exceptions/base.exception';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
+import { GameCoreService } from './game-core.service';
 import {
   CorrectInningRunsDto,
   CorrectTeamHitsDto,
@@ -35,7 +36,10 @@ const NEXT_POSITIONS: Partial<Record<BracketPosition, BracketPosition[]>> = {
  */
 @Injectable()
 export class GameCorrectionService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly gameCoreService: GameCoreService,
+  ) {}
 
   async correctInningRuns(gameId: number, dto: CorrectInningRunsDto) {
     await this.dataSource.transaction(async (manager) => {
@@ -170,7 +174,7 @@ export class GameCorrectionService {
     });
   }
 
-  /** 승자가 바뀌면, 아직 시작 전인 다음 라운드 경기에서 두 팀 자리를 맞바꾼다 */
+  /** 승자가 바뀌면, 아직 시작 전인 다음 라운드 경기에서 두 팀 자리를 맞바꾼다 (동점이었으면 새로 배치) */
   private async applyBracketChange(
     manager: EntityManager,
     game: Game,
@@ -185,7 +189,8 @@ export class GameCorrectionService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (newOutcome === outcomeOf(before.home, before.away)) return;
+    const oldOutcome = outcomeOf(before.home, before.away);
+    if (newOutcome === oldOutcome) return;
 
     const newWinner =
       newOutcome === 'HOME'
@@ -203,15 +208,31 @@ export class GameCorrectionService {
         }),
       ),
     );
+    if (
+      nextGames.some((next) => next && next.status !== GameStatus.SCHEDULED)
+    ) {
+      throw new BaseException(
+        '다음 라운드 경기가 이미 시작돼 승패를 바꿀 수 없습니다.',
+        ErrorCodes.GAME_NOT_EDITABLE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await manager.update(Game, game.id, { winnerTeamTournamentId: newWinner });
+
+    // 동점으로 끝나 아무도 진출하지 못했던 경기면 처음 진출하듯 배치한다
+    if (oldOutcome === 'DRAW') {
+      await this.gameCoreService.advanceBracket(
+        game,
+        newWinner,
+        newLoser,
+        manager,
+      );
+      return;
+    }
+
     for (const next of nextGames) {
       if (!next) continue;
-      if (next.status !== GameStatus.SCHEDULED) {
-        throw new BaseException(
-          '다음 라운드 경기가 이미 시작돼 승패를 바꿀 수 없습니다.',
-          ErrorCodes.GAME_NOT_EDITABLE,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
       const swap = (id: number | null) =>
         id === newLoser ? newWinner : id === newWinner ? newLoser : id;
       await manager.update(Game, next.id, {
@@ -219,7 +240,5 @@ export class GameCorrectionService {
         awayTeamTournamentId: swap(next.awayTeamTournamentId),
       });
     }
-
-    await manager.update(Game, game.id, { winnerTeamTournamentId: newWinner });
   }
 }

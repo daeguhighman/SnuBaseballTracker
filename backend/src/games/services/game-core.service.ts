@@ -26,10 +26,27 @@ import { BracketPosition, MatchStage } from '@/common/enums/match-stage.enum';
 import { Observable, ReplaySubject } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
 import { Play, PlayStatus } from '@/plays/entities/play.entity';
+import { GameUndoSnapshot } from '../entities/game-undo-snapshot.entity';
+import {
+  deleteGameRecords,
+  withoutForeignKeyChecks,
+} from './game-record-tables';
 import { AppRole, User } from '@/users/entities/user.entity';
 /*
   기본 조회, 상태 변경 등 핵심 로직
  */
+/** 대진 위치별 경기 단계 */
+const STAGE_BY_POSITION: Record<BracketPosition, MatchStage> = {
+  [BracketPosition.QF_1]: MatchStage.QF,
+  [BracketPosition.QF_2]: MatchStage.QF,
+  [BracketPosition.QF_3]: MatchStage.QF,
+  [BracketPosition.QF_4]: MatchStage.QF,
+  [BracketPosition.SF_1]: MatchStage.SF,
+  [BracketPosition.SF_2]: MatchStage.SF,
+  [BracketPosition.THIRD_PLACE]: MatchStage.THIRD_PLACE,
+  [BracketPosition.F]: MatchStage.FINAL,
+};
+
 @Injectable()
 export class GameCoreService {
   private readonly logger = new Logger(GameCoreService.name);
@@ -405,6 +422,18 @@ export class GameCoreService {
         );
       }
 
+      // 토너먼트는 승자가 다음 라운드로 올라가야 하므로 동점으로 끝낼 수 없다
+      if (
+        game.stage !== MatchStage.LEAGUE &&
+        game.gameStat.homeScore === game.gameStat.awayScore
+      ) {
+        throw new BaseException(
+          '토너먼트 경기는 동점으로 끝낼 수 없습니다. 승부가 난 뒤 종료해 주세요.',
+          ErrorCodes.INVALID_INPUT,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       // 4. 팀 토너먼트 통계 업데이트
       if (game.stage === MatchStage.LEAGUE) {
         await this.updateTeamTournamentStats(game, manager);
@@ -564,7 +593,7 @@ export class GameCoreService {
   }
 
   /** 대진표 경기의 승자(와 준결승 패자)를 다음 경기 슬롯에 배치한다. */
-  private async advanceBracket(
+  async advanceBracket(
     game: Game,
     winnerTeamId: number | null,
     loserTeamId: number | null,
@@ -604,12 +633,11 @@ export class GameCoreService {
     const transition = transitionMap[game.bracketPosition];
     if (transition && winnerTeamId !== null) {
       // 4) 다음 경기(준결승→결승 혹은 8강→준결승) 승자 배치
-      const nextGame = await manager.findOneOrFail(Game, {
-        where: {
-          tournamentId: game.tournamentId,
-          bracketPosition: transition.nextPos,
-        },
-      });
+      const nextGame = await this.findOrCreateBracketGame(
+        manager,
+        game.tournamentId,
+        transition.nextPos,
+      );
       nextGame[transition.nextSlot] = winnerTeamId;
       await manager.save(nextGame);
 
@@ -619,12 +647,11 @@ export class GameCoreService {
           game.bracketPosition === BracketPosition.SF_2) &&
         loserTeamId !== null
       ) {
-        const thirdGame = await manager.findOneOrFail(Game, {
-          where: {
-            tournamentId: game.tournamentId,
-            bracketPosition: BracketPosition.THIRD_PLACE,
-          },
-        });
+        const thirdGame = await this.findOrCreateBracketGame(
+          manager,
+          game.tournamentId,
+          BracketPosition.THIRD_PLACE,
+        );
 
         if (game.bracketPosition === BracketPosition.SF_1) {
           // SF1 패자는 awayTeam
@@ -637,6 +664,27 @@ export class GameCoreService {
         await manager.save(thirdGame);
       }
     }
+  }
+
+  /** 다음 라운드 경기가 아직 없으면(빈 대진을 만들지 않았으면) 팀·일정 없이 만든다 */
+  private async findOrCreateBracketGame(
+    manager: EntityManager,
+    tournamentId: number,
+    bracketPosition: BracketPosition,
+  ) {
+    const existing = await manager.findOne(Game, {
+      where: { tournamentId, bracketPosition },
+    });
+    if (existing) return existing;
+    return manager.save(
+      manager.create(Game, {
+        tournamentId,
+        stage: STAGE_BY_POSITION[bracketPosition],
+        bracketPosition,
+        startTime: null,
+        status: GameStatus.SCHEDULED,
+      }),
+    );
   }
 
   async assignUmpireToGame(gameId: number, umpireId: number) {
@@ -842,17 +890,6 @@ export class GameCoreService {
       );
     }
 
-    const stageByPosition: Record<BracketPosition, MatchStage> = {
-      [BracketPosition.QF_1]: MatchStage.QF,
-      [BracketPosition.QF_2]: MatchStage.QF,
-      [BracketPosition.QF_3]: MatchStage.QF,
-      [BracketPosition.QF_4]: MatchStage.QF,
-      [BracketPosition.SF_1]: MatchStage.SF,
-      [BracketPosition.SF_2]: MatchStage.SF,
-      [BracketPosition.THIRD_PLACE]: MatchStage.THIRD_PLACE,
-      [BracketPosition.F]: MatchStage.FINAL,
-    };
-
     const existing = await this.gameRepository.find({
       where: { tournamentId, bracketPosition: Not(IsNull()) },
       select: ['id', 'bracketPosition'],
@@ -865,7 +902,7 @@ export class GameCoreService {
         .map((position) =>
           this.gameRepository.create({
             tournament,
-            stage: stageByPosition[position],
+            stage: STAGE_BY_POSITION[position],
             bracketPosition: position,
             startTime: null,
             status: GameStatus.SCHEDULED,
@@ -901,7 +938,11 @@ export class GameCoreService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (game.status !== GameStatus.SCHEDULED) {
+    // 노게임 경기는 다시 잡을 수 있다 (저장할 때 예정 경기로 되돌린다)
+    if (
+      game.status !== GameStatus.SCHEDULED &&
+      game.status !== GameStatus.CANCELLED
+    ) {
       throw new BaseException(
         '시작했거나 끝난 경기는 대진을 바꿀 수 없습니다.',
         ErrorCodes.GAME_NOT_EDITABLE,
@@ -949,7 +990,22 @@ export class GameCoreService {
     game.homeTeamTournamentId = home ?? null;
     game.awayTeamTournamentId = away ?? null;
     if (input.startTime !== undefined) game.startTime = input.startTime;
-    return this.gameRepository.save(game);
+
+    if (game.status !== GameStatus.CANCELLED) {
+      return this.gameRepository.save(game);
+    }
+
+    // 노게임 경기를 재경기로 되살린다. 남아 있던 기록을 지워야 라인업 제출·경기 시작을 처음부터 할 수 있다
+    return this.dataSource.transaction(async (manager) => {
+      await withoutForeignKeyChecks(manager, () =>
+        deleteGameRecords(manager, gameId),
+      );
+      await manager.delete(GameUndoSnapshot, { gameId });
+      game.status = GameStatus.SCHEDULED;
+      game.winnerTeamTournamentId = null;
+      game.isForfeit = false;
+      return manager.save(game);
+    });
   }
 
   async updateSchedule(gameId: number, startTime: Date) {
