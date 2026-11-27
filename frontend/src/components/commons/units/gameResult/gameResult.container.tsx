@@ -8,6 +8,12 @@ import React, {
   useCallback,
 } from "react";
 import {
+  emptyScoreRow,
+  inningCountOf,
+  inningCountOfRow,
+  scoreboardHeaders,
+} from "../../../../commons/libraries/scoreboard";
+import {
   Container,
   ScoreBoardWrapper,
   InningHeader,
@@ -56,12 +62,11 @@ interface ISelectedCell {
   cellIndex: number; // 이닝 인덱스(0-based)
 }
 
-// 점수 배열 초기값 (1~7회, R, H)
-const defaultTeamAScores = ["", "", "", "", "", "", "", "", ""];
-const defaultTeamBScores = ["", "", "", "", "", "", "", "", ""];
+// 점수 배열 초기값 (1~7회, R, H). 승부치기가 있으면 이닝 칸이 늘어난다
+const defaultTeamAScores: string[] = emptyScoreRow();
+const defaultTeamBScores: string[] = emptyScoreRow();
 
 export default function FinalGameRecordPage() {
-  const inningHeaders = ["", "1", "2", "3", "4", "5", "6", "7", "R", "H"];
   const router = useRouter();
 
   // IP 값을 이닝 표기법으로 변환하는 함수 추가
@@ -194,14 +199,15 @@ export default function FinalGameRecordPage() {
       // canRecord 상태 설정
       setCanRecord(apiCanRecord);
       // 🎯 새로운 scoreboard 구조 처리
-      const newA = Array(9).fill("");
-      const newB = Array(9).fill("");
+      // 7회 + 승부치기로 늘어난 이닝
+      const n = inningCountOf(scoreboard?.innings);
+      const newA = emptyScoreRow(n);
+      const newB = emptyScoreRow(n);
 
-      // 1~7이닝 점수 처리
       if (scoreboard?.innings) {
         scoreboard.innings.forEach((inning: any) => {
           const idx = inning.inning - 1; // 0-based index
-          if (idx >= 0 && idx < 7) {
+          if (idx >= 0 && idx < n) {
             newA[idx] = String(inning.away ?? "");
             newB[idx] = String(inning.home ?? "");
           }
@@ -218,10 +224,10 @@ export default function FinalGameRecordPage() {
 
       // R, H 컬럼 처리 (scoreboard.totals 사용)
       if (teamSummary) {
-        newA[7] = String(teamSummary.away?.runs ?? "");
-        newA[8] = String(teamSummary.away?.hits ?? "");
-        newB[7] = String(teamSummary.home?.runs ?? "");
-        newB[8] = String(teamSummary.home?.hits ?? "");
+        newA[n] = String(teamSummary.away?.runs ?? "");
+        newA[n + 1] = String(teamSummary.away?.hits ?? "");
+        newB[n] = String(teamSummary.home?.runs ?? "");
+        newB[n + 1] = String(teamSummary.home?.hits ?? "");
       }
 
       // 마지막 이닝 정보 저장 (기존 로직 유지)
@@ -292,14 +298,19 @@ export default function FinalGameRecordPage() {
   // };
   const [selectedStatId, setSelectedStatId] = useState<number | null>(null);
 
-  // 이닝 점수(0~6)·안타(8) 칸만 정정할 수 있다. 득점(R)은 이닝 점수의 합이다
+  // 이닝 점수·안타(H) 칸만 정정할 수 있다. 득점(R)은 이닝 점수의 합이다
+  const inningCount = inningCountOfRow(teamAScores);
+  const hitsIdx = inningCount + 1;
   const isCorrectableCell = (score: string, idx: number) =>
-    canRecord && score !== "" && score !== "-" && (idx < 7 || idx === 8);
+    canRecord &&
+    score !== "" &&
+    score !== "-" &&
+    (idx < inningCount || idx === hitsIdx);
 
   const saveCorrection = async (value: number) => {
     if (!correction) return;
     const { team, idx } = correction;
-    if (idx === 8) {
+    if (idx === hitsIdx) {
       await API.patch(`/games/${recordId}/result/hits`, {
         team: team === "A" ? "away" : "home",
         hits: value,
@@ -404,14 +415,14 @@ export default function FinalGameRecordPage() {
 
       {/* 스코어보드 */}
       <ScoreBoardWrapper ref={scoreboardRef}>
-        <InningHeader>
-          {inningHeaders.map((inn, idx) => (
+        <InningHeader $innings={inningCount}>
+          {scoreboardHeaders(inningCount).map((inn, idx) => (
             <InningCell key={idx}>{inn}</InningCell>
           ))}
         </InningHeader>
 
         {/* 팀 A (원정) - away 팀 */}
-        <TeamRow className="team-row">
+        <TeamRow className="team-row" $innings={inningCount}>
           <TeamNameCell>{teamAName.slice(0, 3)}</TeamNameCell>
           {teamAScores.map((score, idx) => (
             <TeamScoreCell
@@ -437,7 +448,7 @@ export default function FinalGameRecordPage() {
         </TeamRow>
 
         {/* 팀 B (홈) - home 팀 */}
-        <TeamRow className="team-row">
+        <TeamRow className="team-row" $innings={inningCount}>
           <TeamNameCell>{teamBName.slice(0, 3)}</TeamNameCell>
           {teamBScores.map((score, idx) => (
             <TeamScoreCell

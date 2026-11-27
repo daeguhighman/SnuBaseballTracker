@@ -22,6 +22,9 @@ import { GameInningStat } from '@/games/entities/game-inning-stat.entity';
 import { Runner } from './entities/runner.entity';
 import { GameUndoService } from '@/games/services/game-undo.service';
 
+/** 이 이닝부터 동점이면 무사 1·2루 승부치기 */
+const TIEBREAK_START_INNING = 8;
+
 @Injectable()
 export class PlayService {
   constructor(
@@ -393,6 +396,11 @@ export class PlayService {
     await em.save(gameStat);
     await em.save(newInningStat);
 
+    // 8회부터 동점이면 승부치기: 무사 1·2루에서 시작
+    if (this.isTiebreakHalf(gameStat)) {
+      await this.placeTiebreakRunners(em, gameStat, newInningStat);
+    }
+
     // 새로운 Play 생성
     const { max } = await em
       .createQueryBuilder(Play, 'p')
@@ -695,6 +703,76 @@ export class PlayService {
         break;
     }
     await em.save(pitcherGameStat);
+  }
+
+  /**
+   * 새로 시작하는 반 이닝이 승부치기인지.
+   * 8회초는 7회까지 동점일 때만 열리고, 그 뒤 말 공격은 초 공격 결과와 상관없이 승부치기로 한다.
+   * (초 공격에서 원정팀이 앞서 나가도 홈팀은 무사 1·2루에서 공격한다)
+   */
+  private isTiebreakHalf(gameStat: GameStat): boolean {
+    if (gameStat.inning < TIEBREAK_START_INNING) return false;
+    if (gameStat.inningHalf === InningHalf.BOT) return true;
+    return gameStat.homeScore === gameStat.awayScore;
+  }
+
+  /**
+   * 승부치기 주자 배치: 이번 이닝 첫 타자의 바로 앞 타순이 2루, 그 앞 타순이 1루.
+   * 득점 시 기존 로직이 Runner를 찾아 처리하므로 Runner도 함께 만든다 (자책점 구분은 하지 않는다).
+   */
+  private async placeTiebreakRunners(
+    em: EntityManager,
+    gameStat: GameStat,
+    inningStat: GameInningStat,
+  ): Promise<void> {
+    const isTop = gameStat.inningHalf === InningHalf.TOP;
+    const leadoffGpId = isTop
+      ? gameStat.awayBatterParticipationId
+      : gameStat.homeBatterParticipationId;
+    const pitcherGpId = isTop
+      ? gameStat.homePitcherParticipationId
+      : gameStat.awayPitcherParticipationId;
+
+    const leadoff = await em.findOne(BatterGameParticipation, {
+      where: { id: leadoffGpId },
+    });
+    if (!leadoff) throw new NotFoundException('Current batter not found');
+
+    const batters = (
+      await em.find(BatterGameParticipation, {
+        where: {
+          gameId: gameStat.gameId,
+          teamTournamentId: leadoff.teamTournamentId,
+          isActive: true,
+        },
+        order: { battingOrder: 'ASC' },
+      })
+    ).filter((b) => b.battingOrder >= 1);
+    if (batters.length < 3) return; // 주자 둘 + 타자가 안 되면 배치하지 않는다
+
+    const maxOrder = Math.max(...batters.map((b) => b.battingOrder));
+    const prevOrder = (order: number) => (order <= 1 ? maxOrder : order - 1);
+    const byOrder = (order: number) =>
+      batters.find((b) => b.battingOrder === order);
+
+    const onSecond = byOrder(prevOrder(leadoff.battingOrder));
+    const onFirst = onSecond ? byOrder(prevOrder(onSecond.battingOrder)) : null;
+    if (!onSecond || !onFirst) return;
+
+    gameStat.onSecondGpId = onSecond.id;
+    gameStat.onFirstGpId = onFirst.id;
+    await em.save(gameStat);
+
+    for (const gp of [onSecond, onFirst]) {
+      await em.save(
+        em.create(Runner, {
+          runnerGpId: gp.id,
+          responsiblePitcherGpId: pitcherGpId,
+          gameInningStatId: inningStat.id,
+          isActive: true,
+        }),
+      );
+    }
   }
 
   private async findNextBatter(

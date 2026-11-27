@@ -32,7 +32,7 @@ import { BatterStat } from '@/records/entities/batter-stat.entity';
 import { PitcherStat } from '@/records/entities/pitcher-stat.entity';
 import { PlayerTournament } from '@/players/entities/player-tournament.entity';
 import { Decimal } from 'decimal.js';
-import { In, Between } from 'typeorm';
+import { In, MoreThanOrEqual } from 'typeorm';
 import { GameInningStat } from '../entities/game-inning-stat.entity';
 import { ErrorCodes } from '@/common/exceptions/error-codes.enum';
 import { BaseException } from '@/common/exceptions/base.exception';
@@ -1855,12 +1855,12 @@ export class GameStatsService {
     );
     const outs = inningStat?.outs ?? 0;
 
-    // --- 1회부터 7회까지 모든 타석에 들어선 타자들 찾기 ---
+    // --- 모든 이닝(승부치기 포함)의 타석에 들어선 타자들 찾기 ---
     const allInningPlays = await this.playRepository.find({
       where: {
         gameId: gameId,
         gameInningStat: {
-          inning: Between(1, 7), // 1회부터 7회까지
+          inning: MoreThanOrEqual(1), // 승부치기(8회~) 포함
         },
       },
       relations: [

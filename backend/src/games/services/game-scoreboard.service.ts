@@ -118,8 +118,11 @@ export class GameScoreboardService {
       gameStat = game.gameStat;
     }
 
+    // 7회말 이후는 동점일 때만 승부치기(8회~)로 넘어갈 수 있다
     const isLastInning =
-      gameStat.inning === 7 && gameStat.inningHalf === InningHalf.BOT;
+      gameStat.inning >= 7 &&
+      gameStat.inningHalf === InningHalf.BOT &&
+      gameStat.homeScore !== gameStat.awayScore;
 
     if (isLastInning) {
       throw new BaseException(

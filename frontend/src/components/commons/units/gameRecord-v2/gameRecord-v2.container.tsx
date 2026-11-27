@@ -1,4 +1,10 @@
 import {
+  emptyScoreRow,
+  inningCountOf,
+  inningCountOfRow,
+  scoreboardHeaders,
+} from "../../../../commons/libraries/scoreboard";
+import {
   useState,
   useEffect,
   useCallback,
@@ -218,8 +224,6 @@ export default function GameRecordPageV2() {
   const recordId = router.query.recordId;
   // const [outs, setOuts] = useState<boolean[]>([false, false, false]);
 
-  // 이닝 헤더 (1~7, R, H)
-  const inningHeaders = ["", "1", "2", "3", "4", "5", "6", "7", "R", "H"];
 
   // 팀 이름
   const [teamAName, setTeamAName] = useState("");
@@ -584,23 +588,24 @@ export default function GameRecordPageV2() {
   /** snapshot.scoreboard → UI 배열 9칸(7이닝 + R/H)으로 변환 */
   /** snapshot.scoreboard → 9칸(7이닝 + R/H) */
   function parseScoreboard(scoreboard: any) {
-    const A = Array(9).fill("");
-    const B = Array(9).fill("");
+    // 7회 + 승부치기로 늘어난 이닝
+    const n = inningCountOf(scoreboard?.innings);
+    const A = emptyScoreRow(n);
+    const B = emptyScoreRow(n);
 
-    // ⬅️ 1~7 이닝
     scoreboard?.innings?.forEach((inn: any) => {
       const i = inn.inning - 1; // 0-based
-      if (i >= 0 && i < 7) {
+      if (i >= 0 && i < n) {
         A[i] = inn.away ?? "";
         B[i] = inn.home ?? "";
       }
     });
 
     // ⬅️ 마지막 두 칸(R, H)
-    A[7] = scoreboard?.totals?.away?.R ?? "";
-    A[8] = scoreboard?.totals?.away?.H ?? "";
-    B[7] = scoreboard?.totals?.home?.R ?? "";
-    B[8] = scoreboard?.totals?.home?.H ?? "";
+    A[n] = scoreboard?.totals?.away?.R ?? "";
+    A[n + 1] = scoreboard?.totals?.away?.H ?? "";
+    B[n] = scoreboard?.totals?.home?.R ?? "";
+    B[n + 1] = scoreboard?.totals?.home?.H ?? "";
 
     /* 다음 공격 팀 추정용(선택) */
     let nextAttack: "home" | "away" = "away";
@@ -614,7 +619,7 @@ export default function GameRecordPageV2() {
   // function getInitialScores() {
   //   if (typeof window === "undefined") {
   //     // SSR 경우
-  //     return { A: Array(9).fill(""), B: Array(9).fill(""), nextAttack: "away" };
+  //     return { A: emptyScoreRow(), B: emptyScoreRow(), nextAttack: "away" };
   //   }
   //   try {
   //     const raw = localStorage.getItem("snapshot");
@@ -624,7 +629,7 @@ export default function GameRecordPageV2() {
   //     if (!sb) throw new Error("scoreboard 없음");
   //     return parseScoreboard(sb);
   //   } catch {
-  //     return { A: Array(9).fill(""), B: Array(9).fill(""), nextAttack: "away" };
+  //     return { A: emptyScoreRow(), B: emptyScoreRow(), nextAttack: "away" };
   //   }
   // }
 
@@ -637,7 +642,7 @@ export default function GameRecordPageV2() {
   // }, [snapshotData?.snapshot?.gameSummary?.scoreboard]);
   function getInitialScores() {
     if (typeof window === "undefined") {
-      return { A: Array(9).fill(""), B: Array(9).fill(""), nextAttack: "away" };
+      return { A: emptyScoreRow(), B: emptyScoreRow(), nextAttack: "away" };
     }
     try {
       const raw = localStorage.getItem("snapshot");
@@ -647,7 +652,7 @@ export default function GameRecordPageV2() {
       if (!sb) throw new Error("scoreboard 없음");
       return parseScoreboard(sb);
     } catch {
-      return { A: Array(9).fill(""), B: Array(9).fill(""), nextAttack: "away" };
+      return { A: emptyScoreRow(), B: emptyScoreRow(), nextAttack: "away" };
     }
   }
 
@@ -2949,18 +2954,19 @@ export default function GameRecordPageV2() {
     badgeSnapsRef.current = badgeSnaps;
   }, [badgeSnaps]);
   const outSet = reconstructMode ? outBadgesVirtual : outBadgesActual;
+  const inningCount = inningCountOfRow(teamAScores);
 
   return (
     <GameRecordContainer ref={containerRef}>
       <ScoreBoardWrapper>
-        <InningHeader>
-          {inningHeaders.map((inn, i) => (
+        <InningHeader $innings={inningCount}>
+          {scoreboardHeaders(inningCount).map((inn, i) => (
             <InningCell key={i}>{inn}</InningCell>
           ))}
         </InningHeader>
 
         {/* Team A */}
-        <TeamRow>
+        <TeamRow $innings={inningCount}>
           <TeamNameCell>
             {/* {snapshotData?.snapshot?.gameSummary?.awayTeam?.name?.slice(0, 3)} */}
             {awayName.slice(0, 3)}
@@ -2976,7 +2982,7 @@ export default function GameRecordPageV2() {
         </TeamRow>
 
         {/* Team B */}
-        <TeamRow>
+        <TeamRow $innings={inningCount}>
           <TeamNameCell>
             {/* {snapshotData?.snapshot?.gameSummary?.homeTeam?.name?.slice(0, 3)} */}
             {homeName.slice(0, 3)}
