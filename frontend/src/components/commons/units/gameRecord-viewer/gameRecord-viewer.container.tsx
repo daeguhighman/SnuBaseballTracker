@@ -96,6 +96,12 @@ import {
 } from "../../../../commons/libraries/loadingOverlay";
 import ErrorAlert from "../../../../commons/libraries/showErrorCode";
 import {
+  emptyScoreRow,
+  inningCountOf,
+  inningCountOfRow,
+  scoreboardHeaders,
+} from "../../../../commons/libraries/scoreboard";
+import {
   OnDeckNameWrapper,
   OnDeckWrapper,
 } from "../gameRecord-v2/gameRecord-v2.style";
@@ -187,22 +193,24 @@ export default function GameRecordPageViewer() {
     setTeamBName(snap?.gameSummary?.homeTeam?.name ?? "");
 
     // 스코어보드
-    const newA = Array(9).fill("");
-    const newB = Array(9).fill("");
     const innings = snap?.gameSummary?.scoreboard?.innings ?? [];
+    // 7회 + 승부치기로 늘어난 이닝
+    const n = inningCountOf(innings);
+    const newA = emptyScoreRow(n);
+    const newB = emptyScoreRow(n);
     for (const inn of innings) {
       const idx = (inn?.inning ?? 0) - 1;
-      if (idx >= 0 && idx < 7) {
+      if (idx >= 0 && idx < n) {
         newA[idx] = inn?.away ?? "";
         newB[idx] = inn?.home ?? "";
       }
     }
     const totals = snap?.gameSummary?.scoreboard?.totals;
     if (totals) {
-      newA[7] = totals?.away?.R ?? "";
-      newA[8] = totals?.away?.H ?? "";
-      newB[7] = totals?.home?.R ?? "";
-      newB[8] = totals?.home?.H ?? "";
+      newA[n] = totals?.away?.R ?? "";
+      newA[n + 1] = totals?.away?.H ?? "";
+      newB[n] = totals?.home?.R ?? "";
+      newB[n + 1] = totals?.home?.H ?? "";
     }
     setTeamAScores(newA);
     setTeamBScores(newB);
@@ -366,16 +374,14 @@ export default function GameRecordPageViewer() {
 
   const [outs, setOuts] = useState<boolean[]>([false, false, false]);
 
-  // 이닝 헤더 (1~7, R, H)
-  const inningHeaders = ["", "1", "2", "3", "4", "5", "6", "7", "R", "H"];
 
   // 팀 이름
   const [teamAName, setTeamAName] = useState("");
   const [teamBName, setTeamBName] = useState("");
 
   // 이닝별 점수 (9칸: 7이닝 + R, H)
-  const [teamAScores, setTeamAScores] = useState(Array(9).fill(""));
-  const [teamBScores, setTeamBScores] = useState(Array(9).fill(""));
+  const [teamAScores, setTeamAScores] = useState(emptyScoreRow());
+  const [teamBScores, setTeamBScores] = useState(emptyScoreRow());
 
   /* 🔄 actual out-count만 반영 */
   const deriveOuts = (snap: any): boolean[] => {
@@ -1217,17 +1223,19 @@ export default function GameRecordPageViewer() {
     [sseData?.playerRecords?.innings]
   );
 
+  const inningCount = inningCountOfRow(teamAScores);
+
   return (
     <GameRecordContainer>
       <ScoreBoardWrapper>
-        <InningHeader>
-          {inningHeaders.map((inn, i) => (
+        <InningHeader $innings={inningCount}>
+          {scoreboardHeaders(inningCount).map((inn, i) => (
             <InningCell key={i}>{inn}</InningCell>
           ))}
         </InningHeader>
 
         {/* Team A */}
-        <TeamRow>
+        <TeamRow $innings={inningCount}>
           <TeamNameCell>
             {sseData?.gameSummary?.awayTeam?.name?.slice(0, 3)}
           </TeamNameCell>
@@ -1242,7 +1250,7 @@ export default function GameRecordPageViewer() {
         </TeamRow>
 
         {/* Team B */}
-        <TeamRow>
+        <TeamRow $innings={inningCount}>
           <TeamNameCell>
             {sseData?.gameSummary?.homeTeam?.name?.slice(0, 3)}
           </TeamNameCell>
@@ -1426,7 +1434,7 @@ export default function GameRecordPageViewer() {
           })}
       </GraphicWrapper>
       <InningRow>
-        {[1, 2, 3, 4, 5, 6, 7].map((inning) => (
+        {Array.from({ length: inningCount }, (_, i) => i + 1).map((inning) => (
           <InningItem
             key={inning}
             $isSelected={selectedInning === inning}

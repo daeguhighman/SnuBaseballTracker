@@ -63,9 +63,9 @@ export const ScoreBoardWrapper = styled.div`
 /** ─────────────────────────────────────────────────────────
  *  1) 상단 이닝 헤더 (총 12열: 이닝(1~9) + R + H)
  * ───────────────────────────────────────────────────────── */
-export const InningHeader = styled.div`
+export const InningHeader = styled.div<{ $innings?: number }>`
   display: grid;
-  grid-template-columns: 15vw repeat(9, 1fr);
+  grid-template-columns: 15vw repeat(${({ $innings = 7 }) => $innings + 2}, 1fr);
   width: 100%;
   height: 33%;
   justify-content: center;
@@ -78,8 +78,8 @@ export const InningHeader = styled.div`
   > *:first-of-type {
     border-bottom: none;
   }
-  > *:nth-of-type(9),
-  > *:nth-of-type(10) {
+  /* 마지막 두 칸(R, H) */
+  > *:nth-last-of-type(-n + 2) {
     color: red;
   }
   padding-right: 1vh;
@@ -118,14 +118,14 @@ export const EditableInputScore = styled.input`
  *     첫 번째 열: 팀 이름 (별도 스타일)
  *     나머지 11열: 이닝별 점수 (팀 점수 셀)
  * ───────────────────────────────────────────────────────── */
-export const TeamRow = styled.div`
+export const TeamRow = styled.div<{ $innings?: number }>`
   display: grid;
-  grid-template-columns: 15vw repeat(9, 1fr);
+  grid-template-columns: 15vw repeat(${({ $innings = 7 }) => $innings + 2}, 1fr);
   width: 100%;
   align-items: center;
   height: 33%;
-  > *:nth-of-type(9),
-  > *:nth-of-type(10) {
+  /* 마지막 두 칸(R, H) */
+  > *:nth-last-of-type(-n + 2) {
     color: red;
     font-weight: 700;
   }
